@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "src"
+		},
+		{
+			"path": "dist\\templates"
+		},
+		{
+			"name": "binance-server",
+			"path": "."
+		}
+	]
+}
