@@ -5,10 +5,6 @@
 		},
 		{
 			"path": "dist\\templates"
-		},
-		{
-			"name": "binance-server",
-			"path": "."
 		}
 	]
 }

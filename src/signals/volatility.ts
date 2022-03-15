@@ -1,31 +1,14 @@
+import { Candle, CdlDir, KeyResult, Result } from './signals';
 import { Chart } from '../chart';
-
-type Candle = {
-    high: number;
-    open: number;
-    close: number;
-    low: number;
-}
-
-enum CdlDir {
-    up = 'up',
-    down = 'down',
-}
+import symbols = require('../data/symbols.json');
 
 const fee: number = .1;
 
-type Result = {
-    key: string;
-    desc: string;
-}
-
 // exported component
 function Volatility() {
-    const symbols = ['ADAUSDT', 'ATOMUSDT', 'BATUSDT', 'BCHUSDT', 'BNBUSDT', 'BTCUSDT', 'DASHUSDT', 'DOGEUSDT', 'EOSUSDT', 'ETCUSDT', 'ETHUSDT', 'IOSTUSDT', 'IOTAUSDT', 'LINKUSDT', 'LTCUSDT', 'MATICUSDT', 'NEOUSDT', 'ONTUSDT', 'QTUMUSDT', 'RVNUSDT', 'TRXUSDT', 'VETUSDT', 'XLMUSDT', 'XMRUSDT', 'XRPUSDT', 'ZECUSDT', 'XTZUSDT'];
-
-    return new Promise<Result[]>((resolve, reject) => {
-        Chart.candlesticks({ symbols, interval: '2h', limit: 5 }, (data) => {
-            const result: Result[] = [];
+    return new Promise<Result>((resolve, reject) => {
+        Chart.candlesticks({ symbols, interval: '1h', limit: 5 }, (data) => {
+            const result: Result = [];
 
             for (const key in data) {
                 if (Object.prototype.hasOwnProperty.call(data, key)) {
@@ -71,8 +54,6 @@ function Volatility() {
                     });
 
                     if (!falseAccum) {
-                        let keyResult: string = key + '- is volatile pair';
-
                         const volatility = {
                             minLong: 999,
                             minShort: 999
@@ -103,7 +84,16 @@ function Volatility() {
                                 const possibleLoss = ((lastCandle.close - lastCandle.low) / (lastCandle.close / 100)) + fee;
 
                                 if (expectedProfit > possibleLoss) {
-                                    keyResult += ' Long. Expected profit - ' + expectedProfit + ' Possible loss - ' + possibleLoss;
+                                    const keyResult: KeyResult = {
+                                        key: key,
+                                        position: 'long',
+                                        entryPrice: lastCandle.close,
+                                        expectedProfit: expectedProfit,
+                                        possibleLoss: possibleLoss,
+                                        stopLoss: lastCandle.low,
+                                    };
+
+                                    result.push(keyResult);
                                 }
                             }
                         }
@@ -117,12 +107,19 @@ function Volatility() {
                                 const possibleLoss = ((lastCandle.high - lastCandle.close) / (lastCandle.close / 100)) + fee;
 
                                 if (expectedProfit > possibleLoss) {
-                                    keyResult += ' Short. Expected profit - ' + expectedProfit + ' Possible loss - ' + possibleLoss;
+                                    const keyResult: KeyResult = {
+                                        key: key,
+                                        position: 'short',
+                                        entryPrice: lastCandle.close,
+                                        expectedProfit: expectedProfit,
+                                        possibleLoss: possibleLoss,
+                                        stopLoss: lastCandle.high,
+                                    };
+
+                                    result.push(keyResult);
                                 }
                             }
                         }
-
-                        result.push({ key, desc: keyResult });
                     }
                 }
             }

@@ -4,6 +4,7 @@
       "lib": ["es2020"],
       "target": "es6",
       "moduleResolution": "node",
+      "resolveJsonModule": true,
       "outDir": "dist",
       "allowJs": true,
       "sourceMap": true
