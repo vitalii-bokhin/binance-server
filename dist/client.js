@@ -8,7 +8,6 @@ const multer = require("multer");
 const websocket = require("ws");
 const api_1 = require("./api");
 const chart_1 = require("./chart");
-const signals_1 = require("./signals");
 const db = require('./database'), user = require('./user'), watch = require('./watch'), order = require('./order');
 const app = express(), upload = multer();
 app.use(function (req, res, next) {
@@ -42,14 +41,14 @@ app.get('/', function (req, res) {
     };
     res.render('index', opt);
 });
-app.get('/signals/volatility', function (req, res) {
-    (0, signals_1.Volatility)().then((data) => {
-        const opt = {
-            title: 'Volatility signals',
-            data: JSON.stringify(data)
-        };
-        res.render('index', opt);
-    });
+app.get('/bot', function (req, res) {
+    // Volatility().then((data) => {
+    //     const opt = {
+    //         title: 'Volatility signals',
+    //         data: JSON.stringify(data)
+    //     };
+    //     res.render('index', opt);
+    // });
 });
 app.post('/auth', upload.none(), function (req, res) {
     const user = db.user(null, req.body.email);

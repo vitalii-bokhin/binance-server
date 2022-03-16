@@ -67,15 +67,15 @@ app.get('/', function (req, res) {
     res.render('index', opt);
 });
 
-app.get('/signals/volatility', function (req, res) {
-    Volatility().then((data) => {
-        const opt = {
-            title: 'Volatility signals',
-            data: JSON.stringify(data)
-        };
+app.get('/bot', function (req, res) {
+    // Volatility().then((data) => {
+    //     const opt = {
+    //         title: 'Volatility signals',
+    //         data: JSON.stringify(data)
+    //     };
 
-        res.render('index', opt);
-    });
+    //     res.render('index', opt);
+    // });
 });
 
 app.post('/auth', upload.none(), function (req, res) {

@@ -99,7 +99,7 @@ const Chart = {
 		})();
 	},
 
-	candlesticks: function (opt: { symbols: string[]; interval: string; limit: number; }, callback: (arg0: {}) => void) {
+	candlesTicks: function (opt: { symbols: string[]; interval: string; limit: number; }, callback: (arg0: {}) => void) {
 		const result = {};
 
 		let i = 0;
@@ -139,12 +139,25 @@ const Chart = {
 	},
 
 	wsCandlesTicks: function (symbArr) {
-		binance.websockets.candlesticks(symbArr, "5m", (candlesticks) => {
-			let { e: eventType, E: eventTime, s: symbol, k: ticks } = candlesticks;
-			let { o: open, h: high, l: low, c: close, v: volume, n: trades, i: interval, x: isFinal, q: quoteVolume, V: buyVolume, Q: quoteBuyVolume } = ticks;
+		// binance.websockets.candlesticks(symbArr, "5m", (candlesticks) => {
+		// 	let { e: eventType, E: eventTime, s: symbol, k: ticks } = candlesticks;
+		// 	let { o: open, h: high, l: low, c: close, v: volume, n: trades, i: interval, x: isFinal, q: quoteVolume, V: buyVolume, Q: quoteBuyVolume } = ticks;
 
-			this.ev.emit('wsCandlesTicks', { open, high, low, close });
-		});
+		// 	this.ev.emit('wsCandlesTicks', { open, high, low, close });
+		// });
+		
+		binance.futuresChart('BTCUSDT', '1m', (symbol, interval, candlesTicks) => {
+			console.log(candlesTicks);
+			let i = 0;
+			for (const key in candlesTicks) {
+				if (Object.prototype.hasOwnProperty.call(candlesTicks, key)) {
+					const element = candlesTicks[key];
+					i++;
+					
+				}
+			}
+			console.log(i); 
+		}, 0); 
 	},
 
 	wsTerminate: function (endpoint) {

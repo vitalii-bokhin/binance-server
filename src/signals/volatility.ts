@@ -1,13 +1,8 @@
 import { Candle, CdlDir, KeyResult, Result } from './signals';
-import { Chart } from '../chart';
-import symbols = require('../data/symbols.json');
-
-const fee: number = .1;
 
 // exported component
-function Volatility() {
+function Volatility({fee, data}) {
     return new Promise<Result>((resolve, reject) => {
-        Chart.candlesticks({ symbols, interval: '1h', limit: 5 }, (data) => {
             const result: Result = [];
 
             for (const key in data) {
@@ -125,7 +120,6 @@ function Volatility() {
             }
 
             resolve(result);
-        });
     });
 }
 

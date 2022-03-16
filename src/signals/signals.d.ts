@@ -5,7 +5,7 @@ export type KeyResult = {
     position: 'long' | 'short';
     entryPrice: number;
     stopLoss: number;
-}
+};
 
 export type Result = KeyResult[];
 
@@ -14,7 +14,7 @@ export type Candle = {
     open: number;
     close: number;
     low: number;
-}
+};
 
 export enum CdlDir {
     up = 'up',
