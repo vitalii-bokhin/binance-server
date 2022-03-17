@@ -108,17 +108,18 @@ const Chart = {
         // 	let { o: open, h: high, l: low, c: close, v: volume, n: trades, i: interval, x: isFinal, q: quoteVolume, V: buyVolume, Q: quoteBuyVolume } = ticks;
         // 	this.ev.emit('wsCandlesTicks', { open, high, low, close });
         // });
+        const r = Math.random() * 100;
         binance.futuresChart('BTCUSDT', '1m', (symbol, interval, candlesTicks) => {
-            console.log(candlesTicks);
-            let i = 0;
-            for (const key in candlesTicks) {
-                if (Object.prototype.hasOwnProperty.call(candlesTicks, key)) {
-                    const element = candlesTicks[key];
-                    i++;
-                }
-            }
-            console.log(i);
-        }, 0);
+            // console.log(candlesTicks);
+            // let i = 0;
+            // for (const key in candlesTicks) {
+            // 	if (Object.prototype.hasOwnProperty.call(candlesTicks, key)) {
+            // 		const element = candlesTicks[key];
+            // 		i++;
+            // 	}
+            // }
+            console.log(r);
+        }, 1);
     },
     wsTerminate: function (endpoint) {
         binance.websockets.terminate(endpoint);

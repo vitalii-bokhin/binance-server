@@ -20,3 +20,8 @@ export enum CdlDir {
     up = 'up',
     down = 'down',
 }
+
+export type SignalEntry = {
+    fee: number;
+    data: { [key: string]: Candle[] };
+};

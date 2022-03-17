@@ -10,6 +10,9 @@ Chart.candlesTicks({ symbols, interval: '1h', limit: 5 }, (data) => {
     Volatility({fee, data});
 });
 
-candlesTicksStream({ symbols: ['BTCUSDT'], interval: '1m', limit: 2 }, (data) => {
-    console.log(data);
-});
+export function Bot() {
+    candlesTicksStream({ symbols: ['BTCUSDT'], interval: '1m', limit: 2 }, (data) => {
+        const s = Volatility({fee, data});
+        console.log(s);
+    });
+}

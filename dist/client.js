@@ -8,6 +8,7 @@ const multer = require("multer");
 const websocket = require("ws");
 const api_1 = require("./api");
 const chart_1 = require("./chart");
+const bot_1 = require("./bot");
 const db = require('./database'), user = require('./user'), watch = require('./watch'), order = require('./order');
 const app = express(), upload = multer();
 app.use(function (req, res, next) {
@@ -49,6 +50,9 @@ app.get('/bot', function (req, res) {
     //     };
     //     res.render('index', opt);
     // });
+    (0, bot_1.Bot)();
+    // Chart.wsCandlesTicks('BTC');
+    res.render('index', { title: 'Bot', data: '' });
 });
 app.post('/auth', upload.none(), function (req, res) {
     const user = db.user(null, req.body.email);

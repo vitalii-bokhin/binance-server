@@ -1,7 +1,7 @@
-import { Candle, CdlDir, KeyResult, Result } from './signals';
+import { Candle, CdlDir, KeyResult, Result, SignalEntry } from './signals';
 
 // exported component
-function Volatility({fee, data}) {
+function Volatility({fee, data}: SignalEntry) {
     return new Promise<Result>((resolve, reject) => {
             const result: Result = [];
 

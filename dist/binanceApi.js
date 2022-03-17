@@ -1,10 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.candlesTicksStream = exports.candlesTicks = void 0;
+const Events = require("events");
 const WebSocket = require("ws");
 const Binance = require('node-binance-api');
 const binance = new Binance();
 const streamApi = 'wss://fstream.binance.com/stream?streams=';
+const event = new Events.EventEmitter();
+const streamsSubscribers = new Map();
 function candlesTicks({ symbols, interval, limit }, callback) {
     const result = {};
     let i = 0;
@@ -34,7 +37,14 @@ function candlesTicksStream({ symbols, interval, limit }, callback) {
     candlesTicks({ symbols, interval, limit }, (data) => {
         const result = data;
         const streams = symbols.map(s => s.toLowerCase() + '@kline_' + interval).join('/');
-        const ws = new WebSocket(streamApi + streams);
+        let ws;
+        if (streamsSubscribers.has(streams)) {
+            ws = streamsSubscribers.get(streams);
+        }
+        else {
+            ws = new WebSocket(streamApi + streams);
+            streamsSubscribers.set(streams, ws);
+        }
         ws.on('message', function message(data) {
             const { e: eventType, E: eventTime, s: symbol, k: ticks } = JSON.parse(data).data;
             const { t: openTime, o: open, h: high, l: low, c: close, x: isFinal } = ticks;
@@ -50,6 +60,7 @@ function candlesTicksStream({ symbols, interval, limit }, callback) {
             }
             result[symbol][result[symbol].length - 1] = candle;
             callback(result);
+            console.log(close);
             if (isFinal) {
                 result[symbol].shift();
             }
