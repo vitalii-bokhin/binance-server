@@ -1,12 +1,9 @@
-import Events = require('events');
-import WebSocket = require('ws');
+import WebSocket from 'ws';
+import Binance from 'node-binance-api';
 
-const Binance = require('node-binance-api');
 const binance = new Binance();
 
 const streamApi = 'wss://fstream.binance.com/stream?streams=';
-
-const event = new Events.EventEmitter();
 
 type Candle = {
     openTime: number;
@@ -14,6 +11,8 @@ type Candle = {
     open: number;
     close: number;
     low: number;
+    interval: string;
+    limit: number;
     isFinal?: boolean;
 };
 
@@ -25,7 +24,9 @@ type CandlesTicksEntry = {
 
 type CandlesTicksCallback = (arg0: { [key: string]: Candle[] }) => void;
 
-const streamsSubscribers = new Map<string, WebSocket>();
+const streamsSubscribers: {
+    [key: string]: WebSocket;
+} = {};
 
 export function candlesTicks({ symbols, interval, limit }: CandlesTicksEntry, callback: CandlesTicksCallback): void {
     const result = {};
@@ -66,23 +67,25 @@ export function candlesTicksStream({ symbols, interval, limit }: CandlesTicksEnt
 
         let ws: WebSocket;
 
-        if (streamsSubscribers.has(streams)) {
-            ws = streamsSubscribers.get(streams);
+        if (streamsSubscribers[streams] !== undefined) {
+            ws = streamsSubscribers[streams];
         } else {
             ws = new WebSocket(streamApi + streams);
-            streamsSubscribers.set(streams, ws);
+            streamsSubscribers[streams] = ws;
         }
 
         ws.on('message', function message(data: any) {
             const { e: eventType, E: eventTime, s: symbol, k: ticks } = JSON.parse(data).data;
             const { t: openTime, o: open, h: high, l: low, c: close, x: isFinal } = ticks;
 
-            const candle = {
+            const candle: Candle = {
                 openTime: openTime,
                 open: +open,
                 high: +high,
                 low: +low,
-                close: +close
+                close: +close,
+                interval,
+                limit
             };
 
             if (result[symbol][result[symbol].length - 1].openTime !== openTime) {
@@ -92,7 +95,6 @@ export function candlesTicksStream({ symbols, interval, limit }: CandlesTicksEnt
             result[symbol][result[symbol].length - 1] = candle;
 
             callback(result);
-            console.log(close);
 
             if (isFinal) {
                 result[symbol].shift();

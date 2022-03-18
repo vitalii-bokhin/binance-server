@@ -1,13 +1,14 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.candlesTicksStream = exports.candlesTicks = void 0;
-const Events = require("events");
-const WebSocket = require("ws");
-const Binance = require('node-binance-api');
-const binance = new Binance();
+const ws_1 = __importDefault(require("ws"));
+const node_binance_api_1 = __importDefault(require("node-binance-api"));
+const binance = new node_binance_api_1.default();
 const streamApi = 'wss://fstream.binance.com/stream?streams=';
-const event = new Events.EventEmitter();
-const streamsSubscribers = new Map();
+const streamsSubscribers = {};
 function candlesTicks({ symbols, interval, limit }, callback) {
     const result = {};
     let i = 0;
@@ -38,12 +39,12 @@ function candlesTicksStream({ symbols, interval, limit }, callback) {
         const result = data;
         const streams = symbols.map(s => s.toLowerCase() + '@kline_' + interval).join('/');
         let ws;
-        if (streamsSubscribers.has(streams)) {
-            ws = streamsSubscribers.get(streams);
+        if (streamsSubscribers[streams] !== undefined) {
+            ws = streamsSubscribers[streams];
         }
         else {
-            ws = new WebSocket(streamApi + streams);
-            streamsSubscribers.set(streams, ws);
+            ws = new ws_1.default(streamApi + streams);
+            streamsSubscribers[streams] = ws;
         }
         ws.on('message', function message(data) {
             const { e: eventType, E: eventTime, s: symbol, k: ticks } = JSON.parse(data).data;
@@ -53,14 +54,15 @@ function candlesTicksStream({ symbols, interval, limit }, callback) {
                 open: +open,
                 high: +high,
                 low: +low,
-                close: +close
+                close: +close,
+                interval,
+                limit
             };
             if (result[symbol][result[symbol].length - 1].openTime !== openTime) {
                 result[symbol].push(candle);
             }
             result[symbol][result[symbol].length - 1] = candle;
             callback(result);
-            console.log(close);
             if (isFinal) {
                 result[symbol].shift();
             }

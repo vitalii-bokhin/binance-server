@@ -1,5 +1,5 @@
-import { Candle, CdlDir, KeyResult, Result, SignalEntry } from './signals';
-
+import { Candle, CdlDir, SymbolResult, SignalEntry, Result } from './types';
+ 
 // exported component
 function Volatility({fee, data}: SignalEntry) {
     return new Promise<Result>((resolve, reject) => {
@@ -9,8 +9,8 @@ function Volatility({fee, data}: SignalEntry) {
                 if (Object.prototype.hasOwnProperty.call(data, key)) {
                     const _item = data[key];
 
-                    let firstCdlDir: string,
-                        expectedLastCdlDir: string | undefined,
+                    let firstCdlDir: CdlDir,
+                        expectedLastCdlDir: CdlDir,
                         falseAccum: number = 0;
 
                     let item = [..._item];
@@ -20,15 +20,15 @@ function Volatility({fee, data}: SignalEntry) {
                     item.forEach((cdl: Candle, i: number): void => {
                         if (!i) {
                             if (cdl.close >= cdl.open) {
-                                firstCdlDir = CdlDir.up;
-                                expectedLastCdlDir = CdlDir.up;
+                                firstCdlDir = 'up';
+                                expectedLastCdlDir = 'up';
                             } else {
-                                firstCdlDir = CdlDir.down;
-                                expectedLastCdlDir = CdlDir.down;
+                                firstCdlDir = 'down';
+                                expectedLastCdlDir = 'down';
                             }
 
                         } else {
-                            if (firstCdlDir === CdlDir.up) {
+                            if (firstCdlDir === 'up') {
                                 if (
                                     (i % 2 === 0 && cdl.close < cdl.open) ||
                                     (i % 2 !== 0 && cdl.close >= cdl.open)
@@ -37,7 +37,7 @@ function Volatility({fee, data}: SignalEntry) {
                                 }
                             }
 
-                            if (firstCdlDir === CdlDir.down) {
+                            if (firstCdlDir === 'down') {
                                 if (
                                     (i % 2 !== 0 && cdl.close < cdl.open) ||
                                     (i % 2 === 0 && cdl.close >= cdl.open)
@@ -70,7 +70,7 @@ function Volatility({fee, data}: SignalEntry) {
                             }
                         });
 
-                        if (expectedLastCdlDir === CdlDir.up) {
+                        if (expectedLastCdlDir === 'up') {
                             const changePerc = (lastCandle.high - lastCandle.low) / (lastCandle.high / 100);
 
                             if (changePerc < volatility.minLong - fee && lastCandle.close >= lastCandle.open) {
@@ -79,8 +79,8 @@ function Volatility({fee, data}: SignalEntry) {
                                 const possibleLoss = ((lastCandle.close - lastCandle.low) / (lastCandle.close / 100)) + fee;
 
                                 if (expectedProfit > possibleLoss) {
-                                    const keyResult: KeyResult = {
-                                        key: key,
+                                    const keyResult: SymbolResult = {
+                                        symbol: key,
                                         position: 'long',
                                         entryPrice: lastCandle.close,
                                         expectedProfit: expectedProfit,
@@ -93,7 +93,7 @@ function Volatility({fee, data}: SignalEntry) {
                             }
                         }
 
-                        if (expectedLastCdlDir === CdlDir.down) {
+                        if (expectedLastCdlDir === 'down') {
                             const changePerc = (lastCandle.high - lastCandle.low) / (lastCandle.high / 100);
 
                             if (changePerc < volatility.minShort - fee && lastCandle.close < lastCandle.open) {
@@ -102,8 +102,8 @@ function Volatility({fee, data}: SignalEntry) {
                                 const possibleLoss = ((lastCandle.high - lastCandle.close) / (lastCandle.close / 100)) + fee;
 
                                 if (expectedProfit > possibleLoss) {
-                                    const keyResult: KeyResult = {
-                                        key: key,
+                                    const keyResult: SymbolResult = {
+                                        symbol: key,
                                         position: 'short',
                                         entryPrice: lastCandle.close,
                                         expectedProfit: expectedProfit,

@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Volatility = void 0;
-const signals_1 = require("./signals");
 // exported component
 function Volatility({ fee, data }) {
     return new Promise((resolve, reject) => {
@@ -15,22 +14,22 @@ function Volatility({ fee, data }) {
                 item.forEach((cdl, i) => {
                     if (!i) {
                         if (cdl.close >= cdl.open) {
-                            firstCdlDir = signals_1.CdlDir.up;
-                            expectedLastCdlDir = signals_1.CdlDir.up;
+                            firstCdlDir = 'up';
+                            expectedLastCdlDir = 'up';
                         }
                         else {
-                            firstCdlDir = signals_1.CdlDir.down;
-                            expectedLastCdlDir = signals_1.CdlDir.down;
+                            firstCdlDir = 'down';
+                            expectedLastCdlDir = 'down';
                         }
                     }
                     else {
-                        if (firstCdlDir === signals_1.CdlDir.up) {
+                        if (firstCdlDir === 'up') {
                             if ((i % 2 === 0 && cdl.close < cdl.open) ||
                                 (i % 2 !== 0 && cdl.close >= cdl.open)) {
                                 falseAccum++;
                             }
                         }
-                        if (firstCdlDir === signals_1.CdlDir.down) {
+                        if (firstCdlDir === 'down') {
                             if ((i % 2 !== 0 && cdl.close < cdl.open) ||
                                 (i % 2 === 0 && cdl.close >= cdl.open)) {
                                 falseAccum++;
@@ -57,14 +56,14 @@ function Volatility({ fee, data }) {
                             }
                         }
                     });
-                    if (expectedLastCdlDir === signals_1.CdlDir.up) {
+                    if (expectedLastCdlDir === 'up') {
                         const changePerc = (lastCandle.high - lastCandle.low) / (lastCandle.high / 100);
                         if (changePerc < volatility.minLong - fee && lastCandle.close >= lastCandle.open) {
                             const expectedProfit = volatility.minLong - fee - changePerc;
                             const possibleLoss = ((lastCandle.close - lastCandle.low) / (lastCandle.close / 100)) + fee;
                             if (expectedProfit > possibleLoss) {
                                 const keyResult = {
-                                    key: key,
+                                    symbol: key,
                                     position: 'long',
                                     entryPrice: lastCandle.close,
                                     expectedProfit: expectedProfit,
@@ -75,14 +74,14 @@ function Volatility({ fee, data }) {
                             }
                         }
                     }
-                    if (expectedLastCdlDir === signals_1.CdlDir.down) {
+                    if (expectedLastCdlDir === 'down') {
                         const changePerc = (lastCandle.high - lastCandle.low) / (lastCandle.high / 100);
                         if (changePerc < volatility.minShort - fee && lastCandle.close < lastCandle.open) {
                             const expectedProfit = volatility.minShort - fee - changePerc;
                             const possibleLoss = ((lastCandle.high - lastCandle.close) / (lastCandle.close / 100)) + fee;
                             if (expectedProfit > possibleLoss) {
                                 const keyResult = {
-                                    key: key,
+                                    symbol: key,
                                     position: 'short',
                                     entryPrice: lastCandle.close,
                                     expectedProfit: expectedProfit,

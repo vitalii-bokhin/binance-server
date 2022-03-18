@@ -1,3 +1,3 @@
 import { Volatility } from './volatility';
 
-export { Volatility };
+export { Volatility }; 

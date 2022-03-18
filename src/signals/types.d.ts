@@ -1,5 +1,5 @@
-export type KeyResult = {
-    key: string;
+export type SymbolResult = {
+    symbol: string;
     expectedProfit: number;
     possibleLoss: number;
     position: 'long' | 'short';
@@ -7,7 +7,7 @@ export type KeyResult = {
     stopLoss: number;
 };
 
-export type Result = KeyResult[];
+export type Result = SymbolResult[];
 
 export type Candle = {
     high: number;
@@ -16,10 +16,7 @@ export type Candle = {
     low: number;
 };
 
-export enum CdlDir {
-    up = 'up',
-    down = 'down',
-}
+export type CdlDir = 'up' | 'down';
 
 export type SignalEntry = {
     fee: number;

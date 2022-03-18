@@ -4,11 +4,13 @@
   "description": "binance trade bot",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon dist/index.js"
   },
   "author": "Vitalii Bokhin https://vitaliibokhin.com",
   "license": "MIT License",
   "dependencies": {
+    "dotenv": "^16.0.0",
     "express": "^4.17.1",
     "express-session": "^1.17.0",
     "lodash-express": "^0.1.0",
