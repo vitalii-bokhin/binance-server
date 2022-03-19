@@ -1,25 +1,29 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Bot = void 0;
 const binanceApi_1 = require("./binanceApi");
-const chart_1 = require("./chart");
-const symbols = require("./data/symbols.json");
 const position_1 = require("./position");
 const volatility_1 = require("./signals/volatility");
+const symbols_1 = __importDefault(require("./symbols"));
 const fee = .1;
-chart_1.Chart.candlesTicks({ symbols, interval: '1h', limit: 5 }, (data) => {
-    (0, volatility_1.Volatility)({ fee, data });
-});
+// Chart.candlesTicks({ symbols, interval: '1h', limit: 5 }, (data) => {
+//     Volatility({ fee, data });
+// });
 const botPositions = {};
-function Bot() {
+let isPosition = false;
+async function Bot() {
     const interval = '1h';
-    const limit = 2;
+    const limit = 5;
+    const { symbols, symbolsObj } = await (0, symbols_1.default)();
     (0, binanceApi_1.candlesTicksStream)({ symbols, interval, limit }, (data) => {
-        (0, volatility_1.Volatility)({ fee, data })
-            .then((res) => {
+        (0, volatility_1.Volatility)({ fee, limit, data }).then((res) => {
             res.forEach((signal) => {
                 const pKey = [signal.symbol, interval, limit].join('_');
-                if (!botPositions[pKey]) {
+                if (!botPositions[pKey] && !isPosition) {
+                    isPosition = true;
                     botPositions[pKey] = new position_1.Position({
                         position: signal.position,
                         symbol: signal.symbol,
@@ -28,9 +32,12 @@ function Bot() {
                         entryPrice: signal.entryPrice,
                         stopLoss: signal.stopLoss,
                     });
-                    botPositions[pKey].setEntryOrder();
+                    console.log(botPositions[pKey]);
+                    botPositions[pKey].setEntryOrder(symbolsObj)
+                        .then((so) => {
+                        console.log(so);
+                    });
                 }
-                console.log(signal);
             });
         });
     });

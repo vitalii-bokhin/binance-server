@@ -5,12 +5,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Position = void 0;
 const node_binance_api_1 = __importDefault(require("node-binance-api"));
-// const binanceAuth = new Binance().options({
-//     APIKEY: BINANCE_KEY,
-//     APISECRET: BINANCE_SECRET,
-//     useServerTime: true
-// });
-const binanceAuth = new node_binance_api_1.default();
+const config_1 = require("./config");
+const binanceAuth = new node_binance_api_1.default().options({
+    APIKEY: config_1.BINANCE_KEY,
+    APISECRET: config_1.BINANCE_SECRET,
+    useServerTime: true
+});
+// const binanceAuth = new Binance();
 class Position {
     constructor(opt) {
         this.position = opt.position;
@@ -20,10 +21,14 @@ class Position {
         this.entryPrice = opt.entryPrice;
         this.stopLoss = opt.stopLoss;
     }
-    setEntryOrder() {
+    async setEntryOrder(symbolsObj) {
         this.status = 'pending';
         const side = this.position === 'long' ? 'BUY' : 'SELL';
-        binanceAuth.futuresOrder(side, this.symbol, this.entryPrice);
+        const quantity = +(5 / this.entryPrice).toFixed(symbolsObj[this.symbol].quantityPrecision);
+        const params = {};
+        const lvr = await binanceAuth.futuresLeverage(this.symbol, 1);
+        return [side, quantity, lvr];
+        // binanceAuth.futuresOrder(side, this.symbol, quantity, this.entryPrice, params);
     }
 }
 exports.Position = Position;

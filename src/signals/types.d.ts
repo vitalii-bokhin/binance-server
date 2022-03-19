@@ -20,5 +20,6 @@ export type CdlDir = 'up' | 'down';
 
 export type SignalEntry = {
     fee: number;
+    limit: number;
     data: { [key: string]: Candle[] };
 };

@@ -1,12 +1,12 @@
 import Binance from 'node-binance-api';
 import { BINANCE_KEY, BINANCE_SECRET } from './config';
 
-// const binanceAuth = new Binance().options({
-//     APIKEY: BINANCE_KEY,
-//     APISECRET: BINANCE_SECRET,
-//     useServerTime: true
-// });
-const binanceAuth = new Binance();
+const binanceAuth = new Binance().options({
+    APIKEY: BINANCE_KEY,
+    APISECRET: BINANCE_SECRET,
+    useServerTime: true
+});
+// const binanceAuth = new Binance();
 
 export class Position {
     position: 'long' | 'short';
@@ -33,11 +33,17 @@ export class Position {
         this.stopLoss = opt.stopLoss;
     }
 
-    setEntryOrder() {
+    async setEntryOrder(symbolsObj: { [key: string]: { quantityPrecision: number; } }) {
         this.status = 'pending';
 
         const side = this.position === 'long' ? 'BUY' : 'SELL';
+        const quantity = +(5 / this.entryPrice).toFixed(symbolsObj[this.symbol].quantityPrecision);
+        const params = {};
 
-        binanceAuth.futuresOrder(side, this.symbol, this.entryPrice, );
+        const lvr = await binanceAuth.futuresLeverage(this.symbol, 1);
+
+        return [side, quantity, lvr];
+
+        // binanceAuth.futuresOrder(side, this.symbol, quantity, this.entryPrice, params);
     }
 }
