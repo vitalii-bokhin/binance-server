@@ -102,3 +102,7 @@ export function candlesTicksStream({ symbols, interval, limit }: CandlesTicksEnt
         });
     });
 }
+
+export function ordersUpdateStream({symbol}) {
+
+}

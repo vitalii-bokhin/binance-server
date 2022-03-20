@@ -1,3 +1,3 @@
-import { Volatility } from './volatility';
+import { Aisle } from './aisle';
 
-export { Volatility }; 
+export { Aisle }; 

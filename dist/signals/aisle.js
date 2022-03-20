@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Volatility = void 0;
+exports.Aisle = void 0;
 // exported component
-function Volatility({ fee, limit, data }) {
+function Aisle({ fee, limit, data }) {
     return new Promise((resolve, reject) => {
         const result = [];
         for (const key in data) {
@@ -88,35 +88,41 @@ function Volatility({ fee, limit, data }) {
                             volatility.minLow = cdl.low;
                         }
                     });
-                    const partOfAvrgChange = sumChange / limit;
-                    const highDtPerc = (volatility.maxHigh - volatility.minHigh) / (volatility.minHigh / 100);
+                    const partOfAvrgChange = sumChange / item.length / 2;
                     const lowDtPerc = (volatility.maxLow - volatility.minLow) / (volatility.minLow / 100);
-                    if (expectedLastCdlDir === 'up' && lowDtPerc < partOfAvrgChange) {
+                    if (expectedLastCdlDir === 'up' &&
+                        lowDtPerc < partOfAvrgChange &&
+                        lastCandle.close > lastCandle.open) {
                         const expectedProfit = (volatility.minHigh - lastCandle.close) / (lastCandle.close / 100) - fee;
-                        const possibleLoss = (lastCandle.close - volatility.minLow) / (lastCandle.close / 100) + fee;
-                        if (expectedProfit > possibleLoss) {
+                        const stopLoss = (lastCandle.low < volatility.minLow ? lastCandle.low : volatility.minLow) - (volatility.maxLow - volatility.minLow);
+                        const possibleLoss = (lastCandle.close - stopLoss) / (lastCandle.close / 100) + fee;
+                        if (expectedProfit > possibleLoss && expectedProfit > fee) {
                             const keyResult = {
                                 symbol: key,
                                 position: 'long',
                                 entryPrice: lastCandle.close,
                                 expectedProfit: expectedProfit,
                                 possibleLoss: possibleLoss,
-                                stopLoss: lastCandle.low < volatility.minLow ? lastCandle.low : volatility.minLow,
+                                stopLoss,
                             };
                             result.push(keyResult);
                         }
                     }
-                    if (expectedLastCdlDir === 'down' && highDtPerc < partOfAvrgChange) {
+                    const highDtPerc = (volatility.maxHigh - volatility.minHigh) / (volatility.minHigh / 100);
+                    if (expectedLastCdlDir === 'down' &&
+                        highDtPerc < partOfAvrgChange &&
+                        lastCandle.close < lastCandle.open) {
                         const expectedProfit = (lastCandle.close - volatility.maxLow) / (lastCandle.close / 100) - fee;
-                        const possibleLoss = (volatility.maxHigh - lastCandle.close) / (lastCandle.close / 100) + fee;
-                        if (expectedProfit > possibleLoss) {
+                        const stopLoss = (lastCandle.high > volatility.maxHigh ? lastCandle.high : volatility.maxHigh) + (volatility.maxHigh - volatility.minHigh);
+                        const possibleLoss = (stopLoss - lastCandle.close) / (lastCandle.close / 100) + fee;
+                        if (expectedProfit > possibleLoss && expectedProfit > fee) {
                             const keyResult = {
                                 symbol: key,
                                 position: 'short',
                                 entryPrice: lastCandle.close,
                                 expectedProfit: expectedProfit,
                                 possibleLoss: possibleLoss,
-                                stopLoss: lastCandle.high > volatility.maxHigh ? lastCandle.high : volatility.maxHigh,
+                                stopLoss,
                             };
                             result.push(keyResult);
                         }
@@ -163,5 +169,5 @@ function Volatility({ fee, limit, data }) {
         resolve(result);
     });
 }
-exports.Volatility = Volatility;
-//# sourceMappingURL=volatility.js.map
+exports.Aisle = Aisle;
+//# sourceMappingURL=aisle.js.map

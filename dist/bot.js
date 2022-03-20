@@ -6,22 +6,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Bot = void 0;
 const binanceApi_1 = require("./binanceApi");
 const position_1 = require("./position");
-const volatility_1 = require("./signals/volatility");
 const symbols_1 = __importDefault(require("./symbols"));
+const signals_1 = require("./signals");
 const fee = .1;
 // Chart.candlesTicks({ symbols, interval: '1h', limit: 5 }, (data) => {
 //     Volatility({ fee, data });
 // });
 const botPositions = {};
 let isPosition = false;
+console.log('Bot import');
 async function Bot() {
     const interval = '1h';
     const limit = 5;
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
+    console.log('Bot call');
     (0, binanceApi_1.candlesTicksStream)({ symbols, interval, limit }, (data) => {
-        (0, volatility_1.Volatility)({ fee, limit, data }).then((res) => {
+        (0, signals_1.Aisle)({ fee, limit, data }).then((res) => {
             res.forEach((signal) => {
-                const pKey = [signal.symbol, interval, limit].join('_');
+                const pKey = signal.symbol;
                 if (!botPositions[pKey] && !isPosition) {
                     isPosition = true;
                     botPositions[pKey] = new position_1.Position({
@@ -32,10 +34,10 @@ async function Bot() {
                         entryPrice: signal.entryPrice,
                         stopLoss: signal.stopLoss,
                     });
-                    console.log(botPositions[pKey]);
+                    console.log(botPositions);
                     botPositions[pKey].setEntryOrder(symbolsObj)
-                        .then((so) => {
-                        console.log(so);
+                        .then((res) => {
+                        console.log(res);
                     });
                 }
             });

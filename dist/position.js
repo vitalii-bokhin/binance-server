@@ -23,12 +23,21 @@ class Position {
     }
     async setEntryOrder(symbolsObj) {
         this.status = 'pending';
-        const side = this.position === 'long' ? 'BUY' : 'SELL';
-        const quantity = +(5 / this.entryPrice).toFixed(symbolsObj[this.symbol].quantityPrecision);
-        const params = {};
+        const entrySide = this.position === 'long' ? 'BUY' : 'SELL';
+        const quantity = +(6 / this.entryPrice).toFixed(symbolsObj[this.symbol].quantityPrecision);
+        const entryParams = {
+            timeInForce: 'GTC'
+        };
         const lvr = await binanceAuth.futuresLeverage(this.symbol, 1);
-        return [side, quantity, lvr];
-        // binanceAuth.futuresOrder(side, this.symbol, quantity, this.entryPrice, params);
+        const entryOrd = await binanceAuth.futuresOrder(entrySide, this.symbol, quantity, this.entryPrice, entryParams);
+        const exitSide = this.position === 'long' ? 'SELL' : 'BUY';
+        const exitParams = {
+            type: 'STOP_MARKET',
+            closePosition: true,
+            stopPrice: this.stopLoss
+        };
+        const stopOrd = await binanceAuth.futuresOrder(exitSide, this.symbol, false, false, exitParams);
+        return [entryOrd, stopOrd];
     }
 }
 exports.Position = Position;

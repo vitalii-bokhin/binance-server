@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.candlesTicksStream = exports.candlesTicks = void 0;
+exports.ordersUpdateStream = exports.candlesTicksStream = exports.candlesTicks = void 0;
 const ws_1 = __importDefault(require("ws"));
 const node_binance_api_1 = __importDefault(require("node-binance-api"));
 const binance = new node_binance_api_1.default();
@@ -70,4 +70,7 @@ function candlesTicksStream({ symbols, interval, limit }, callback) {
     });
 }
 exports.candlesTicksStream = candlesTicksStream;
+function ordersUpdateStream({ symbol }) {
+}
+exports.ordersUpdateStream = ordersUpdateStream;
 //# sourceMappingURL=binanceApi.js.map

@@ -1,7 +1,7 @@
 import { Candle, CdlDir, SymbolResult, SignalEntry, Result } from './types';
 
 // exported component
-function Volatility({ fee, limit, data }: SignalEntry) {
+function Aisle({ fee, limit, data }: SignalEntry) {
     return new Promise<Result>((resolve, reject) => {
         const result: Result = [];
 
@@ -111,50 +111,63 @@ function Volatility({ fee, limit, data }: SignalEntry) {
                         }
                     });
 
-                    const partOfAvrgChange = sumChange / limit;
+                    const partOfAvrgChange = sumChange / item.length / 2;
 
-                    const highDtPerc = (volatility.maxHigh - volatility.minHigh) / (volatility.minHigh / 100);
                     const lowDtPerc = (volatility.maxLow - volatility.minLow) / (volatility.minLow / 100);
 
-                    if (highDtPerc < partOfAvrgChange && lowDtPerc < partOfAvrgChange) {
+                    if (
+                        expectedLastCdlDir === 'up' &&
+                        lowDtPerc < partOfAvrgChange &&
+                        lastCandle.close > lastCandle.open
+                    ) {
+                        const expectedProfit = (volatility.minHigh - lastCandle.close) / (lastCandle.close / 100) - fee;
 
-                        if (expectedLastCdlDir === 'up') {
-                            const expectedProfit = (volatility.minHigh - lastCandle.close) / (lastCandle.close / 100) - fee;
-                            const possibleLoss = (lastCandle.close - volatility.minLow) / (lastCandle.close / 100) + fee;
+                        const stopLoss = (lastCandle.low < volatility.minLow ? lastCandle.low : volatility.minLow) - (volatility.maxLow - volatility.minLow);
+                        
+                        const possibleLoss = (lastCandle.close - stopLoss) / (lastCandle.close / 100) + fee;
 
-                            if (expectedProfit > possibleLoss) {
-                                const keyResult: SymbolResult = {
-                                    symbol: key,
-                                    position: 'long',
-                                    entryPrice: lastCandle.close,
-                                    expectedProfit: expectedProfit,
-                                    possibleLoss: possibleLoss,
-                                    stopLoss: volatility.minLow,
-                                };
+                        if (expectedProfit > possibleLoss && expectedProfit > fee) {
+                            const keyResult: SymbolResult = {
+                                symbol: key,
+                                position: 'long',
+                                entryPrice: lastCandle.close,
+                                expectedProfit: expectedProfit,
+                                possibleLoss: possibleLoss,
+                                stopLoss,
+                            };
 
-                                result.push(keyResult);
-                            }
+                            result.push(keyResult);
                         }
-
-                        if (expectedLastCdlDir === 'down') {
-                            const expectedProfit = (lastCandle.close - volatility.maxLow) / (lastCandle.close / 100) - fee;
-                            const possibleLoss = (volatility.maxHigh - lastCandle.close) / (lastCandle.close / 100) + fee;
-
-                            if (expectedProfit > possibleLoss) {
-                                const keyResult: SymbolResult = {
-                                    symbol: key,
-                                    position: 'short',
-                                    entryPrice: lastCandle.close,
-                                    expectedProfit: expectedProfit,
-                                    possibleLoss: possibleLoss,
-                                    stopLoss: volatility.maxHigh,
-                                };
-
-                                result.push(keyResult);
-                            }
-                        }
-
                     }
+
+                    const highDtPerc = (volatility.maxHigh - volatility.minHigh) / (volatility.minHigh / 100);
+
+                    if (
+                        expectedLastCdlDir === 'down' &&
+                        highDtPerc < partOfAvrgChange &&
+                        lastCandle.close < lastCandle.open
+                    ) {
+                        const expectedProfit = (lastCandle.close - volatility.maxLow) / (lastCandle.close / 100) - fee;
+
+                        const stopLoss = (lastCandle.high > volatility.maxHigh ? lastCandle.high : volatility.maxHigh) + (volatility.maxHigh - volatility.minHigh);
+
+                        const possibleLoss = (stopLoss - lastCandle.close) / (lastCandle.close / 100) + fee;
+
+                        if (expectedProfit > possibleLoss && expectedProfit > fee) {
+                            const keyResult: SymbolResult = {
+                                symbol: key,
+                                position: 'short',
+                                entryPrice: lastCandle.close,
+                                expectedProfit: expectedProfit,
+                                possibleLoss: possibleLoss,
+                                stopLoss,
+                            };
+
+                            result.push(keyResult);
+                        }
+                    }
+
+
 
                     // if (expectedLastCdlDir === 'up') {
                     //     const changePerc = (lastCandle.high - lastCandle.low) / (lastCandle.low / 100);
@@ -209,4 +222,4 @@ function Volatility({ fee, limit, data }: SignalEntry) {
     });
 }
 
-export { Volatility };
+export { Aisle };

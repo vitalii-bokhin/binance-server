@@ -7,7 +7,6 @@ import websocket = require('ws');
 
 import { api } from './api';
 import { Chart } from './chart';
-import { Volatility } from './signals';
 import { Bot } from './bot';
 
 const db = require('./database'),
@@ -77,7 +76,7 @@ app.get('/bot', function (req, res) {
 
     //     res.render('index', opt);
     // });
-    Bot();
+    // Bot();
     // Chart.wsCandlesTicks('BTC');
     res.render('index', {title: 'Bot', data: ''});
 });

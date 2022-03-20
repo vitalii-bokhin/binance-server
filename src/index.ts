@@ -1,5 +1,6 @@
+import './client';
 import { Bot } from './bot';
-import getSymbols from './symbols';
+// import getSymbols from './symbols';
 
 
 Bot();
