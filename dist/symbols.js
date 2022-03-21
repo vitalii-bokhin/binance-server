@@ -15,7 +15,8 @@ async function getSymbols() {
     exchInfo.symbols.forEach((sym) => {
         if (sym.contractType == 'PERPETUAL' && sym.status == 'TRADING' && sym.marginAsset == 'USDT') {
             symbolsObj[sym.symbol] = {
-                quantityPrecision: sym.quantityPrecision
+                quantityPrecision: sym.quantityPrecision,
+                pricePrecision: sym.pricePrecision
             };
             symbols.push(sym.symbol);
         }

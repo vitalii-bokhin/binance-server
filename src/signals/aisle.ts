@@ -70,7 +70,8 @@ function Aisle({ fee, limit, data }: SignalEntry) {
                         minLow: 99999
                     };
 
-                    let sumChange = 0;
+                    let sumChange = 0,
+                        sumClose = 0;
 
                     item.forEach((cdl: Candle, i: number): void => {
                         // const changeLongPerc = (cdl.high - cdl.low) / (cdl.low / 100);
@@ -92,6 +93,8 @@ function Aisle({ fee, limit, data }: SignalEntry) {
                         //     volatility.minShort = changeShortPerc;
                         // }
 
+                        sumClose += cdl.close;
+
                         sumChange += (cdl.high - cdl.low) / (cdl.low / 100);
 
                         if (cdl.high > volatility.maxHigh) {
@@ -111,6 +114,8 @@ function Aisle({ fee, limit, data }: SignalEntry) {
                         }
                     });
 
+                    const avrgClose = (sumClose + lastCandle.close) / limit;
+
                     const partOfAvrgChange = sumChange / item.length / 2;
 
                     const lowDtPerc = (volatility.maxLow - volatility.minLow) / (volatility.minLow / 100);
@@ -123,7 +128,7 @@ function Aisle({ fee, limit, data }: SignalEntry) {
                         const expectedProfit = (volatility.minHigh - lastCandle.close) / (lastCandle.close / 100) - fee;
 
                         const stopLoss = (lastCandle.low < volatility.minLow ? lastCandle.low : volatility.minLow) - (volatility.maxLow - volatility.minLow);
-                        
+
                         const possibleLoss = (lastCandle.close - stopLoss) / (lastCandle.close / 100) + fee;
 
                         if (expectedProfit > possibleLoss && expectedProfit > fee) {

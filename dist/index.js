@@ -4,6 +4,12 @@ require("./client");
 const bot_1 = require("./bot");
 // import getSymbols from './symbols';
 (0, bot_1.Bot)();
+// priceStream('IMXUSDT', function(res) {
+//     console.log(res);
+// });
+// positionUpdateStream('IMXUSDT', function(res) {
+//     console.log(res);
+// });
 // getSymbols().then(function(res) {
 //     console.log(res.symbols);
 //     console.log(res.symbolsObj);

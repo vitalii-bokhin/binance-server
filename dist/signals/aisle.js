@@ -58,7 +58,7 @@ function Aisle({ fee, limit, data }) {
                         maxLow: 0,
                         minLow: 99999
                     };
-                    let sumChange = 0;
+                    let sumChange = 0, sumClose = 0;
                     item.forEach((cdl, i) => {
                         // const changeLongPerc = (cdl.high - cdl.low) / (cdl.low / 100);
                         // const changeShortPerc = (cdl.high - cdl.low) / (cdl.high / 100);
@@ -74,6 +74,7 @@ function Aisle({ fee, limit, data }) {
                         // if (changeShortPerc < volatility.minShort) {
                         //     volatility.minShort = changeShortPerc;
                         // }
+                        sumClose += cdl.close;
                         sumChange += (cdl.high - cdl.low) / (cdl.low / 100);
                         if (cdl.high > volatility.maxHigh) {
                             volatility.maxHigh = cdl.high;
@@ -88,6 +89,7 @@ function Aisle({ fee, limit, data }) {
                             volatility.minLow = cdl.low;
                         }
                     });
+                    const avrgClose = (sumClose + lastCandle.close) / limit;
                     const partOfAvrgChange = sumChange / item.length / 2;
                     const lowDtPerc = (volatility.maxLow - volatility.minLow) / (volatility.minLow / 100);
                     if (expectedLastCdlDir === 'up' &&

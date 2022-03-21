@@ -3,10 +3,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ordersUpdateStream = exports.candlesTicksStream = exports.candlesTicks = void 0;
+exports.priceStream = exports.positionUpdateStream = exports.ordersUpdateStream = exports.candlesTicksStream = exports.candlesTicks = void 0;
 const ws_1 = __importDefault(require("ws"));
 const node_binance_api_1 = __importDefault(require("node-binance-api"));
+const config_1 = require("./config");
 const binance = new node_binance_api_1.default();
+const binanceAuth = new node_binance_api_1.default().options({
+    APIKEY: config_1.BINANCE_KEY,
+    APISECRET: config_1.BINANCE_SECRET,
+    useServerTime: true
+});
 const streamApi = 'wss://fstream.binance.com/stream?streams=';
 const streamsSubscribers = {};
 function candlesTicks({ symbols, interval, limit }, callback) {
@@ -70,7 +76,66 @@ function candlesTicksStream({ symbols, interval, limit }, callback) {
     });
 }
 exports.candlesTicksStream = candlesTicksStream;
-function ordersUpdateStream({ symbol }) {
+// account data stream (position, order update)
+const orderUpdateSubscribers = {};
+const positionUpdateSubscribers = {};
+const userFutureDataSubscribers = {};
+let userFutureDataExecuted = false;
+const userFutureDataSubscribe = function (key, callback) {
+    userFutureDataSubscribers[key] = callback;
+    if (!userFutureDataExecuted) {
+        userFutureDataExecuted = true;
+        binanceAuth.websockets.userFutureData(null, (res) => {
+            if (userFutureDataSubscribers['positions_update']) {
+                userFutureDataSubscribers['positions_update'](res.updateData.positions);
+            }
+        }, (res) => {
+            if (userFutureDataSubscribers['orders_update']) {
+                userFutureDataSubscribers['orders_update'](res.order);
+            }
+        });
+    }
+};
+function ordersUpdateStream(symbol, callback) {
+    if (!orderUpdateSubscribers[symbol]) {
+        orderUpdateSubscribers[symbol] = [];
+    }
+    orderUpdateSubscribers[symbol].push(callback);
+    userFutureDataSubscribe('orders_update', function (order) {
+        orderUpdateSubscribers[order.symbol].forEach(cb => cb(order));
+    });
 }
 exports.ordersUpdateStream = ordersUpdateStream;
+function positionUpdateStream(symbol, callback) {
+    if (!positionUpdateSubscribers[symbol]) {
+        positionUpdateSubscribers[symbol] = [];
+    }
+    positionUpdateSubscribers[symbol].push(callback);
+    userFutureDataSubscribe('positions_update', function (positions) {
+        positions.forEach(pos => {
+            positionUpdateSubscribers[pos.symbol].forEach(cb => cb(pos));
+        });
+    });
+}
+exports.positionUpdateStream = positionUpdateStream;
+// price stream
+const priceSubscribers = {};
+let priceStreamWsHasBeenRun = false;
+function priceStream(symbol, callback) {
+    if (!priceSubscribers[symbol]) {
+        priceSubscribers[symbol] = [];
+    }
+    priceSubscribers[symbol].push(callback);
+    if (!priceStreamWsHasBeenRun) {
+        priceStreamWsHasBeenRun = true;
+        binance.futuresMarkPriceStream(res => {
+            res.forEach(item => {
+                if (priceSubscribers[item.symbol]) {
+                    priceSubscribers[item.symbol].forEach(cb => cb(item));
+                }
+            });
+        });
+    }
+}
+exports.priceStream = priceStream;
 //# sourceMappingURL=binanceApi.js.map

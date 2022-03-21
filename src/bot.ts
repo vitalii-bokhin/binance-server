@@ -1,6 +1,4 @@
-import symbols from './data/symbols.json';
 import { candlesTicksStream } from './binanceApi';
-import { Chart } from './chart';
 import { Position } from './position';
 import getSymbols from './symbols';
 import { Aisle } from './signals';
@@ -20,7 +18,7 @@ let isPosition = false;
 console.log('Bot import');
 
 export async function Bot(): Promise<void> {
-    const interval: string = '1h';
+    const interval: string = '4h';
     const limit: number = 5;
 
     const { symbols, symbolsObj } = await getSymbols();
@@ -42,6 +40,7 @@ export async function Bot(): Promise<void> {
                         possibleLoss: signal.possibleLoss,
                         entryPrice: signal.entryPrice,
                         stopLoss: signal.stopLoss,
+                        fee
                     });
 
                     console.log(botPositions);

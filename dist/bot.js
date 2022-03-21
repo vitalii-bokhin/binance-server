@@ -16,7 +16,7 @@ const botPositions = {};
 let isPosition = false;
 console.log('Bot import');
 async function Bot() {
-    const interval = '1h';
+    const interval = '4h';
     const limit = 5;
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
     console.log('Bot call');
@@ -33,6 +33,7 @@ async function Bot() {
                         possibleLoss: signal.possibleLoss,
                         entryPrice: signal.entryPrice,
                         stopLoss: signal.stopLoss,
+                        fee
                     });
                     console.log(botPositions);
                     botPositions[pKey].setEntryOrder(symbolsObj)
