@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Aisle = void 0;
-// exported component
 function Aisle({ fee, limit, data }) {
     return new Promise((resolve, reject) => {
         const result = [];
@@ -59,7 +58,7 @@ function Aisle({ fee, limit, data }) {
                         minLow: 99999
                     };
                     let sumChange = 0, sumClose = 0;
-                    item.forEach((cdl, i) => {
+                    item.forEach((cdl) => {
                         // const changeLongPerc = (cdl.high - cdl.low) / (cdl.low / 100);
                         // const changeShortPerc = (cdl.high - cdl.low) / (cdl.high / 100);
                         // if (changeLongPerc > volatility.maxLong) {

@@ -62,12 +62,14 @@ export function candlesTicks({ symbols, interval, limit }: CandlesTicksEntry, ca
             if (i === symbols.length) {
                 callback(result);
             }
+        }).catch(error => {
+            console.log(new Error(error));
         });
     });
 }
 
 export function candlesTicksStream({ symbols, interval, limit }: CandlesTicksEntry, callback: CandlesTicksCallback): void {
-    candlesTicks({ symbols, interval, limit }, (data) => {
+    candlesTicks({ symbols, interval, limit }, data => {
         const result = data;
         const streams = symbols.map(s => s.toLowerCase() + '@kline_' + interval).join('/');
 

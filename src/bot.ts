@@ -1,7 +1,7 @@
 import { candlesTicksStream } from './binanceApi';
 import { Position } from './position';
 import getSymbols from './symbols';
-import { Aisle } from './signals';
+import { Aisle, Fling } from './signals';
 
 const fee: number = .1;
 
@@ -15,19 +15,19 @@ const botPositions: {
 
 let isPosition = false;
 
-console.log('Bot import');
-
 export async function Bot(): Promise<void> {
-    const interval: string = '4h';
-    const limit: number = 5;
+    const interval: string = '1h';
+    const limit: number = 3;
 
     const { symbols, symbolsObj } = await getSymbols();
 
-    console.log('Bot call');
+    candlesTicksStream({ symbols, interval, limit }, data => {
+        if (!isPosition) {
+            console.log(data);
+        }
 
-    candlesTicksStream({ symbols, interval, limit }, (data) => {
-        Aisle({ fee, limit, data }).then((res) => {
-            res.forEach((signal) => {
+        Fling({ fee, limit, data }).then(res => {
+            res.forEach(signal => {
                 const pKey = signal.symbol;
 
                 if (!botPositions[pKey] && !isPosition) {
@@ -40,12 +40,14 @@ export async function Bot(): Promise<void> {
                         possibleLoss: signal.possibleLoss,
                         entryPrice: signal.entryPrice,
                         stopLoss: signal.stopLoss,
-                        fee
+                        fee,
+                        usdtAmount: 6,
+                        symbolInfo: symbolsObj[signal.symbol]
                     });
 
                     console.log(botPositions);
 
-                    botPositions[pKey].setEntryOrder(symbolsObj)
+                    botPositions[pKey].setEntryOrder()
                         .then((res) => {
                             console.log(res);
                         });

@@ -14,15 +14,16 @@ const fee = .1;
 // });
 const botPositions = {};
 let isPosition = false;
-console.log('Bot import');
 async function Bot() {
-    const interval = '4h';
-    const limit = 5;
+    const interval = '1h';
+    const limit = 3;
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
-    console.log('Bot call');
-    (0, binanceApi_1.candlesTicksStream)({ symbols, interval, limit }, (data) => {
-        (0, signals_1.Aisle)({ fee, limit, data }).then((res) => {
-            res.forEach((signal) => {
+    (0, binanceApi_1.candlesTicksStream)({ symbols, interval, limit }, data => {
+        if (!isPosition) {
+            console.log(data);
+        }
+        (0, signals_1.Fling)({ fee, limit, data }).then(res => {
+            res.forEach(signal => {
                 const pKey = signal.symbol;
                 if (!botPositions[pKey] && !isPosition) {
                     isPosition = true;
@@ -33,10 +34,12 @@ async function Bot() {
                         possibleLoss: signal.possibleLoss,
                         entryPrice: signal.entryPrice,
                         stopLoss: signal.stopLoss,
-                        fee
+                        fee,
+                        usdtAmount: 6,
+                        symbolInfo: symbolsObj[signal.symbol]
                     });
                     console.log(botPositions);
-                    botPositions[pKey].setEntryOrder(symbolsObj)
+                    botPositions[pKey].setEntryOrder()
                         .then((res) => {
                         console.log(res);
                     });

@@ -1,7 +1,6 @@
 import { Candle, CdlDir, SymbolResult, SignalEntry, Result } from './types';
 
-// exported component
-function Aisle({ fee, limit, data }: SignalEntry) {
+export function Aisle({ fee, limit, data }: SignalEntry) {
     return new Promise<Result>((resolve, reject) => {
         const result: Result = [];
 
@@ -73,7 +72,7 @@ function Aisle({ fee, limit, data }: SignalEntry) {
                     let sumChange = 0,
                         sumClose = 0;
 
-                    item.forEach((cdl: Candle, i: number): void => {
+                    item.forEach((cdl: Candle): void => {
                         // const changeLongPerc = (cdl.high - cdl.low) / (cdl.low / 100);
                         // const changeShortPerc = (cdl.high - cdl.low) / (cdl.high / 100);
 
@@ -226,5 +225,3 @@ function Aisle({ fee, limit, data }: SignalEntry) {
         resolve(result);
     });
 }
-
-export { Aisle };

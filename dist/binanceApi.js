@@ -36,12 +36,14 @@ function candlesTicks({ symbols, interval, limit }, callback) {
             if (i === symbols.length) {
                 callback(result);
             }
+        }).catch(error => {
+            console.log(new Error(error));
         });
     });
 }
 exports.candlesTicks = candlesTicks;
 function candlesTicksStream({ symbols, interval, limit }, callback) {
-    candlesTicks({ symbols, interval, limit }, (data) => {
+    candlesTicks({ symbols, interval, limit }, data => {
         const result = data;
         const streams = symbols.map(s => s.toLowerCase() + '@kline_' + interval).join('/');
         let ws;
