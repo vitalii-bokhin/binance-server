@@ -9,42 +9,42 @@ const position_1 = require("./position");
 const symbols_1 = __importDefault(require("./symbols"));
 const signals_1 = require("./signals");
 const fee = .1;
-// Chart.candlesTicks({ symbols, interval: '1h', limit: 5 }, (data) => {
-//     Volatility({ fee, data });
-// });
 const botPositions = {};
 let isPosition = false;
 async function Bot() {
     const interval = '1h';
     const limit = 3;
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
+    const setPosition = res => {
+        res.sort((a, b) => b.expectedProfit - a.expectedProfit);
+        res.forEach(s => {
+            const pKey = s.symbol;
+            if (!botPositions[pKey] && !isPosition) {
+                isPosition = true;
+                botPositions[pKey] = new position_1.Position({
+                    position: s.position,
+                    symbol: s.symbol,
+                    expectedProfit: s.expectedProfit,
+                    possibleLoss: s.possibleLoss,
+                    entryPrice: s.entryPrice,
+                    stopLoss: s.stopLoss,
+                    fee,
+                    usdtAmount: 6,
+                    symbolInfo: symbolsObj[s.symbol],
+                    trailingStopLossStepPerc: s.expectedProfit < 1 ? s.expectedProfit : s.expectedProfit / 2,
+                    signal: s.signal
+                });
+                console.log(botPositions);
+                botPositions[pKey].setEntryOrder()
+                    .then((res) => {
+                    console.log(res);
+                });
+            }
+        });
+    };
     (0, binanceApi_1.candlesTicksStream)({ symbols, interval, limit }, data => {
-        if (!isPosition) {
-            console.log(data);
-        }
-        (0, signals_1.Fling)({ fee, limit, data }).then(res => {
-            res.forEach(signal => {
-                const pKey = signal.symbol;
-                if (!botPositions[pKey] && !isPosition) {
-                    isPosition = true;
-                    botPositions[pKey] = new position_1.Position({
-                        position: signal.position,
-                        symbol: signal.symbol,
-                        expectedProfit: signal.expectedProfit,
-                        possibleLoss: signal.possibleLoss,
-                        entryPrice: signal.entryPrice,
-                        stopLoss: signal.stopLoss,
-                        fee,
-                        usdtAmount: 6,
-                        symbolInfo: symbolsObj[signal.symbol]
-                    });
-                    console.log(botPositions);
-                    botPositions[pKey].setEntryOrder()
-                        .then((res) => {
-                        console.log(res);
-                    });
-                }
-            });
+        (0, signals_1.Signals)({ fee, limit, data }).then(res => {
+            setPosition(res);
         });
     });
 }

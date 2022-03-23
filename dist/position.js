@@ -25,11 +25,12 @@ class Position {
         this.fee = opt.fee;
         this.usdtAmount = opt.usdtAmount;
         this.symbolInfo = opt.symbolInfo;
-        this.trailingStopLossDistance = this.fee * 2;
+        this.trailingStopLossTriggerPerc = .2; // first trailing move
+        this.trailingStopLossPerc = .1; // first trailing move
+        this.trailingStopLossStepPerc = +(opt.trailingStopLossStepPerc - .2).toFixed(2);
+        this.signal = opt.signal;
     }
     async setEntryOrder() {
-        this.watchPosition();
-        this.status = 'pending';
         // leverage
         const lvr = await binanceAuth.futuresLeverage(this.symbol, 1);
         // entry
@@ -44,10 +45,13 @@ class Position {
         const exitParams = {
             type: 'STOP_MARKET',
             closePosition: true,
-            stopPrice: this.stopLoss
+            workingType: 'MARK_PRICE',
+            stopPrice: +this.stopLoss.toFixed(this.symbolInfo.pricePrecision)
         };
         const stopOrd = await binanceAuth.futuresOrder(exitSide, this.symbol, false, false, exitParams);
         this.stopLossClientOrderId = stopOrd.clientOrderId;
+        // watch
+        this.watchPosition();
         return [entryOrd, stopOrd];
     }
     watchPosition() {
@@ -60,7 +64,7 @@ class Position {
                 else {
                     changePerc = (this.entryPrice - (+price.markPrice)) / (this.entryPrice / 100);
                 }
-                if (changePerc > this.trailingStopLossDistance) {
+                if (changePerc > this.trailingStopLossTriggerPerc) {
                     this.stopLossHasBeenMoved = true;
                     this.moveStopLoss();
                 }
@@ -72,23 +76,25 @@ class Position {
         });
     }
     async moveStopLoss() {
+        await binanceAuth.futuresCancel(this.symbol, { origClientOrderId: this.stopLossClientOrderId });
         const exitSide = this.position === 'long' ? 'SELL' : 'BUY';
         const exitParams = {
             type: 'STOP_MARKET',
             closePosition: true,
+            workingType: 'MARK_PRICE',
             stopPrice: 0
         };
         if (this.position === 'long') {
-            exitParams.stopPrice = this.entryPrice + (this.fee * (this.entryPrice / 100));
+            exitParams.stopPrice = this.entryPrice + (this.trailingStopLossPerc * (this.entryPrice / 100));
         }
         else {
-            exitParams.stopPrice = this.entryPrice - (this.fee * (this.entryPrice / 100));
+            exitParams.stopPrice = this.entryPrice - (this.trailingStopLossPerc * (this.entryPrice / 100));
         }
-        ss;
         exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
-        await binanceAuth.futuresOrder(exitSide, this.symbol, false, false, exitParams);
-        await binanceAuth.futuresCancel(this.symbol, { origClientOrderId: this.stopLossClientOrderId });
-        this.trailingStopLossDistance = this.trailingStopLossDistance + this.fee * 2;
+        const stopOrd = await binanceAuth.futuresOrder(exitSide, this.symbol, false, false, exitParams);
+        this.stopLossClientOrderId = stopOrd.clientOrderId;
+        this.trailingStopLossTriggerPerc = this.trailingStopLossTriggerPerc + this.trailingStopLossStepPerc;
+        this.trailingStopLossPerc = this.trailingStopLossPerc + this.trailingStopLossStepPerc;
         this.stopLossHasBeenMoved = false;
     }
 }

@@ -122,7 +122,8 @@ export function Aisle({ fee, limit, data }: SignalEntry) {
                     if (
                         expectedLastCdlDir === 'up' &&
                         lowDtPerc < partOfAvrgChange &&
-                        lastCandle.close > lastCandle.open
+                        lastCandle.close > lastCandle.open &&
+                        lastCandle.high - lastCandle.close < lastCandle.close - lastCandle.low
                     ) {
                         const expectedProfit = (volatility.minHigh - lastCandle.close) / (lastCandle.close / 100) - fee;
 
@@ -138,6 +139,7 @@ export function Aisle({ fee, limit, data }: SignalEntry) {
                                 expectedProfit: expectedProfit,
                                 possibleLoss: possibleLoss,
                                 stopLoss,
+                                signal: 'aisle'
                             };
 
                             result.push(keyResult);
@@ -149,7 +151,8 @@ export function Aisle({ fee, limit, data }: SignalEntry) {
                     if (
                         expectedLastCdlDir === 'down' &&
                         highDtPerc < partOfAvrgChange &&
-                        lastCandle.close < lastCandle.open
+                        lastCandle.close < lastCandle.open &&
+                        lastCandle.close - lastCandle.low < lastCandle.high - lastCandle.close
                     ) {
                         const expectedProfit = (lastCandle.close - volatility.maxLow) / (lastCandle.close / 100) - fee;
 
@@ -165,6 +168,7 @@ export function Aisle({ fee, limit, data }: SignalEntry) {
                                 expectedProfit: expectedProfit,
                                 possibleLoss: possibleLoss,
                                 stopLoss,
+                                signal: 'aisle'
                             };
 
                             result.push(keyResult);

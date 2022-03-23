@@ -93,7 +93,8 @@ function Aisle({ fee, limit, data }) {
                     const lowDtPerc = (volatility.maxLow - volatility.minLow) / (volatility.minLow / 100);
                     if (expectedLastCdlDir === 'up' &&
                         lowDtPerc < partOfAvrgChange &&
-                        lastCandle.close > lastCandle.open) {
+                        lastCandle.close > lastCandle.open &&
+                        lastCandle.high - lastCandle.close < lastCandle.close - lastCandle.low) {
                         const expectedProfit = (volatility.minHigh - lastCandle.close) / (lastCandle.close / 100) - fee;
                         const stopLoss = (lastCandle.low < volatility.minLow ? lastCandle.low : volatility.minLow) - (volatility.maxLow - volatility.minLow);
                         const possibleLoss = (lastCandle.close - stopLoss) / (lastCandle.close / 100) + fee;
@@ -105,6 +106,7 @@ function Aisle({ fee, limit, data }) {
                                 expectedProfit: expectedProfit,
                                 possibleLoss: possibleLoss,
                                 stopLoss,
+                                signal: 'aisle'
                             };
                             result.push(keyResult);
                         }
@@ -112,7 +114,8 @@ function Aisle({ fee, limit, data }) {
                     const highDtPerc = (volatility.maxHigh - volatility.minHigh) / (volatility.minHigh / 100);
                     if (expectedLastCdlDir === 'down' &&
                         highDtPerc < partOfAvrgChange &&
-                        lastCandle.close < lastCandle.open) {
+                        lastCandle.close < lastCandle.open &&
+                        lastCandle.close - lastCandle.low < lastCandle.high - lastCandle.close) {
                         const expectedProfit = (lastCandle.close - volatility.maxLow) / (lastCandle.close / 100) - fee;
                         const stopLoss = (lastCandle.high > volatility.maxHigh ? lastCandle.high : volatility.maxHigh) + (volatility.maxHigh - volatility.minHigh);
                         const possibleLoss = (stopLoss - lastCandle.close) / (lastCandle.close / 100) + fee;
@@ -124,6 +127,7 @@ function Aisle({ fee, limit, data }) {
                                 expectedProfit: expectedProfit,
                                 possibleLoss: possibleLoss,
                                 stopLoss,
+                                signal: 'aisle'
                             };
                             result.push(keyResult);
                         }

@@ -1,13 +1,9 @@
 import { candlesTicksStream } from './binanceApi';
 import { Position } from './position';
 import getSymbols from './symbols';
-import { Aisle, Fling } from './signals';
+import { Signals } from './signals';
 
 const fee: number = .1;
-
-// Chart.candlesTicks({ symbols, interval: '1h', limit: 5 }, (data) => {
-//     Volatility({ fee, data });
-// });
 
 const botPositions: {
     [key: string]: Position;
@@ -21,38 +17,42 @@ export async function Bot(): Promise<void> {
 
     const { symbols, symbolsObj } = await getSymbols();
 
-    candlesTicksStream({ symbols, interval, limit }, data => {
-        if (!isPosition) {
-            console.log(data);
-        }
+    const setPosition = res => {
+        res.sort((a, b) => b.expectedProfit - a.expectedProfit);
 
-        Fling({ fee, limit, data }).then(res => {
-            res.forEach(signal => {
-                const pKey = signal.symbol;
+        res.forEach(s => {
+            const pKey = s.symbol;
 
-                if (!botPositions[pKey] && !isPosition) {
-                    isPosition = true;
+            if (!botPositions[pKey] && !isPosition) {
+                isPosition = true;
 
-                    botPositions[pKey] = new Position({
-                        position: signal.position,
-                        symbol: signal.symbol,
-                        expectedProfit: signal.expectedProfit,
-                        possibleLoss: signal.possibleLoss,
-                        entryPrice: signal.entryPrice,
-                        stopLoss: signal.stopLoss,
-                        fee,
-                        usdtAmount: 6,
-                        symbolInfo: symbolsObj[signal.symbol]
+                botPositions[pKey] = new Position({
+                    position: s.position,
+                    symbol: s.symbol,
+                    expectedProfit: s.expectedProfit,
+                    possibleLoss: s.possibleLoss,
+                    entryPrice: s.entryPrice,
+                    stopLoss: s.stopLoss,
+                    fee,
+                    usdtAmount: 6,
+                    symbolInfo: symbolsObj[s.symbol],
+                    trailingStopLossStepPerc: s.expectedProfit < 1 ? s.expectedProfit : s.expectedProfit / 2,
+                    signal: s.signal
+                });
+
+                console.log(botPositions);
+
+                botPositions[pKey].setEntryOrder()
+                    .then((res) => {
+                        console.log(res);
                     });
+            }
+        });
+    }
 
-                    console.log(botPositions);
-
-                    botPositions[pKey].setEntryOrder()
-                        .then((res) => {
-                            console.log(res);
-                        });
-                }
-            });
+    candlesTicksStream({ symbols, interval, limit }, data => {
+        Signals({ fee, limit, data }).then(res => {
+            setPosition(res);
         });
     });
 }

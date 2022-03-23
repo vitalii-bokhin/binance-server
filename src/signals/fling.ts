@@ -22,22 +22,21 @@ export function Fling({ fee, limit, data }: SignalEntry) {
                         } else {
                             cdlDir = 'down';
                         }
+                    }
 
-                    } else {
-                        if (cdlDir === 'up') {
-                            if (
-                                cdl.close < cdl.open ||
-                                (cdl.high - cdl.low) - (cdl.close - cdl.open) > cdl.close - cdl.open
-                            ) {
-                                falseAccum++;
-                            }
-                        } else if (cdlDir === 'down') {
-                            if (
-                                cdl.close > cdl.open ||
-                                (cdl.high - cdl.low) - (cdl.open - cdl.close) > cdl.open - cdl.close
-                            ) {
-                                falseAccum++;
-                            }
+                    if (cdlDir === 'up') {
+                        if (
+                            cdl.close < cdl.open ||
+                            cdl.high - cdl.close > cdl.close - cdl.low
+                        ) {
+                            falseAccum++;
+                        }
+                    } else if (cdlDir === 'down') {
+                        if (
+                            cdl.close > cdl.open ||
+                            cdl.close - cdl.low > cdl.high - cdl.close
+                        ) {
+                            falseAccum++;
                         }
                     }
                 });
@@ -45,14 +44,30 @@ export function Fling({ fee, limit, data }: SignalEntry) {
                 if (!falseAccum) {
                     const volatility = {
                         minLong: 999,
-                        minShort: 999
+                        minShort: 999,
+                        dtChangeLong: 0,
+                        dtChangeShort: 0,
+                        expectedChangeLong: 0,
+                        expectedChangeShort: 0
                     };
 
                     const preLastCandle: Candle = item[item.length - 1];
 
+                    let prevChangeLongPerc = 0,
+                        prevChangeShortPerc = 0;
+
                     item.forEach((cdl: Candle): void => {
                         const changeLongPerc = (cdl.high - cdl.low) / (cdl.low / 100);
                         const changeShortPerc = (cdl.high - cdl.low) / (cdl.high / 100);
+
+                        volatility.dtChangeLong = changeLongPerc - prevChangeLongPerc;
+                        volatility.dtChangeShort = changeShortPerc - prevChangeShortPerc;
+
+                        volatility.expectedChangeLong = changeLongPerc + volatility.dtChangeLong;
+                        volatility.expectedChangeShort = changeShortPerc + volatility.dtChangeShort;
+                        
+                        prevChangeLongPerc = changeLongPerc;
+                        prevChangeShortPerc = changeShortPerc;
 
                         if (changeLongPerc < volatility.minLong) {
                             volatility.minLong = changeLongPerc;
@@ -64,8 +79,12 @@ export function Fling({ fee, limit, data }: SignalEntry) {
                     });
 
                     // long
-                    if (cdlDir === 'up' && lastCandle.close > lastCandle.open) {
-                        const expectedProfit = volatility.minLong - fee;
+                    if (
+                        cdlDir === 'up' &&
+                        lastCandle.close > lastCandle.open &&
+                        lastCandle.high - lastCandle.close < lastCandle.close - lastCandle.low
+                    ) {
+                        const expectedProfit = volatility.expectedChangeLong - (lastCandle.close - lastCandle.low) / (lastCandle.low / 100) - fee;
 
                         // const stopLoss = lastCandle.low < preLastCandle.low ? lastCandle.low : preLastCandle.low;
                         const stopLoss = lastCandle.low;
@@ -80,6 +99,7 @@ export function Fling({ fee, limit, data }: SignalEntry) {
                                 expectedProfit: expectedProfit,
                                 possibleLoss: possibleLoss,
                                 stopLoss,
+                                signal: 'fling'
                             };
 
                             result.push(keyResult);
@@ -87,8 +107,12 @@ export function Fling({ fee, limit, data }: SignalEntry) {
                     }
 
                     // short
-                    if (cdlDir === 'down' && lastCandle.close < lastCandle.open) {
-                        const expectedProfit = volatility.minShort - fee;
+                    if (
+                        cdlDir === 'down' &&
+                        lastCandle.close < lastCandle.open &&
+                        lastCandle.close - lastCandle.low < lastCandle.high - lastCandle.close
+                    ) {
+                        const expectedProfit = volatility.expectedChangeShort - (lastCandle.high - lastCandle.close) / (lastCandle.high / 100) - fee;
 
                         // const stopLoss = lastCandle.high > preLastCandle.high ? lastCandle.high : preLastCandle.high;
                         const stopLoss = lastCandle.high;
@@ -103,6 +127,7 @@ export function Fling({ fee, limit, data }: SignalEntry) {
                                 expectedProfit: expectedProfit,
                                 possibleLoss: possibleLoss,
                                 stopLoss,
+                                signal: 'fling'
                             };
 
                             result.push(keyResult);

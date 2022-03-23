@@ -5,6 +5,7 @@ export type SymbolResult = {
     position: 'long' | 'short';
     entryPrice: number;
     stopLoss: number;
+    signal: string;
 };
 
 export type Result = SymbolResult[];
