@@ -62,6 +62,7 @@ export function candlesTicks({ symbols, interval, limit }: CandlesTicksEntry, ca
             if (i === symbols.length) {
                 callback(result);
             }
+        
         }).catch(error => {
             console.log(new Error(error));
         });

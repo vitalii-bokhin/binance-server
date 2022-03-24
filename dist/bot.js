@@ -10,18 +10,24 @@ const symbols_1 = __importDefault(require("./symbols"));
 const signals_1 = require("./signals");
 const fee = .1;
 const botPositions = {};
-let isPosition = false;
+let positions = 0;
 async function Bot() {
     const interval = '1h';
     const limit = 3;
+    const usdtAmount = 10;
+    const leverage = 2;
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
     const setPosition = res => {
-        res.sort((a, b) => b.expectedProfit - a.expectedProfit);
         res.forEach(s => {
             const pKey = s.symbol;
-            if (!botPositions[pKey] && !isPosition) {
-                isPosition = true;
+            if (!botPositions[pKey] && positions < 2) {
+                positions++;
+                let trailingStopLossStepPerc = .1;
+                if (s.expectedProfit !== undefined) {
+                    trailingStopLossStepPerc = s.expectedProfit < 1 ? s.expectedProfit : s.expectedProfit / 2;
+                }
                 botPositions[pKey] = new position_1.Position({
+                    positionKey: pKey,
                     position: s.position,
                     symbol: s.symbol,
                     expectedProfit: s.expectedProfit,
@@ -29,15 +35,19 @@ async function Bot() {
                     entryPrice: s.entryPrice,
                     stopLoss: s.stopLoss,
                     fee,
-                    usdtAmount: 6,
+                    usdtAmount,
+                    leverage,
                     symbolInfo: symbolsObj[s.symbol],
-                    trailingStopLossStepPerc: s.expectedProfit < 1 ? s.expectedProfit : s.expectedProfit / 2,
+                    trailingStopLossStepPerc,
                     signal: s.signal
                 });
                 console.log(botPositions);
                 botPositions[pKey].setEntryOrder()
                     .then((res) => {
                     console.log(res);
+                    if (res.error) {
+                        positions--;
+                    }
                 });
             }
         });

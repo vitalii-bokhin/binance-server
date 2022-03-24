@@ -10,6 +10,7 @@ const binanceAuth = new Binance().options({
 // const binanceAuth = new Binance();
 
 export class Position {
+    positionKey: string;
     position: 'long' | 'short';
     symbol: string;
     expectedProfit: number;
@@ -18,6 +19,7 @@ export class Position {
     stopLoss: number;
     fee: number;
     usdtAmount: number;
+    leverage: number;
     stopLossHasBeenMoved: boolean = false;
     stopLossClientOrderId: string;
     symbolInfo: {
@@ -30,6 +32,7 @@ export class Position {
     signal?: string;
 
     constructor(opt: {
+        positionKey: string;
         position: 'long' | 'short';
         symbol: string;
         expectedProfit: number;
@@ -38,6 +41,7 @@ export class Position {
         stopLoss: number;
         fee: number;
         usdtAmount: number;
+        leverage: number;
         symbolInfo: {
             quantityPrecision: number;
             pricePrecision: number;
@@ -45,6 +49,7 @@ export class Position {
         trailingStopLossStepPerc: number;
         signal?: string;
     }) {
+        this.positionKey = opt.positionKey;
         this.position = opt.position;
         this.symbol = opt.symbol;
         this.expectedProfit = opt.expectedProfit;
@@ -53,23 +58,34 @@ export class Position {
         this.stopLoss = opt.stopLoss;
         this.fee = opt.fee;
         this.usdtAmount = opt.usdtAmount;
+        this.leverage = opt.leverage;
         this.symbolInfo = opt.symbolInfo;
-        this.trailingStopLossTriggerPerc = .2; // first trailing move
+        this.trailingStopLossTriggerPerc = .3; // first trailing move
         this.trailingStopLossPerc = .1; // first trailing move
-        this.trailingStopLossStepPerc = +(opt.trailingStopLossStepPerc - .2).toFixed(2);
+        this.trailingStopLossStepPerc = opt.trailingStopLossStepPerc;
         this.signal = opt.signal;
     }
 
-    async setEntryOrder() {
+    async setEntryOrder(): Promise<{
+        entryOrder?: any;
+        stopLossOrder?: any;
+        error?: string;
+        positionKey?: string;
+    }> {
         // leverage
-        const lvr = await binanceAuth.futuresLeverage(this.symbol, 1);
+        const lvr = await binanceAuth.futuresLeverage(this.symbol, this.leverage);
 
         // entry
         const entrySide = this.position === 'long' ? 'BUY' : 'SELL';
         const quantity = +(this.usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
         const entryParams = {
-            timeInForce: 'GTC'
+            timeInForce: 'GTC',
+            workingType: 'MARK_PRICE'
         };
+
+        if (quantity == 0) {
+            return { error: 'QUANTITY_IS_NULL', positionKey: this.positionKey };
+        }
 
         const entryOrd = await binanceAuth.futuresOrder(entrySide, this.symbol, quantity, this.entryPrice, entryParams);
 
@@ -89,7 +105,7 @@ export class Position {
         // watch
         this.watchPosition();
 
-        return [entryOrd, stopOrd];
+        return { entryOrder: entryOrd, stopLossOrder: stopOrd };
     }
 
     watchPosition() {

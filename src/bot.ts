@@ -9,24 +9,31 @@ const botPositions: {
     [key: string]: Position;
 } = {};
 
-let isPosition = false;
+let positions = 0;
 
 export async function Bot(): Promise<void> {
-    const interval: string = '1h';
-    const limit: number = 3;
+    const interval = '1h';
+    const limit = 3;
+    const usdtAmount = 10;
+    const leverage = 2;
 
     const { symbols, symbolsObj } = await getSymbols();
 
     const setPosition = res => {
-        res.sort((a, b) => b.expectedProfit - a.expectedProfit);
-
         res.forEach(s => {
             const pKey = s.symbol;
 
-            if (!botPositions[pKey] && !isPosition) {
-                isPosition = true;
+            if (!botPositions[pKey] && positions < 2) {
+                positions++;
+
+                let trailingStopLossStepPerc = .1;
+
+                if (s.expectedProfit !== undefined) {
+                    trailingStopLossStepPerc = s.expectedProfit < 1 ? s.expectedProfit : s.expectedProfit / 2;
+                }
 
                 botPositions[pKey] = new Position({
+                    positionKey: pKey,
                     position: s.position,
                     symbol: s.symbol,
                     expectedProfit: s.expectedProfit,
@@ -34,9 +41,10 @@ export async function Bot(): Promise<void> {
                     entryPrice: s.entryPrice,
                     stopLoss: s.stopLoss,
                     fee,
-                    usdtAmount: 6,
+                    usdtAmount,
+                    leverage,
                     symbolInfo: symbolsObj[s.symbol],
-                    trailingStopLossStepPerc: s.expectedProfit < 1 ? s.expectedProfit : s.expectedProfit / 2,
+                    trailingStopLossStepPerc,
                     signal: s.signal
                 });
 
@@ -45,6 +53,10 @@ export async function Bot(): Promise<void> {
                 botPositions[pKey].setEntryOrder()
                     .then((res) => {
                         console.log(res);
+
+                        if (res.error) {
+                            positions--;
+                        }
                     });
             }
         });

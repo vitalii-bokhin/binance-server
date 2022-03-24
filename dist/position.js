@@ -16,6 +16,7 @@ const binanceAuth = new node_binance_api_1.default().options({
 class Position {
     constructor(opt) {
         this.stopLossHasBeenMoved = false;
+        this.positionKey = opt.positionKey;
         this.position = opt.position;
         this.symbol = opt.symbol;
         this.expectedProfit = opt.expectedProfit;
@@ -24,21 +25,26 @@ class Position {
         this.stopLoss = opt.stopLoss;
         this.fee = opt.fee;
         this.usdtAmount = opt.usdtAmount;
+        this.leverage = opt.leverage;
         this.symbolInfo = opt.symbolInfo;
-        this.trailingStopLossTriggerPerc = .2; // first trailing move
+        this.trailingStopLossTriggerPerc = .3; // first trailing move
         this.trailingStopLossPerc = .1; // first trailing move
-        this.trailingStopLossStepPerc = +(opt.trailingStopLossStepPerc - .2).toFixed(2);
+        this.trailingStopLossStepPerc = opt.trailingStopLossStepPerc;
         this.signal = opt.signal;
     }
     async setEntryOrder() {
         // leverage
-        const lvr = await binanceAuth.futuresLeverage(this.symbol, 1);
+        const lvr = await binanceAuth.futuresLeverage(this.symbol, this.leverage);
         // entry
         const entrySide = this.position === 'long' ? 'BUY' : 'SELL';
         const quantity = +(this.usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
         const entryParams = {
-            timeInForce: 'GTC'
+            timeInForce: 'GTC',
+            workingType: 'MARK_PRICE'
         };
+        if (quantity == 0) {
+            return { error: 'QUANTITY_IS_NULL', positionKey: this.positionKey };
+        }
         const entryOrd = await binanceAuth.futuresOrder(entrySide, this.symbol, quantity, this.entryPrice, entryParams);
         // stop loss
         const exitSide = this.position === 'long' ? 'SELL' : 'BUY';
@@ -52,7 +58,7 @@ class Position {
         this.stopLossClientOrderId = stopOrd.clientOrderId;
         // watch
         this.watchPosition();
-        return [entryOrd, stopOrd];
+        return { entryOrder: entryOrd, stopLossOrder: stopOrd };
     }
     watchPosition() {
         (0, binanceApi_1.priceStream)(this.symbol, price => {
