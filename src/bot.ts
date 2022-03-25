@@ -26,10 +26,14 @@ export async function Bot(): Promise<void> {
             if (!botPositions[pKey] && positions < 2) {
                 positions++;
 
-                let trailingStopLossStepPerc = .1;
+                let trailingStopTriggerPerc: number;
+                let trailingStopPricePerc: number;
+                let trailingStepPerc: number;
 
-                if (s.expectedProfit !== undefined) {
-                    trailingStopLossStepPerc = s.expectedProfit < 1 ? s.expectedProfit : s.expectedProfit / 2;
+                if (s.signal == 'scalping') {
+                    trailingStopTriggerPerc = .1;
+                    trailingStopPricePerc = 0;
+                    trailingStepPerc = .1;
                 }
 
                 botPositions[pKey] = new Position({
@@ -44,11 +48,11 @@ export async function Bot(): Promise<void> {
                     usdtAmount,
                     leverage,
                     symbolInfo: symbolsObj[s.symbol],
-                    trailingStopLossStepPerc,
+                    trailingStopTriggerPerc,
+                    trailingStopPricePerc,
+                    trailingStepPerc,
                     signal: s.signal
                 });
-
-                console.log(botPositions);
 
                 botPositions[pKey].setEntryOrder()
                     .then((res) => {
@@ -58,6 +62,13 @@ export async function Bot(): Promise<void> {
                             positions--;
                         }
                     });
+
+                botPositions[pKey].deletePosition(positionKey => {
+                    delete botPositions[positionKey];
+                    positions--;
+                });
+
+                console.log(botPositions);
             }
         });
     }

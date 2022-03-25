@@ -62,7 +62,7 @@ export function candlesTicks({ symbols, interval, limit }: CandlesTicksEntry, ca
             if (i === symbols.length) {
                 callback(result);
             }
-        
+
         }).catch(error => {
             console.log(new Error(error));
         });
@@ -135,12 +135,12 @@ const userFutureDataSubscribe = function (key, callback) {
 
         binanceAuth.websockets.userFutureData(
             null,
-            (res) => {
+            res => {
                 if (userFutureDataSubscribers['positions_update']) {
                     userFutureDataSubscribers['positions_update'](res.updateData.positions);
                 }
             },
-            (res) => {
+            res => {
                 if (userFutureDataSubscribers['orders_update']) {
                     userFutureDataSubscribers['orders_update'](res.order);
                 }
@@ -156,9 +156,11 @@ export function ordersUpdateStream(symbol: string, callback: (arg0: {}) => void)
 
     orderUpdateSubscribers[symbol].push(callback);
 
-    userFutureDataSubscribe('orders_update', function (order) {
-        orderUpdateSubscribers[order.symbol].forEach(cb => cb(order));
-    });
+    if (!userFutureDataSubscribers['orders_update']) {
+        userFutureDataSubscribe('orders_update', function (order) {
+            orderUpdateSubscribers[order.symbol].forEach(cb => cb(order));
+        });
+    }
 }
 
 export function positionUpdateStream(symbol: string, callback: (arg0: {}) => void) {
@@ -168,11 +170,13 @@ export function positionUpdateStream(symbol: string, callback: (arg0: {}) => voi
 
     positionUpdateSubscribers[symbol].push(callback);
 
-    userFutureDataSubscribe('positions_update', function (positions) {
-        positions.forEach(pos => {
-            positionUpdateSubscribers[pos.symbol].forEach(cb => cb(pos));
+    if (!userFutureDataSubscribers['positions_update']) {
+        userFutureDataSubscribe('positions_update', function (positions) {
+            positions.forEach(pos => {
+                positionUpdateSubscribers[pos.symbol].forEach(cb => cb(pos));
+            });
         });
-    });
+    }
 }
 
 // price stream
@@ -182,7 +186,7 @@ const priceSubscribers: {
 
 let priceStreamWsHasBeenRun = false;
 
-export function priceStream(symbol, callback: (arg0: {
+export function priceStream(symbol: string, callback: (arg0: {
     symbol: string;
     markPrice: string;
     eventType?: string;

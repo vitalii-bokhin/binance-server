@@ -12,7 +12,6 @@ const binanceAuth = new node_binance_api_1.default().options({
     APISECRET: config_1.BINANCE_SECRET,
     useServerTime: true
 });
-// const binanceAuth = new Binance();
 class Position {
     constructor(opt) {
         this.stopLossHasBeenMoved = false;
@@ -27,9 +26,9 @@ class Position {
         this.usdtAmount = opt.usdtAmount;
         this.leverage = opt.leverage;
         this.symbolInfo = opt.symbolInfo;
-        this.trailingStopLossTriggerPerc = .3; // first trailing move
-        this.trailingStopLossPerc = .1; // first trailing move
-        this.trailingStopLossStepPerc = opt.trailingStopLossStepPerc;
+        this.trailingStopTriggerPerc = opt.trailingStopTriggerPerc; // first trailing move
+        this.trailingStopPricePerc = opt.trailingStopPricePerc; // first trailing move
+        this.trailingStepPerc = opt.trailingStepPerc;
         this.signal = opt.signal;
     }
     async setEntryOrder() {
@@ -39,6 +38,7 @@ class Position {
         const entrySide = this.position === 'long' ? 'BUY' : 'SELL';
         const quantity = +(this.usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
         const entryParams = {
+            type: 'LIMIT',
             timeInForce: 'GTC',
             workingType: 'MARK_PRICE'
         };
@@ -70,15 +70,20 @@ class Position {
                 else {
                     changePerc = (this.entryPrice - (+price.markPrice)) / (this.entryPrice / 100);
                 }
-                if (changePerc > this.trailingStopLossTriggerPerc) {
+                if (changePerc >= this.trailingStopTriggerPerc) {
                     this.stopLossHasBeenMoved = true;
                     this.moveStopLoss();
                 }
             }
         });
-        (0, binanceApi_1.positionUpdateStream)(this.symbol, pos => {
+        (0, binanceApi_1.positionUpdateStream)(this.symbol, (pos) => {
             console.log('--position--');
             console.log(pos);
+            if (pos.positionAmount == '0') {
+                if (this.deletePositionCallback !== undefined) {
+                    this.deletePositionCallback(this.positionKey);
+                }
+            }
         });
     }
     async moveStopLoss() {
@@ -91,17 +96,20 @@ class Position {
             stopPrice: 0
         };
         if (this.position === 'long') {
-            exitParams.stopPrice = this.entryPrice + (this.trailingStopLossPerc * (this.entryPrice / 100));
+            exitParams.stopPrice = this.entryPrice + (this.trailingStopPricePerc * (this.entryPrice / 100));
         }
         else {
-            exitParams.stopPrice = this.entryPrice - (this.trailingStopLossPerc * (this.entryPrice / 100));
+            exitParams.stopPrice = this.entryPrice - (this.trailingStopPricePerc * (this.entryPrice / 100));
         }
         exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
         const stopOrd = await binanceAuth.futuresOrder(exitSide, this.symbol, false, false, exitParams);
         this.stopLossClientOrderId = stopOrd.clientOrderId;
-        this.trailingStopLossTriggerPerc = this.trailingStopLossTriggerPerc + this.trailingStopLossStepPerc;
-        this.trailingStopLossPerc = this.trailingStopLossPerc + this.trailingStopLossStepPerc;
+        this.trailingStopTriggerPerc = this.trailingStopTriggerPerc + this.trailingStepPerc;
+        this.trailingStopPricePerc = this.trailingStopPricePerc + this.trailingStepPerc;
         this.stopLossHasBeenMoved = false;
+    }
+    deletePosition(callback) {
+        this.deletePositionCallback = callback;
     }
 }
 exports.Position = Position;

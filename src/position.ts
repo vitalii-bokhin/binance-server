@@ -7,14 +7,11 @@ const binanceAuth = new Binance().options({
     APISECRET: BINANCE_SECRET,
     useServerTime: true
 });
-// const binanceAuth = new Binance();
 
 export class Position {
     positionKey: string;
     position: 'long' | 'short';
     symbol: string;
-    expectedProfit: number;
-    possibleLoss: number;
     entryPrice: number;
     stopLoss: number;
     fee: number;
@@ -26,17 +23,18 @@ export class Position {
         quantityPrecision: number;
         pricePrecision: number;
     };
-    trailingStopLossTriggerPerc: number;
-    trailingStopLossPerc: number;
-    trailingStopLossStepPerc: number;
+    trailingStopTriggerPerc: number;
+    trailingStopPricePerc: number;
+    trailingStepPerc: number;
     signal?: string;
+    expectedProfit?: number;
+    possibleLoss?: number;
+    deletePositionCallback: (positionKey: string) => void;
 
     constructor(opt: {
         positionKey: string;
         position: 'long' | 'short';
         symbol: string;
-        expectedProfit: number;
-        possibleLoss: number;
         entryPrice: number;
         stopLoss: number;
         fee: number;
@@ -46,8 +44,12 @@ export class Position {
             quantityPrecision: number;
             pricePrecision: number;
         };
-        trailingStopLossStepPerc: number;
+        trailingStopTriggerPerc: number;
+        trailingStopPricePerc: number;
+        trailingStepPerc: number;
         signal?: string;
+        expectedProfit?: number;
+        possibleLoss?: number;
     }) {
         this.positionKey = opt.positionKey;
         this.position = opt.position;
@@ -60,9 +62,9 @@ export class Position {
         this.usdtAmount = opt.usdtAmount;
         this.leverage = opt.leverage;
         this.symbolInfo = opt.symbolInfo;
-        this.trailingStopLossTriggerPerc = .3; // first trailing move
-        this.trailingStopLossPerc = .1; // first trailing move
-        this.trailingStopLossStepPerc = opt.trailingStopLossStepPerc;
+        this.trailingStopTriggerPerc = opt.trailingStopTriggerPerc; // first trailing move
+        this.trailingStopPricePerc = opt.trailingStopPricePerc; // first trailing move
+        this.trailingStepPerc = opt.trailingStepPerc;
         this.signal = opt.signal;
     }
 
@@ -79,6 +81,7 @@ export class Position {
         const entrySide = this.position === 'long' ? 'BUY' : 'SELL';
         const quantity = +(this.usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
         const entryParams = {
+            type: 'LIMIT',
             timeInForce: 'GTC',
             workingType: 'MARK_PRICE'
         };
@@ -108,7 +111,7 @@ export class Position {
         return { entryOrder: entryOrd, stopLossOrder: stopOrd };
     }
 
-    watchPosition() {
+    watchPosition(): void {
         priceStream(this.symbol, price => {
             if (!this.stopLossHasBeenMoved) {
                 let changePerc: number;
@@ -119,7 +122,7 @@ export class Position {
                     changePerc = (this.entryPrice - (+price.markPrice)) / (this.entryPrice / 100);
                 }
 
-                if (changePerc > this.trailingStopLossTriggerPerc) {
+                if (changePerc >= this.trailingStopTriggerPerc) {
                     this.stopLossHasBeenMoved = true;
 
                     this.moveStopLoss();
@@ -127,13 +130,19 @@ export class Position {
             }
         });
 
-        positionUpdateStream(this.symbol, pos => {
+        positionUpdateStream(this.symbol, (pos: any) => {
             console.log('--position--');
             console.log(pos);
+
+            if (pos.positionAmount == '0') {
+                if (this.deletePositionCallback !== undefined) {
+                    this.deletePositionCallback(this.positionKey);
+                }
+            }
         });
     }
 
-    async moveStopLoss() {
+    async moveStopLoss(): Promise<void> {
         await binanceAuth.futuresCancel(this.symbol, { origClientOrderId: this.stopLossClientOrderId });
 
         const exitSide = this.position === 'long' ? 'SELL' : 'BUY';
@@ -145,9 +154,9 @@ export class Position {
         };
 
         if (this.position === 'long') {
-            exitParams.stopPrice = this.entryPrice + (this.trailingStopLossPerc * (this.entryPrice / 100));
+            exitParams.stopPrice = this.entryPrice + (this.trailingStopPricePerc * (this.entryPrice / 100));
         } else {
-            exitParams.stopPrice = this.entryPrice - (this.trailingStopLossPerc * (this.entryPrice / 100));
+            exitParams.stopPrice = this.entryPrice - (this.trailingStopPricePerc * (this.entryPrice / 100));
         }
 
         exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
@@ -156,9 +165,13 @@ export class Position {
 
         this.stopLossClientOrderId = stopOrd.clientOrderId;
 
-        this.trailingStopLossTriggerPerc = this.trailingStopLossTriggerPerc + this.trailingStopLossStepPerc;
-        this.trailingStopLossPerc = this.trailingStopLossPerc + this.trailingStopLossStepPerc;
+        this.trailingStopTriggerPerc = this.trailingStopTriggerPerc + this.trailingStepPerc;
+        this.trailingStopPricePerc = this.trailingStopPricePerc + this.trailingStepPerc;
 
         this.stopLossHasBeenMoved = false;
+    }
+
+    deletePosition(callback: (positionKey: string) => void): void {
+        this.deletePositionCallback = callback;
     }
 }

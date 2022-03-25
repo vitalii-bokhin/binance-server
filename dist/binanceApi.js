@@ -87,11 +87,11 @@ const userFutureDataSubscribe = function (key, callback) {
     userFutureDataSubscribers[key] = callback;
     if (!userFutureDataExecuted) {
         userFutureDataExecuted = true;
-        binanceAuth.websockets.userFutureData(null, (res) => {
+        binanceAuth.websockets.userFutureData(null, res => {
             if (userFutureDataSubscribers['positions_update']) {
                 userFutureDataSubscribers['positions_update'](res.updateData.positions);
             }
-        }, (res) => {
+        }, res => {
             if (userFutureDataSubscribers['orders_update']) {
                 userFutureDataSubscribers['orders_update'](res.order);
             }
@@ -103,9 +103,11 @@ function ordersUpdateStream(symbol, callback) {
         orderUpdateSubscribers[symbol] = [];
     }
     orderUpdateSubscribers[symbol].push(callback);
-    userFutureDataSubscribe('orders_update', function (order) {
-        orderUpdateSubscribers[order.symbol].forEach(cb => cb(order));
-    });
+    if (!userFutureDataSubscribers['orders_update']) {
+        userFutureDataSubscribe('orders_update', function (order) {
+            orderUpdateSubscribers[order.symbol].forEach(cb => cb(order));
+        });
+    }
 }
 exports.ordersUpdateStream = ordersUpdateStream;
 function positionUpdateStream(symbol, callback) {
@@ -113,11 +115,13 @@ function positionUpdateStream(symbol, callback) {
         positionUpdateSubscribers[symbol] = [];
     }
     positionUpdateSubscribers[symbol].push(callback);
-    userFutureDataSubscribe('positions_update', function (positions) {
-        positions.forEach(pos => {
-            positionUpdateSubscribers[pos.symbol].forEach(cb => cb(pos));
+    if (!userFutureDataSubscribers['positions_update']) {
+        userFutureDataSubscribe('positions_update', function (positions) {
+            positions.forEach(pos => {
+                positionUpdateSubscribers[pos.symbol].forEach(cb => cb(pos));
+            });
         });
-    });
+    }
 }
 exports.positionUpdateStream = positionUpdateStream;
 // price stream

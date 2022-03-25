@@ -22,9 +22,13 @@ async function Bot() {
             const pKey = s.symbol;
             if (!botPositions[pKey] && positions < 2) {
                 positions++;
-                let trailingStopLossStepPerc = .1;
-                if (s.expectedProfit !== undefined) {
-                    trailingStopLossStepPerc = s.expectedProfit < 1 ? s.expectedProfit : s.expectedProfit / 2;
+                let trailingStopTriggerPerc;
+                let trailingStopPricePerc;
+                let trailingStepPerc;
+                if (s.signal == 'scalping') {
+                    trailingStopTriggerPerc = .1;
+                    trailingStopPricePerc = 0;
+                    trailingStepPerc = .1;
                 }
                 botPositions[pKey] = new position_1.Position({
                     positionKey: pKey,
@@ -38,10 +42,11 @@ async function Bot() {
                     usdtAmount,
                     leverage,
                     symbolInfo: symbolsObj[s.symbol],
-                    trailingStopLossStepPerc,
+                    trailingStopTriggerPerc,
+                    trailingStopPricePerc,
+                    trailingStepPerc,
                     signal: s.signal
                 });
-                console.log(botPositions);
                 botPositions[pKey].setEntryOrder()
                     .then((res) => {
                     console.log(res);
@@ -49,6 +54,11 @@ async function Bot() {
                         positions--;
                     }
                 });
+                botPositions[pKey].deletePosition(positionKey => {
+                    delete botPositions[positionKey];
+                    positions--;
+                });
+                console.log(botPositions);
             }
         });
     };
