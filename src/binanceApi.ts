@@ -42,8 +42,8 @@ export function candlesTicks({ symbols, interval, limit }: CandlesTicksEntry, ca
     symbols.forEach(sym => {
         const ticksArr = [];
 
-        binance.futuresCandles(sym, interval, { limit }).then(ticks => {
-            ticks.forEach((tick, i) => {
+        binance.futuresCandles(sym, interval, { limit }).then((ticks: any[]) => {
+            ticks.forEach((tick: [any, any, any, any, any, any, any, any, any, any, any, any], i: string | number) => {
                 let [time, open, high, low, close, volume, closeTime, assetVolume, trades, buyBaseVolume, buyAssetVolume, ignored] = tick;
 
                 ticksArr[i] = {
@@ -63,7 +63,7 @@ export function candlesTicks({ symbols, interval, limit }: CandlesTicksEntry, ca
                 callback(result);
             }
 
-        }).catch(error => {
+        }).catch((error: string) => {
             console.log(new Error(error));
         });
     });
@@ -94,7 +94,8 @@ export function candlesTicksStream({ symbols, interval, limit }: CandlesTicksEnt
                 low: +low,
                 close: +close,
                 interval,
-                limit
+                limit,
+                isFinal
             };
 
             if (result[symbol][result[symbol].length - 1].openTime !== openTime) {
@@ -127,7 +128,7 @@ const userFutureDataSubscribers: {
 
 let userFutureDataExecuted = false;
 
-const userFutureDataSubscribe = function (key, callback) {
+const userFutureDataSubscribe = function (key: string, callback: { (order: any): void; (positions: any): void; (arg0: any): void; }) {
     userFutureDataSubscribers[key] = callback;
 
     if (!userFutureDataExecuted) {
@@ -135,12 +136,12 @@ const userFutureDataSubscribe = function (key, callback) {
 
         binanceAuth.websockets.userFutureData(
             null,
-            res => {
+            (res: { updateData: { positions: any; }; }) => {
                 if (userFutureDataSubscribers['positions_update']) {
                     userFutureDataSubscribers['positions_update'](res.updateData.positions);
                 }
             },
-            res => {
+            (res: { order: any; }) => {
                 if (userFutureDataSubscribers['orders_update']) {
                     userFutureDataSubscribers['orders_update'](res.order);
                 }
@@ -149,16 +150,51 @@ const userFutureDataSubscribe = function (key, callback) {
     }
 }
 
-export function ordersUpdateStream(symbol: string, callback: (arg0: {}) => void) {
-    if (!orderUpdateSubscribers[symbol]) {
-        orderUpdateSubscribers[symbol] = [];
+export function ordersUpdateStream(symbol?: string, callback?: (arg0: {
+    symbol: string;
+    clientOrderId: string;
+    orderStatus: 'NEW' | 'FILLED';
+    averagePrice: string;
+    side: any;
+    orderType: any;
+    timeInForce: any;
+    originalQuantity: any;
+    originalPrice: any;
+    stopPrice: any;
+    executionType: any;
+    orderId: any;
+    orderLastFilledQuantity: any;
+    orderFilledAccumulatedQuantity: any;
+    lastFilledPrice: any;
+    commissionAsset: any;
+    commission: any;
+    orderTradeTime: any;
+    tradeId: any;
+    bidsNotional: any;
+    askNotional: any;
+    isMakerSide: any;
+    isReduceOnly: any;
+    stopPriceWorkingType: any;
+    originalOrderType: any;
+    positionSide: any;
+    closeAll: any;
+    activationPrice: any;
+    callbackRate: any;
+    realizedProfit: any;
+}) => void) {
+    if (symbol && callback) {
+        if (!orderUpdateSubscribers[symbol]) {
+            orderUpdateSubscribers[symbol] = [];
+        }
+
+        orderUpdateSubscribers[symbol].push(callback);
     }
 
-    orderUpdateSubscribers[symbol].push(callback);
-
     if (!userFutureDataSubscribers['orders_update']) {
-        userFutureDataSubscribe('orders_update', function (order) {
-            orderUpdateSubscribers[order.symbol].forEach(cb => cb(order));
+        userFutureDataSubscribe('orders_update', function (order: { symbol: string | number; }) {
+            if (orderUpdateSubscribers[order.symbol]) {
+                orderUpdateSubscribers[order.symbol].forEach(cb => cb(order));
+            }
         });
     }
 }
@@ -171,8 +207,8 @@ export function positionUpdateStream(symbol: string, callback: (arg0: {}) => voi
     positionUpdateSubscribers[symbol].push(callback);
 
     if (!userFutureDataSubscribers['positions_update']) {
-        userFutureDataSubscribe('positions_update', function (positions) {
-            positions.forEach(pos => {
+        userFutureDataSubscribe('positions_update', function (positions: any[]) {
+            positions.forEach((pos: { symbol: string | number; }) => {
                 positionUpdateSubscribers[pos.symbol].forEach(cb => cb(pos));
             });
         });
@@ -204,8 +240,8 @@ export function priceStream(symbol: string, callback: (arg0: {
     if (!priceStreamWsHasBeenRun) {
         priceStreamWsHasBeenRun = true;
 
-        binance.futuresMarkPriceStream(res => {
-            res.forEach(item => {
+        binance.futuresMarkPriceStream((res: any[]) => {
+            res.forEach((item: { symbol: string | number; }) => {
                 if (priceSubscribers[item.symbol]) {
                     priceSubscribers[item.symbol].forEach(cb => cb(item));
                 }

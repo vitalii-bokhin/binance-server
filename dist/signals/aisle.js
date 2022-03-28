@@ -106,7 +106,8 @@ function Aisle({ fee, limit, data }) {
                                 expectedProfit: expectedProfit,
                                 possibleLoss: possibleLoss,
                                 stopLoss,
-                                signal: 'aisle'
+                                signal: 'aisle',
+                                preferIndex: expectedProfit
                             };
                             result.push(keyResult);
                         }
@@ -127,7 +128,8 @@ function Aisle({ fee, limit, data }) {
                                 expectedProfit: expectedProfit,
                                 possibleLoss: possibleLoss,
                                 stopLoss,
-                                signal: 'aisle'
+                                signal: 'aisle',
+                                preferIndex: expectedProfit
                             };
                             result.push(keyResult);
                         }

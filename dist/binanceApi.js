@@ -20,7 +20,7 @@ function candlesTicks({ symbols, interval, limit }, callback) {
     let i = 0;
     symbols.forEach(sym => {
         const ticksArr = [];
-        binance.futuresCandles(sym, interval, { limit }).then(ticks => {
+        binance.futuresCandles(sym, interval, { limit }).then((ticks) => {
             ticks.forEach((tick, i) => {
                 let [time, open, high, low, close, volume, closeTime, assetVolume, trades, buyBaseVolume, buyAssetVolume, ignored] = tick;
                 ticksArr[i] = {
@@ -36,7 +36,7 @@ function candlesTicks({ symbols, interval, limit }, callback) {
             if (i === symbols.length) {
                 callback(result);
             }
-        }).catch(error => {
+        }).catch((error) => {
             console.log(new Error(error));
         });
     });
@@ -64,7 +64,8 @@ function candlesTicksStream({ symbols, interval, limit }, callback) {
                 low: +low,
                 close: +close,
                 interval,
-                limit
+                limit,
+                isFinal
             };
             if (result[symbol][result[symbol].length - 1].openTime !== openTime) {
                 result[symbol].push(candle);
@@ -87,11 +88,11 @@ const userFutureDataSubscribe = function (key, callback) {
     userFutureDataSubscribers[key] = callback;
     if (!userFutureDataExecuted) {
         userFutureDataExecuted = true;
-        binanceAuth.websockets.userFutureData(null, res => {
+        binanceAuth.websockets.userFutureData(null, (res) => {
             if (userFutureDataSubscribers['positions_update']) {
                 userFutureDataSubscribers['positions_update'](res.updateData.positions);
             }
-        }, res => {
+        }, (res) => {
             if (userFutureDataSubscribers['orders_update']) {
                 userFutureDataSubscribers['orders_update'](res.order);
             }
@@ -99,13 +100,17 @@ const userFutureDataSubscribe = function (key, callback) {
     }
 };
 function ordersUpdateStream(symbol, callback) {
-    if (!orderUpdateSubscribers[symbol]) {
-        orderUpdateSubscribers[symbol] = [];
+    if (symbol && callback) {
+        if (!orderUpdateSubscribers[symbol]) {
+            orderUpdateSubscribers[symbol] = [];
+        }
+        orderUpdateSubscribers[symbol].push(callback);
     }
-    orderUpdateSubscribers[symbol].push(callback);
     if (!userFutureDataSubscribers['orders_update']) {
         userFutureDataSubscribe('orders_update', function (order) {
-            orderUpdateSubscribers[order.symbol].forEach(cb => cb(order));
+            if (orderUpdateSubscribers[order.symbol]) {
+                orderUpdateSubscribers[order.symbol].forEach(cb => cb(order));
+            }
         });
     }
 }
@@ -117,7 +122,7 @@ function positionUpdateStream(symbol, callback) {
     positionUpdateSubscribers[symbol].push(callback);
     if (!userFutureDataSubscribers['positions_update']) {
         userFutureDataSubscribe('positions_update', function (positions) {
-            positions.forEach(pos => {
+            positions.forEach((pos) => {
                 positionUpdateSubscribers[pos.symbol].forEach(cb => cb(pos));
             });
         });
@@ -134,8 +139,8 @@ function priceStream(symbol, callback) {
     priceSubscribers[symbol].push(callback);
     if (!priceStreamWsHasBeenRun) {
         priceStreamWsHasBeenRun = true;
-        binance.futuresMarkPriceStream(res => {
-            res.forEach(item => {
+        binance.futuresMarkPriceStream((res) => {
+            res.forEach((item) => {
                 if (priceSubscribers[item.symbol]) {
                     priceSubscribers[item.symbol].forEach(cb => cb(item));
                 }

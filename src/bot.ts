@@ -1,4 +1,4 @@
-import { candlesTicksStream } from './binanceApi';
+import { candlesTicksStream, ordersUpdateStream } from './binanceApi';
 import { Position } from './position';
 import getSymbols from './symbols';
 import { Signals } from './signals';
@@ -12,8 +12,10 @@ const botPositions: {
 let positions = 0;
 
 export async function Bot(): Promise<void> {
+    ordersUpdateStream();
+
     const interval = '1h';
-    const limit = 3;
+    const limit = 5;
     const usdtAmount = 10;
     const leverage = 2;
 
@@ -23,18 +25,18 @@ export async function Bot(): Promise<void> {
         res.forEach(s => {
             const pKey = s.symbol;
 
-            if (!botPositions[pKey] && positions < 2) {
+            if (!botPositions[pKey] && positions < 1) {
                 positions++;
 
                 let trailingStopTriggerPerc: number;
                 let trailingStopPricePerc: number;
                 let trailingStepPerc: number;
 
-                if (s.signal == 'scalping') {
-                    trailingStopTriggerPerc = .1;
-                    trailingStopPricePerc = 0;
-                    trailingStepPerc = .1;
-                }
+                // if (s.signal == 'scalping') {
+                //     trailingStopTriggerPerc = .4;
+                //     trailingStopPricePerc = .2;
+                //     trailingStepPerc = .1;
+                // }
 
                 botPositions[pKey] = new Position({
                     positionKey: pKey,
@@ -54,14 +56,24 @@ export async function Bot(): Promise<void> {
                     signal: s.signal
                 });
 
-                botPositions[pKey].setEntryOrder()
-                    .then((res) => {
+                if (s.signal == 'scalping') {
+                    botPositions[pKey].setScalpingOrders().then((res) => {
                         console.log(res);
 
                         if (res.error) {
                             positions--;
                         }
                     });
+
+                } else {
+                    botPositions[pKey].setEntryOrder().then((res) => {
+                        console.log(res);
+
+                        if (res.error) {
+                            positions--;
+                        }
+                    });
+                }
 
                 botPositions[pKey].deletePosition(positionKey => {
                     delete botPositions[positionKey];

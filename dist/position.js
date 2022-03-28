@@ -60,6 +60,82 @@ class Position {
         this.watchPosition();
         return { entryOrder: entryOrd, stopLossOrder: stopOrd };
     }
+    // SCALPING Orders
+    async setScalpingOrders() {
+        this.entryClientOrderId = 'luf21_scalp_' + this.symbol;
+        (0, binanceApi_1.ordersUpdateStream)(this.symbol, order => {
+            if (order.clientOrderId == this.entryClientOrderId && order.orderStatus == 'FILLED') {
+                const entryPrice = +order.averagePrice;
+                // take profit
+                const profitSide = this.position === 'long' ? 'SELL' : 'BUY';
+                const profitParams = {
+                    type: 'TAKE_PROFIT_MARKET',
+                    closePosition: true,
+                    workingType: 'MARK_PRICE',
+                    stopPrice: null
+                };
+                if (this.position === 'long') {
+                    profitParams.stopPrice = entryPrice + ((this.expectedProfit + this.fee) * (entryPrice / 100));
+                }
+                else {
+                    profitParams.stopPrice = entryPrice - ((this.expectedProfit + this.fee) * (entryPrice / 100));
+                }
+                profitParams.stopPrice = +profitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
+                binanceAuth.futuresOrder(profitSide, this.symbol, false, false, profitParams).then(ord => {
+                    console.log(ord);
+                });
+                // stop loss
+                const exitSide = this.position === 'long' ? 'SELL' : 'BUY';
+                const exitParams = {
+                    type: 'STOP_MARKET',
+                    closePosition: true,
+                    workingType: 'MARK_PRICE',
+                    stopPrice: null
+                };
+                if (this.position === 'long') {
+                    exitParams.stopPrice = entryPrice - ((this.possibleLoss - this.fee) * (entryPrice / 100));
+                }
+                else {
+                    exitParams.stopPrice = entryPrice + ((this.possibleLoss - this.fee) * (entryPrice / 100));
+                }
+                exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
+                binanceAuth.futuresOrder(exitSide, this.symbol, false, false, exitParams).then(ord => {
+                    console.log(ord);
+                });
+            }
+        });
+        (0, binanceApi_1.positionUpdateStream)(this.symbol, (pos) => {
+            console.log('--position--');
+            console.log(pos);
+            if (pos.positionAmount == '0') {
+                if (this.deletePositionCallback !== undefined) {
+                    this.deletePositionCallback(this.positionKey);
+                }
+            }
+        });
+        // leverage
+        const lvr = await binanceAuth.futuresLeverage(this.symbol, this.leverage);
+        // entry
+        const entrySide = this.position === 'long' ? 'BUY' : 'SELL';
+        this.usdtAmount = .05 * (100 / this.possibleLoss);
+        console.log('Amount');
+        console.log(this.usdtAmount);
+        const quantity = +(this.usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
+        const entryParams = {
+            type: 'MARKET',
+            workingType: 'MARK_PRICE',
+            newClientOrderId: this.entryClientOrderId
+        };
+        if (quantity == 0) {
+            return { error: 'QUANTITY_IS_NULL', positionKey: this.positionKey };
+        }
+        if (this.usdtAmount < 5) {
+            return { error: 'SMALL_AMOUNT', errorMsg: 'Amount: ' + this.usdtAmount, positionKey: this.positionKey };
+        }
+        const entryOrd = await binanceAuth.futuresOrder(entrySide, this.symbol, quantity, false, entryParams);
+        return { entryOrder: entryOrd };
+    }
+    // WATCH POSITION
     watchPosition() {
         (0, binanceApi_1.priceStream)(this.symbol, price => {
             if (!this.stopLossHasBeenMoved) {

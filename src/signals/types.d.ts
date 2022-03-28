@@ -2,10 +2,11 @@ export type SymbolResult = {
     symbol: string;
     position: 'long' | 'short';
     entryPrice: number;
-    stopLoss: number;
     signal: string;
+    stopLoss?: number;
     possibleLoss?: number;
     expectedProfit?: number;
+    preferIndex: number;
 };
 
 export type Result = SymbolResult[];
@@ -15,6 +16,7 @@ export type Candle = {
     open: number;
     close: number;
     low: number;
+    isFinal?: boolean;
 };
 
 export type CdlDir = 'up' | 'down';

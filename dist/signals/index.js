@@ -14,8 +14,9 @@ async function Signals({ fee, limit, data }) {
         const scalping = await (0, scalping_1.Scalping)({ fee, limit, data });
         signals = scalping;
         // const signals: Result = [].concat(aisle, fling);
-        signals.sort((a, b) => b.expectedProfit - a.expectedProfit);
+        // signals.sort((a, b) => b.expectedProfit - a.expectedProfit);
         // signals.sort((a, b) => a.possibleLoss - b.possibleLoss);
+        signals.sort((a, b) => b.preferIndex - a.preferIndex);
     }
     catch (error) {
         console.log(new Error(error));

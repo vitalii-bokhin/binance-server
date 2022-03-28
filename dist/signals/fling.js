@@ -62,7 +62,8 @@ function Fling({ fee, limit, data }) {
                                 expectedProfit: expectedProfit,
                                 possibleLoss: possibleLoss,
                                 stopLoss,
-                                signal: 'fling'
+                                signal: 'fling',
+                                preferIndex: expectedProfit
                             };
                             result.push(keyResult);
                         }
@@ -83,7 +84,8 @@ function Fling({ fee, limit, data }) {
                                 expectedProfit: expectedProfit,
                                 possibleLoss: possibleLoss,
                                 stopLoss,
-                                signal: 'fling'
+                                signal: 'fling',
+                                preferIndex: expectedProfit
                             };
                             result.push(keyResult);
                         }
