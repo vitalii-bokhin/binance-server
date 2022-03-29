@@ -3,10 +3,11 @@ export type SymbolResult = {
     position: 'long' | 'short';
     entryPrice: number;
     signal: string;
+    preferIndex: number;
     stopLoss?: number;
+    takeProfit?: number;
     possibleLoss?: number;
     expectedProfit?: number;
-    preferIndex: number;
 };
 
 export type Result = SymbolResult[];

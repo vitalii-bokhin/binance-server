@@ -14,6 +14,7 @@ export class Position {
     symbol: string;
     entryPrice: number;
     stopLoss: number;
+    takeProfit: number;
     fee: number;
     usdtAmount: number;
     leverage: number;
@@ -38,6 +39,7 @@ export class Position {
         symbol: string;
         entryPrice: number;
         stopLoss: number;
+        takeProfit: number;
         fee: number;
         usdtAmount: number;
         leverage: number;
@@ -59,6 +61,7 @@ export class Position {
         this.possibleLoss = opt.possibleLoss;
         this.entryPrice = opt.entryPrice;
         this.stopLoss = opt.stopLoss;
+        this.takeProfit = opt.takeProfit;
         this.fee = opt.fee;
         this.usdtAmount = opt.usdtAmount;
         this.leverage = opt.leverage;
@@ -188,7 +191,11 @@ export class Position {
         // entry
         const entrySide = this.position === 'long' ? 'BUY' : 'SELL';
 
-        this.usdtAmount = .05 * (100 / this.possibleLoss);
+        if (this.position === 'long') {
+            this.usdtAmount = .05 * (100 / ((this.entryPrice - this.stopLoss) / (this.entryPrice / 100) - this.fee));
+        } else {
+            this.usdtAmount = .05 * (100 / ((this.stopLoss - this.entryPrice) / (this.entryPrice / 100) - this.fee));
+        }
 
         console.log('Amount');
         console.log(this.usdtAmount);

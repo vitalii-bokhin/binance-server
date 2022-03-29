@@ -45,6 +45,7 @@ export async function Bot(): Promise<void> {
                     expectedProfit: s.expectedProfit,
                     possibleLoss: s.possibleLoss,
                     entryPrice: s.entryPrice,
+                    takeProfit: s.takeProfit,
                     stopLoss: s.stopLoss,
                     fee,
                     usdtAmount,

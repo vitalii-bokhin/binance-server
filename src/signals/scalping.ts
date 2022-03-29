@@ -29,7 +29,7 @@ const analyzeCandle = function (cdl: Candle, pos: 'long' | 'short'): 'stopLong' 
             return 'stopShort';
         } else if (pos == 'long' && highTail / (body + lowTail) > .3) {
             return 'stopLong';
-        }else if (pos == 'long' && lowTail / (body + highTail) < .3) {
+        } else if (pos == 'long' && lowTail / (body + highTail) < .3) {
             return 'stopLong';
         }
 
@@ -120,22 +120,23 @@ export function Scalping({ fee, limit, data }: SignalEntry) {
                     avgHigh: 0,
                     avgLow: 0,
                     maxHigh: 0,
-                        minHigh: 99999,
-                        maxLow: 0,
-                        minLow: 99999
+                    minHigh: 99999,
+                    maxLow: 0,
+                    minLow: 99999
                 };
 
-                let sumChangeLongPerc = 0,
-                    sumChangeShortPerc = 0,
-                    sumHigh = 0,
+                const changesLong: number[] = [],
+                    changesShort: number[] = [];
+
+                let sumHigh = 0,
                     sumLow = 0;
 
                 item.forEach((cdl: Candle): void => {
-                    const changeLongPerc = (cdl.high - cdl.low) / (cdl.low / 100);
-                    const changeShortPerc = (cdl.high - cdl.low) / (cdl.high / 100);
-
-                    sumChangeLongPerc += changeLongPerc;
-                    sumChangeShortPerc += changeShortPerc;
+                    if (cdl.close > cdl.open) {
+                        changesLong.push(cdl.high - cdl.low);
+                    } else if (cdl.open > cdl.close) {
+                        changesShort.push(cdl.high - cdl.low);
+                    }
 
                     sumHigh += cdl.high;
                     sumLow += cdl.low;
@@ -157,19 +158,15 @@ export function Scalping({ fee, limit, data }: SignalEntry) {
                     }
                 });
 
-                volatility.avgChangeLong = sumChangeLongPerc / item.length;
-                volatility.avgChangeShort = sumChangeShortPerc / item.length;
+                volatility.avgChangeLong = changesLong.reduce((a, c) => a + c, 0) / changesLong.length;
+                volatility.avgChangeShort = changesShort.reduce((a, c) => a + c, 0) / changesShort.length;
                 volatility.avgHigh = sumHigh / item.length;
                 volatility.avgLow = sumLow / item.length;
 
+                const lastCandleChange = lastCandle.high - lastCandle.low;
+
                 if (lastCandle.close >= lastCandle.open) {
                     // UP CANDLE
-                    if (avg) {
-                        continue;
-                    }
-
-                    const lastCandleChange = (lastCandle.high - lastCandle.low) / (lastCandle.low / 100);
-
                     if (lastCandleChange > volatility.avgChangeLong / 2) {
                         continue;
                     }
@@ -191,17 +188,20 @@ export function Scalping({ fee, limit, data }: SignalEntry) {
                     const lowTail = lastCandle.open - lastCandle.low;
 
                     if (highTail < lowTail && body > highTail) {
-                        // const stopLoss = lastCandle.close - ((volatility.avgChangeShort - lastCandleChange) * (lastCandle.close / 100));
-                        const expectedProfit = volatility.avgChangeLong - lastCandleChange - fee;
-                        // const possibleLoss = (lastCandle.close - stopLoss) / (lastCandle.close / 100) + fee;
-                        const possibleLoss = lastCandleChange + fee;
+                        const stopLoss = lastCandle.low;
+                        const takeProfit = lastCandle.close + (volatility.avgChangeLong - lastCandleChange);
+                        
+                        const possibleLoss = (lastCandle.close - stopLoss) / (lastCandle.close / 100) + fee;
+                        const expectedProfit = (takeProfit - lastCandle.close) / (lastCandle.close / 100) - fee;
 
                         if (expectedProfit > possibleLoss) {
                             const keyResult: SymbolResult = {
                                 symbol: key,
                                 position: 'long',
                                 entryPrice: lastCandle.close,
-                                expectedProfit: lastCandleChange,
+                                stopLoss,
+                                takeProfit,
+                                expectedProfit,
                                 possibleLoss,
                                 signal: 'scalping',
                                 preferIndex: expectedProfit / possibleLoss
@@ -213,12 +213,6 @@ export function Scalping({ fee, limit, data }: SignalEntry) {
 
                 } else {
                     // DOWN CANDLE
-                    if (lastCandle.close > prevCandle.low || lastCandle.close > prePrevCandle.low) {
-                        continue;
-                    }
-
-                    const lastCandleChange = (lastCandle.high - lastCandle.low) / (lastCandle.high / 100);
-
                     if (lastCandleChange > volatility.avgChangeShort / 2) {
                         continue;
                     }
@@ -240,17 +234,20 @@ export function Scalping({ fee, limit, data }: SignalEntry) {
                     const lowTail = lastCandle.close - lastCandle.low;
 
                     if (lowTail < highTail && body > lowTail) {
-                        // const stopLoss = lastCandle.close + ((volatility.avgChangeLong - lastCandleChange) * (lastCandle.close / 100));
-                        const expectedProfit = volatility.avgChangeShort - lastCandleChange - fee;
-                        // const possibleLoss = (stopLoss - lastCandle.close) / (lastCandle.close / 100) + fee;
-                        const possibleLoss = lastCandleChange + fee;
+                        const stopLoss = lastCandle.high;
+                        const takeProfit = lastCandle.close - (volatility.avgChangeShort - lastCandleChange);
+                        
+                        const possibleLoss = (stopLoss - lastCandle.close) / (lastCandle.close / 100) + fee;
+                        const expectedProfit = (lastCandle.close - takeProfit) / (lastCandle.close / 100) - fee;
 
                         if (expectedProfit > possibleLoss) {
                             const keyResult: SymbolResult = {
                                 symbol: key,
-                                position: 'short',
+                                position: 'long',
                                 entryPrice: lastCandle.close,
-                                expectedProfit: lastCandleChange,
+                                stopLoss,
+                                takeProfit,
+                                expectedProfit,
                                 possibleLoss,
                                 signal: 'scalping',
                                 preferIndex: expectedProfit / possibleLoss
@@ -260,7 +257,6 @@ export function Scalping({ fee, limit, data }: SignalEntry) {
                         }
                     }
                 }
-
             }
         }
 
