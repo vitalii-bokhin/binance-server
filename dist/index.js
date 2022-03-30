@@ -4,6 +4,11 @@ require("./client");
 const bot_1 = require("./bot");
 // import getSymbols from './symbols';
 (0, bot_1.Bot)();
+// const item = ['a','b','c','d','e','f','j'];
+// for (let i = item.length - 1; i > item.length - 5; i--) {
+//     const element = item[i];
+//     console.log(element);
+// }
 // priceStream('IMXUSDT', function(res) {
 //     console.log(res);
 // });

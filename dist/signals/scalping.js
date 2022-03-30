@@ -10,13 +10,13 @@ const analyzeCandle = function (cdl, pos) {
         if (body < lowTail && body < highTail) {
             return 'stopBoth';
         }
-        else if (pos == 'long' && highTail / (body + lowTail) > .3) {
+        else if (pos == 'long' && highTail / (body + lowTail) > .35) {
             return 'stopLong';
         }
-        else if (pos == 'short' && lowTail / (body + highTail) > .3) {
+        else if (pos == 'short' && lowTail / (body + highTail) > .35) {
             return 'stopShort';
         }
-        else if (pos == 'short' && highTail / (body + lowTail) < .3) {
+        else if (pos == 'short' && highTail / (body + lowTail) < .35) {
             return 'stopShort';
         }
     }
@@ -28,13 +28,13 @@ const analyzeCandle = function (cdl, pos) {
         if (body < lowTail && body < highTail) {
             return 'stopBoth';
         }
-        else if (pos == 'short' && lowTail / (body + highTail) > .3) {
+        else if (pos == 'short' && lowTail / (body + highTail) > .35) {
             return 'stopShort';
         }
-        else if (pos == 'long' && highTail / (body + lowTail) > .3) {
+        else if (pos == 'long' && highTail / (body + lowTail) > .35) {
             return 'stopLong';
         }
-        else if (pos == 'long' && lowTail / (body + highTail) < .3) {
+        else if (pos == 'long' && lowTail / (body + highTail) < .35) {
             return 'stopLong';
         }
     }
@@ -104,9 +104,12 @@ function Scalping({ fee, limit, data }) {
                 //     preferIndex: changeDelta[key].changePerc
                 // };
                 // result.push(keyResult);
-                const volatility = {
-                    avgChangeLong: 0,
-                    avgChangeShort: 0,
+                const props = {
+                    mAvg: 0,
+                    avgUpCdlSize: 0,
+                    avgDownCdlSize: 0,
+                    avgUpCdlBody: 0,
+                    avgDownCdlBody: 0,
                     avgHigh: 0,
                     avgLow: 0,
                     maxHigh: 0,
@@ -114,104 +117,130 @@ function Scalping({ fee, limit, data }) {
                     maxLow: 0,
                     minLow: 99999
                 };
-                let sumChangeLongPerc = 0, sumChangeShortPerc = 0, sumHigh = 0, sumLow = 0;
+                const upCandlesSizes = [], downCandlesSizes = [], upCandlesBodies = [], downCandlesBodies = [];
+                let sumHigh = 0, sumLow = 0, averageSum = 0;
                 item.forEach((cdl) => {
-                    const changeLongPerc = (cdl.high - cdl.low) / (cdl.low / 100);
-                    const changeShortPerc = (cdl.high - cdl.low) / (cdl.high / 100);
-                    sumChangeLongPerc += changeLongPerc;
-                    sumChangeShortPerc += changeShortPerc;
+                    averageSum += cdl.close;
+                    if (cdl.close > cdl.open) {
+                        upCandlesSizes.push(cdl.high - cdl.low);
+                        upCandlesBodies.push(cdl.close - cdl.open);
+                    }
+                    else if (cdl.open > cdl.close) {
+                        downCandlesSizes.push(cdl.high - cdl.low);
+                        downCandlesBodies.push(cdl.open - cdl.close);
+                    }
                     sumHigh += cdl.high;
                     sumLow += cdl.low;
-                    if (cdl.high > volatility.maxHigh) {
-                        volatility.maxHigh = cdl.high;
+                    if (cdl.high > props.maxHigh) {
+                        props.maxHigh = cdl.high;
                     }
-                    if (cdl.high < volatility.minHigh) {
-                        volatility.minHigh = cdl.high;
+                    if (cdl.high < props.minHigh) {
+                        props.minHigh = cdl.high;
                     }
-                    if (cdl.low > volatility.maxLow) {
-                        volatility.maxLow = cdl.low;
+                    if (cdl.low > props.maxLow) {
+                        props.maxLow = cdl.low;
                     }
-                    if (cdl.low < volatility.minLow) {
-                        volatility.minLow = cdl.low;
+                    if (cdl.low < props.minLow) {
+                        props.minLow = cdl.low;
                     }
                 });
-                volatility.avgChangeLong = sumChangeLongPerc / item.length;
-                volatility.avgChangeShort = sumChangeShortPerc / item.length;
-                volatility.avgHigh = sumHigh / item.length;
-                volatility.avgLow = sumLow / item.length;
-                if (lastCandle.close >= lastCandle.open) {
+                props.mAvg = (averageSum + lastCandle.close) / limit;
+                props.avgUpCdlSize = upCandlesSizes.reduce((a, c) => a + c, 0) / upCandlesSizes.length;
+                props.avgDownCdlSize = downCandlesSizes.reduce((a, c) => a + c, 0) / downCandlesSizes.length;
+                props.avgUpCdlBody = upCandlesBodies.reduce((a, c) => a + c, 0) / upCandlesBodies.length;
+                props.avgDownCdlBody = downCandlesBodies.reduce((a, c) => a + c, 0) / downCandlesBodies.length;
+                props.avgHigh = sumHigh / item.length;
+                props.avgLow = sumLow / item.length;
+                const lastCandleSize = lastCandle.high - lastCandle.low;
+                if (lastCandle.close > lastCandle.open) {
                     // UP CANDLE
-                    if (avg) {
+                    // if (lastCandleSize > props.avgUpCdlBody / 2) {
+                    //     continue;
+                    // }
+                    let continueLoop = false;
+                    for (let i = item.length - 1; i > item.length - 6; i--) {
+                        const prevCdl = item[i];
+                        const prevSignal = analyzeCandle(prevCdl, 'short');
+                        if (prevSignal == 'stopBoth' || prevSignal == 'stopLong') {
+                            continueLoop = true;
+                        }
+                    }
+                    if (continueLoop) {
                         continue;
                     }
-                    const lastCandleChange = (lastCandle.high - lastCandle.low) / (lastCandle.low / 100);
-                    if (lastCandleChange > volatility.avgChangeLong / 2) {
-                        continue;
-                    }
-                    let prevSignal = analyzeCandle(prePrevCandle, 'long');
-                    if (prevSignal == 'stopLong') {
-                        continue;
-                    }
-                    prevSignal = analyzeCandle(prevCandle, 'long');
-                    if (prevSignal == 'stopBoth' || prevSignal == 'stopLong') {
-                        continue;
-                    }
+                    // let prevSignal = analyzeCandle(prePrevCandle, 'long');
+                    // if (prevSignal == 'stopLong') {
+                    //     continue;
+                    // }
+                    // prevSignal = analyzeCandle(prevCandle, 'long');
+                    // if (prevSignal == 'stopBoth' || prevSignal == 'stopLong') {
+                    //     continue;
+                    // }
                     const highTail = lastCandle.high - lastCandle.close;
                     const body = lastCandle.close - lastCandle.open;
                     const lowTail = lastCandle.open - lastCandle.low;
-                    if (highTail < lowTail && body > highTail) {
-                        // const stopLoss = lastCandle.close - ((volatility.avgChangeShort - lastCandleChange) * (lastCandle.close / 100));
-                        const expectedProfit = volatility.avgChangeLong - lastCandleChange - fee;
-                        // const possibleLoss = (lastCandle.close - stopLoss) / (lastCandle.close / 100) + fee;
-                        const possibleLoss = lastCandleChange + fee;
-                        if (expectedProfit > possibleLoss) {
+                    if (lastCandle.low > props.mAvg /* &&
+                    highTail < lowTail &&
+                    body > highTail */) {
+                        const stopLoss = props.mAvg;
+                        // const takeProfit = lastCandle.close + (props.avgUpCdlBody - lastCandleSize);
+                        const possibleLoss = (lastCandle.close - stopLoss) / (lastCandle.close / 100);
+                        // const expectedProfit = (takeProfit - lastCandle.close) / (lastCandle.close / 100) - fee;
+                        if (true) {
                             const keyResult = {
                                 symbol: key,
                                 position: 'long',
                                 entryPrice: lastCandle.close,
-                                expectedProfit: lastCandleChange,
+                                stopLoss,
                                 possibleLoss,
-                                signal: 'scalping',
-                                preferIndex: expectedProfit / possibleLoss
+                                signal: 'scalping'
                             };
                             result.push(keyResult);
                         }
                     }
                 }
-                else {
+                else if (lastCandle.open > lastCandle.close) {
                     // DOWN CANDLE
-                    if (lastCandle.close > prevCandle.low || lastCandle.close > prePrevCandle.low) {
+                    // if (lastCandleSize > props.avgDownCdlBody / 2) {
+                    //     continue;
+                    // }
+                    let continueLoop = false;
+                    for (let i = item.length - 1; i > item.length - 6; i--) {
+                        const prevCdl = item[i];
+                        const prevSignal = analyzeCandle(prevCdl, 'short');
+                        if (prevSignal == 'stopBoth' || prevSignal == 'stopShort') {
+                            continueLoop = true;
+                        }
+                    }
+                    if (continueLoop) {
                         continue;
                     }
-                    const lastCandleChange = (lastCandle.high - lastCandle.low) / (lastCandle.high / 100);
-                    if (lastCandleChange > volatility.avgChangeShort / 2) {
-                        continue;
-                    }
-                    let prevSignal = analyzeCandle(prePrevCandle, 'short');
-                    if (prevSignal == 'stopShort') {
-                        continue;
-                    }
-                    prevSignal = analyzeCandle(prevCandle, 'short');
-                    if (prevSignal == 'stopBoth' || prevSignal == 'stopShort') {
-                        continue;
-                    }
+                    // let prevSignal = analyzeCandle(prePrevCandle, 'short');
+                    // if (prevSignal == 'stopShort') {
+                    //     continue;
+                    // }
+                    // prevSignal = analyzeCandle(prevCandle, 'short');
+                    // if (prevSignal == 'stopBoth' || prevSignal == 'stopShort') {
+                    //     continue;
+                    // }
                     const highTail = lastCandle.high - lastCandle.open;
                     const body = lastCandle.open - lastCandle.close;
                     const lowTail = lastCandle.close - lastCandle.low;
-                    if (lowTail < highTail && body > lowTail) {
-                        // const stopLoss = lastCandle.close + ((volatility.avgChangeLong - lastCandleChange) * (lastCandle.close / 100));
-                        const expectedProfit = volatility.avgChangeShort - lastCandleChange - fee;
-                        // const possibleLoss = (stopLoss - lastCandle.close) / (lastCandle.close / 100) + fee;
-                        const possibleLoss = lastCandleChange + fee;
-                        if (expectedProfit > possibleLoss) {
+                    if (lastCandle.high < props.mAvg /* &&
+                    lowTail < highTail &&
+                    body > lowTail */) {
+                        const stopLoss = props.mAvg;
+                        // const takeProfit = lastCandle.close - (props.avgDownCdlBody - lastCandleSize);
+                        const possibleLoss = (stopLoss - lastCandle.close) / (lastCandle.close / 100);
+                        // const expectedProfit = (lastCandle.close - takeProfit) / (lastCandle.close / 100) - fee;
+                        if (true) {
                             const keyResult = {
                                 symbol: key,
                                 position: 'short',
                                 entryPrice: lastCandle.close,
-                                expectedProfit: lastCandleChange,
+                                stopLoss,
                                 possibleLoss,
-                                signal: 'scalping',
-                                preferIndex: expectedProfit / possibleLoss
+                                signal: 'scalping'
                             };
                             result.push(keyResult);
                         }

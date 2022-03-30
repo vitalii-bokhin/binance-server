@@ -24,6 +24,7 @@ export class Position {
     symbolInfo: {
         quantityPrecision: number;
         pricePrecision: number;
+        minMarketLotSize: number;
     };
     trailingStopTriggerPerc: number;
     trailingStopPricePerc: number;
@@ -46,6 +47,7 @@ export class Position {
         symbolInfo: {
             quantityPrecision: number;
             pricePrecision: number;
+            minMarketLotSize: number;
         };
         trailingStopTriggerPerc: number;
         trailingStopPricePerc: number;
@@ -140,9 +142,9 @@ export class Position {
                 };
 
                 if (this.position === 'long') {
-                    profitParams.stopPrice = entryPrice + ((this.expectedProfit + this.fee) * (entryPrice / 100));
+                    profitParams.stopPrice = entryPrice + ((this.possibleLoss + this.fee) * (entryPrice / 100));
                 } else {
-                    profitParams.stopPrice = entryPrice - ((this.expectedProfit + this.fee) * (entryPrice / 100));
+                    profitParams.stopPrice = entryPrice - ((this.possibleLoss + this.fee) * (entryPrice / 100));
                 }
 
                 profitParams.stopPrice = +profitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
@@ -160,11 +162,14 @@ export class Position {
                     stopPrice: null
                 };
 
-                if (this.position === 'long') {
-                    exitParams.stopPrice = entryPrice - ((this.possibleLoss - this.fee) * (entryPrice / 100));
-                } else {
-                    exitParams.stopPrice = entryPrice + ((this.possibleLoss - this.fee) * (entryPrice / 100));
-                }
+
+                // if (this.position === 'long') {
+                //     exitParams.stopPrice = entryPrice - ((this.possibleLoss - this.fee) * (entryPrice / 100));
+                // } else {
+                //     exitParams.stopPrice = entryPrice + ((this.possibleLoss - this.fee) * (entryPrice / 100));
+                // }
+
+                exitParams.stopPrice = this.stopLoss;
 
                 exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
 
@@ -191,24 +196,41 @@ export class Position {
         // entry
         const entrySide = this.position === 'long' ? 'BUY' : 'SELL';
 
+        // let usdtAmount = 0;
+
+
         if (this.position === 'long') {
-            this.usdtAmount = .05 * (100 / ((this.entryPrice - this.stopLoss) / (this.entryPrice / 100) - this.fee));
+            this.usdtAmount = .05 * (this.entryPrice / (this.entryPrice - this.stopLoss));
+
+            // this.usdtAmount = .05 * ((100 / this.possibleLoss) - this.fee);
         } else {
-            this.usdtAmount = .05 * (100 / ((this.stopLoss - this.entryPrice) / (this.entryPrice / 100) - this.fee));
+            this.usdtAmount = .05 * (this.entryPrice / (this.stopLoss - this.entryPrice));
+
+            // this.usdtAmount = .05 * ((100 / this.possibleLoss) - this.fee);
         }
+
+        this.usdtAmount -= this.fee * (this.usdtAmount / 100);
 
         console.log('Amount');
         console.log(this.usdtAmount);
 
         const quantity = +(this.usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
+
+        console.log('Quantity');
+        console.log(quantity);
+
         const entryParams = {
             type: 'MARKET',
             workingType: 'MARK_PRICE',
             newClientOrderId: this.entryClientOrderId
         };
 
-        if (quantity == 0) {
-            return { error: 'QUANTITY_IS_NULL', positionKey: this.positionKey };
+        if (quantity < this.symbolInfo.minMarketLotSize) {
+            return {
+                error: 'SMALL_LOT_SIZE',
+                errorMsg: 'Min: ' + this.symbolInfo.minMarketLotSize + '; Current: ' + quantity,
+                positionKey: this.positionKey
+            };
         }
 
         if (this.usdtAmount < 5) {
@@ -218,6 +240,7 @@ export class Position {
         const entryOrd = await binanceAuth.futuresOrder(entrySide, this.symbol, quantity, false, entryParams);
 
         return { entryOrder: entryOrd };
+        // return {};
     }
 
     // WATCH POSITION

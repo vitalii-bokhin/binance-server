@@ -8,13 +8,13 @@ const binanceApi_1 = require("./binanceApi");
 const position_1 = require("./position");
 const symbols_1 = __importDefault(require("./symbols"));
 const signals_1 = require("./signals");
-const fee = .1;
+const fee = .08;
 const botPositions = {};
 let positions = 0;
 async function Bot() {
     (0, binanceApi_1.ordersUpdateStream)();
-    const interval = '1h';
-    const limit = 5;
+    const interval = '5m';
+    const limit = 25;
     const usdtAmount = 10;
     const leverage = 2;
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
@@ -38,6 +38,7 @@ async function Bot() {
                     expectedProfit: s.expectedProfit,
                     possibleLoss: s.possibleLoss,
                     entryPrice: s.entryPrice,
+                    takeProfit: s.takeProfit,
                     stopLoss: s.stopLoss,
                     fee,
                     usdtAmount,

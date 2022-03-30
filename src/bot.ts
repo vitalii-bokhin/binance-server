@@ -3,7 +3,7 @@ import { Position } from './position';
 import getSymbols from './symbols';
 import { Signals } from './signals';
 
-const fee: number = .1;
+const fee: number = .08;
 
 const botPositions: {
     [key: string]: Position;
@@ -14,8 +14,8 @@ let positions = 0;
 export async function Bot(): Promise<void> {
     ordersUpdateStream();
 
-    const interval = '1h';
-    const limit = 5;
+    const interval = '5m';
+    const limit = 25;
     const usdtAmount = 10;
     const leverage = 2;
 
