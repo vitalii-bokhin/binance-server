@@ -14,9 +14,9 @@ let positions = 0;
 async function Bot() {
     (0, binanceApi_1.ordersUpdateStream)();
     const interval = '5m';
-    const limit = 25;
+    const limit = 50;
     const usdtAmount = 10;
-    const leverage = 2;
+    const leverage = 3;
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
     const setPosition = res => {
         res.forEach(s => {
@@ -36,13 +36,13 @@ async function Bot() {
                     position: s.position,
                     symbol: s.symbol,
                     expectedProfit: s.expectedProfit,
-                    possibleLoss: s.possibleLoss,
                     entryPrice: s.entryPrice,
                     takeProfit: s.takeProfit,
                     stopLoss: s.stopLoss,
                     fee,
                     usdtAmount,
                     leverage,
+                    symbols,
                     symbolInfo: symbolsObj[s.symbol],
                     trailingStopTriggerPerc,
                     trailingStopPricePerc,
@@ -67,7 +67,7 @@ async function Bot() {
                 }
                 botPositions[pKey].deletePosition(positionKey => {
                     delete botPositions[positionKey];
-                    positions--;
+                    // positions--;
                 });
                 console.log(botPositions);
             }

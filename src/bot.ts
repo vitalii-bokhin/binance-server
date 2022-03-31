@@ -15,9 +15,9 @@ export async function Bot(): Promise<void> {
     ordersUpdateStream();
 
     const interval = '5m';
-    const limit = 25;
+    const limit = 50;
     const usdtAmount = 10;
-    const leverage = 2;
+    const leverage = 3;
 
     const { symbols, symbolsObj } = await getSymbols();
 
@@ -43,13 +43,13 @@ export async function Bot(): Promise<void> {
                     position: s.position,
                     symbol: s.symbol,
                     expectedProfit: s.expectedProfit,
-                    possibleLoss: s.possibleLoss,
                     entryPrice: s.entryPrice,
                     takeProfit: s.takeProfit,
                     stopLoss: s.stopLoss,
                     fee,
                     usdtAmount,
                     leverage,
+                    symbols,
                     symbolInfo: symbolsObj[s.symbol],
                     trailingStopTriggerPerc,
                     trailingStopPricePerc,
@@ -78,7 +78,7 @@ export async function Bot(): Promise<void> {
 
                 botPositions[pKey].deletePosition(positionKey => {
                     delete botPositions[positionKey];
-                    positions--;
+                    // positions--;
                 });
 
                 console.log(botPositions);

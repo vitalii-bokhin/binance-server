@@ -1,29 +1,33 @@
 'use strict';
 
-const Binance = require('node-binance-api'),
-	request = require('request');
+const res = 100 - (100 / (1 + ((((47069 - 46973) + (47243 - 47060)) / 3) / ((47243 - 46973) / 3))));
 
-const bin1 = new Binance().options({
-	APIKEY: 'WY1mPnVjBWnPU58u6FG0gaK7l4lxSf95bhawDTnkPJql5bcMNJWZ3S00RUHfAtkp',
-	APISECRET: 'ttuby0O54qzDA9aDylmBMG6TtIIJ5r0rQOMlmq1OHsVSCsECo31JGyxGDh6SyWRa',
-	useServerTime: true // If you get timestamp errors, synchronize to server time at startup
-});
+console.log(res);
 
-const bin2 = new Binance().options({
-	APIKEY: 'JABNMO3WMhlZV9HiRfiuKaFEMaNkSlrmq98ssyamd6lqnizAD38xoNRNcgFnCvUW',
-	APISECRET: 'bao8Nuz10fBcWCx68wK9PMGS4rq2uaESmHdSUsZJdnrSKv698G1rkZ2m4djvBQ0n',
-	useServerTime: true // If you get timestamp errors, synchronize to server time at startup
-});
+// const Binance = require('node-binance-api'),
+// 	request = require('request');
 
-const bin0 = new Binance();
+// const bin1 = new Binance().options({
+// 	APIKEY: 'WY1mPnVjBWnPU58u6FG0gaK7l4lxSf95bhawDTnkPJql5bcMNJWZ3S00RUHfAtkp',
+// 	APISECRET: 'ttuby0O54qzDA9aDylmBMG6TtIIJ5r0rQOMlmq1OHsVSCsECo31JGyxGDh6SyWRa',
+// 	useServerTime: true // If you get timestamp errors, synchronize to server time at startup
+// });
 
-bin0.exchangeInfo(function(er, response) {
-	console.log(response.rateLimits);
-});
+// const bin2 = new Binance().options({
+// 	APIKEY: 'JABNMO3WMhlZV9HiRfiuKaFEMaNkSlrmq98ssyamd6lqnizAD38xoNRNcgFnCvUW',
+// 	APISECRET: 'bao8Nuz10fBcWCx68wK9PMGS4rq2uaESmHdSUsZJdnrSKv698G1rkZ2m4djvBQ0n',
+// 	useServerTime: true // If you get timestamp errors, synchronize to server time at startup
+// });
 
-bin1.exchangeInfo(function(er, response) {
-	console.log(response.rateLimits);
-});
+// const bin0 = new Binance();
+
+// bin0.exchangeInfo(function(er, response) {
+// 	console.log(response.rateLimits);
+// });
+
+// bin1.exchangeInfo(function(er, response) {
+// 	console.log(response.rateLimits);
+// });
 
 // bin1.balance((error, balances) => {
 // 	// if ( error ) return console.error(error);

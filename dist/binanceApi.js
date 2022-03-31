@@ -15,6 +15,7 @@ const binanceAuth = new node_binance_api_1.default().options({
 });
 const streamApi = 'wss://fstream.binance.com/stream?streams=';
 const streamsSubscribers = {};
+const candlesTicksStreamSubscribers = {};
 function candlesTicks({ symbols, interval, limit }, callback) {
     const result = {};
     let i = 0;
@@ -43,9 +44,16 @@ function candlesTicks({ symbols, interval, limit }, callback) {
 }
 exports.candlesTicks = candlesTicks;
 function candlesTicksStream({ symbols, interval, limit }, callback) {
+    const streams = symbols.map(s => s.toLowerCase() + '@kline_' + interval).join('/');
+    if (!candlesTicksStreamSubscribers[streams]) {
+        candlesTicksStreamSubscribers[streams] = [];
+    }
+    candlesTicksStreamSubscribers[streams].push(callback);
+    if (candlesTicksStreamSubscribers[streams].length > 1) {
+        return;
+    }
     candlesTicks({ symbols, interval, limit }, data => {
         const result = data;
-        const streams = symbols.map(s => s.toLowerCase() + '@kline_' + interval).join('/');
         let ws;
         if (streamsSubscribers[streams] !== undefined) {
             ws = streamsSubscribers[streams];
@@ -71,7 +79,7 @@ function candlesTicksStream({ symbols, interval, limit }, callback) {
                 result[symbol].push(candle);
             }
             result[symbol][result[symbol].length - 1] = candle;
-            callback(result);
+            candlesTicksStreamSubscribers[streams].forEach(cb => cb(result));
             if (isFinal) {
                 result[symbol].shift();
             }

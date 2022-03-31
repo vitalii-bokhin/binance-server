@@ -34,6 +34,10 @@ const streamsSubscribers: {
     [key: string]: WebSocket;
 } = {};
 
+const candlesTicksStreamSubscribers: {
+    [key: string]: ((arg0: any) => void)[];
+} = {};
+
 export function candlesTicks({ symbols, interval, limit }: CandlesTicksEntry, callback: CandlesTicksCallback): void {
     const result = {};
 
@@ -70,10 +74,20 @@ export function candlesTicks({ symbols, interval, limit }: CandlesTicksEntry, ca
 }
 
 export function candlesTicksStream({ symbols, interval, limit }: CandlesTicksEntry, callback: CandlesTicksCallback): void {
+    const streams = symbols.map(s => s.toLowerCase() + '@kline_' + interval).join('/');
+
+    if (!candlesTicksStreamSubscribers[streams]) {
+        candlesTicksStreamSubscribers[streams] = [];
+    }
+
+    candlesTicksStreamSubscribers[streams].push(callback);
+
+    if (candlesTicksStreamSubscribers[streams].length > 1) {
+        return;
+    }
+
     candlesTicks({ symbols, interval, limit }, data => {
         const result = data;
-        const streams = symbols.map(s => s.toLowerCase() + '@kline_' + interval).join('/');
-
         let ws: WebSocket;
 
         if (streamsSubscribers[streams] !== undefined) {
@@ -104,7 +118,7 @@ export function candlesTicksStream({ symbols, interval, limit }: CandlesTicksEnt
 
             result[symbol][result[symbol].length - 1] = candle;
 
-            callback(result);
+            candlesTicksStreamSubscribers[streams].forEach(cb => cb(result));
 
             if (isFinal) {
                 result[symbol].shift();

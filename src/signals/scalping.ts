@@ -1,3 +1,4 @@
+import { RSI } from '../indicators';
 import { Candle, CdlDir, SymbolResult, SignalEntry, Result } from './types';
 
 const analyzeCandle = function (cdl: Candle, pos: 'long' | 'short'): 'stopLong' | 'stopShort' | 'stopBoth' {
@@ -53,15 +54,22 @@ export function Scalping({ fee, limit, data }: SignalEntry) {
             if (Object.prototype.hasOwnProperty.call(data, key)) {
                 const _item = data[key];
 
+                const rsi = RSI({ data: _item, lng: 9 });
+
                 let item = [..._item];
 
                 const lastCandle: Candle = item.pop();
                 const prevCandle: Candle = item[item.length - 1];
                 const prePrevCandle: Candle = item[item.length - 2];
 
+                let itemFstPart = item.slice(item.length - 50 < 0 ? 0 : item.length - 50, item.length - 25);
+                let itemSecPart = item.slice(item.length - 25);
+
                 if (!lastCandle || !prevCandle || !prePrevCandle) {
                     continue;
                 }
+
+
 
                 // if (!changeDelta[key] && !lastCandle.isFinal) {
                 //     changeDelta[key] = {
@@ -115,7 +123,9 @@ export function Scalping({ fee, limit, data }: SignalEntry) {
                 // result.push(keyResult);
 
                 const props = {
-                    mAvg: 0,
+                    fstMAvg: 0,
+                    secMAvg: 0,
+                    volatility: 0,
                     avgUpCdlSize: 0,
                     avgDownCdlSize: 0,
                     avgUpCdlBody: 0,
@@ -128,6 +138,19 @@ export function Scalping({ fee, limit, data }: SignalEntry) {
                     minLow: 99999
                 };
 
+                const fstMAvg: any = itemFstPart.reduce((pr, cur): any => {
+                    return { close: pr.close + cur.close };
+                });
+
+                props.fstMAvg = fstMAvg.close / itemFstPart.length;
+
+                const secMAvg: any = itemSecPart.reduce((pr, cur): any => {
+                    return { close: pr.close + cur.close };
+                });
+
+                props.secMAvg = (secMAvg.close + lastCandle.close) / (itemSecPart.length + 1);
+
+
                 const upCandlesSizes: number[] = [],
                     downCandlesSizes: number[] = [],
                     upCandlesBodies: number[] = [],
@@ -135,10 +158,10 @@ export function Scalping({ fee, limit, data }: SignalEntry) {
 
                 let sumHigh = 0,
                     sumLow = 0,
-                    averageSum = 0;
+                    volatilitySum = 0;
 
-                item.forEach((cdl: Candle): void => {
-                    averageSum += cdl.close;
+                itemSecPart.forEach((cdl: Candle): void => {
+                    volatilitySum += cdl.high - cdl.low;
 
                     if (cdl.close > cdl.open) {
                         upCandlesSizes.push(cdl.high - cdl.low);
@@ -168,36 +191,41 @@ export function Scalping({ fee, limit, data }: SignalEntry) {
                     }
                 });
 
-                props.mAvg = (averageSum + lastCandle.close) / limit;
+                props.volatility = volatilitySum / itemSecPart.length;
                 props.avgUpCdlSize = upCandlesSizes.reduce((a, c) => a + c, 0) / upCandlesSizes.length;
                 props.avgDownCdlSize = downCandlesSizes.reduce((a, c) => a + c, 0) / downCandlesSizes.length;
                 props.avgUpCdlBody = upCandlesBodies.reduce((a, c) => a + c, 0) / upCandlesBodies.length;
                 props.avgDownCdlBody = downCandlesBodies.reduce((a, c) => a + c, 0) / downCandlesBodies.length;
-                props.avgHigh = sumHigh / item.length;
-                props.avgLow = sumLow / item.length;
+                props.avgHigh = sumHigh / itemSecPart.length;
+                props.avgLow = sumLow / itemSecPart.length;
 
                 const lastCandleSize = lastCandle.high - lastCandle.low;
 
                 if (lastCandle.close > lastCandle.open) {
                     // UP CANDLE
+
+                    if (props.secMAvg < props.fstMAvg) {
+                        continue;
+                    }
+
                     // if (lastCandleSize > props.avgUpCdlBody / 2) {
                     //     continue;
                     // }
 
-                    let continueLoop = false;
+                    // let continueLoop = false;
 
-                    for (let i = item.length - 1; i > item.length - 6; i--) {
-                        const prevCdl = item[i];
-                        const prevSignal = analyzeCandle(prevCdl, 'short');
+                    // for (let i = itemSecPart.length - 1; i > itemSecPart.length - 6; i--) {
+                    //     const prevCdl = item[i];
+                    //     const prevSignal = analyzeCandle(prevCdl, 'short');
 
-                        if (prevSignal == 'stopBoth' || prevSignal == 'stopLong') {
-                            continueLoop = true;
-                        }
-                    }
+                    //     if (prevSignal == 'stopBoth' || prevSignal == 'stopLong') {
+                    //         continueLoop = true;
+                    //     }
+                    // }
 
-                    if (continueLoop) {
-                        continue;
-                    }
+                    // if (continueLoop) {
+                    //     continue;
+                    // }
 
                     // let prevSignal = analyzeCandle(prePrevCandle, 'long');
 
@@ -205,23 +233,27 @@ export function Scalping({ fee, limit, data }: SignalEntry) {
                     //     continue;
                     // }
 
-                    // prevSignal = analyzeCandle(prevCandle, 'long');
+                    const prevSignal = analyzeCandle(prevCandle, 'long');
 
-                    // if (prevSignal == 'stopBoth' || prevSignal == 'stopLong') {
-                    //     continue;
-                    // }
+                    if (prevSignal == 'stopBoth' || prevSignal == 'stopLong') {
+                        continue;
+                    }
 
                     const highTail = lastCandle.high - lastCandle.close;
                     const body = lastCandle.close - lastCandle.open;
                     const lowTail = lastCandle.open - lastCandle.low;
 
                     if (
-                        lastCandle.low > props.mAvg /* &&
-                        highTail < lowTail &&
-                        body > highTail */
+                        lastCandle.open > props.secMAvg &&
+                        rsi > 50 && rsi < 60 &&
+                        highTail < lowTail && body > highTail
                     ) {
-                        const stopLoss = props.mAvg;
+                        let stopLoss = props.secMAvg;
                         // const takeProfit = lastCandle.close + (props.avgUpCdlBody - lastCandleSize);
+
+                        if (lastCandle.close - props.volatility < stopLoss) {
+                            stopLoss = lastCandle.close - props.volatility;
+                        }
 
                         const possibleLoss = (lastCandle.close - stopLoss) / (lastCandle.close / 100);
                         // const expectedProfit = (takeProfit - lastCandle.close) / (lastCandle.close / 100) - fee;
@@ -242,24 +274,29 @@ export function Scalping({ fee, limit, data }: SignalEntry) {
 
                 } else if (lastCandle.open > lastCandle.close) {
                     // DOWN CANDLE
+
+                    if (props.secMAvg > props.fstMAvg) {
+                        continue;
+                    }
+
                     // if (lastCandleSize > props.avgDownCdlBody / 2) {
                     //     continue;
                     // }
 
-                    let continueLoop = false;
+                    // let continueLoop = false;
 
-                    for (let i = item.length - 1; i > item.length - 6; i--) {
-                        const prevCdl = item[i];
-                        const prevSignal = analyzeCandle(prevCdl, 'short');
+                    // for (let i = itemSecPart.length - 1; i > itemSecPart.length - 6; i--) {
+                    //     const prevCdl = item[i];
+                    //     const prevSignal = analyzeCandle(prevCdl, 'short');
 
-                        if (prevSignal == 'stopBoth' || prevSignal == 'stopShort') {
-                            continueLoop = true;
-                        }
-                    }
+                    //     if (prevSignal == 'stopBoth' || prevSignal == 'stopShort') {
+                    //         continueLoop = true;
+                    //     }
+                    // }
 
-                    if (continueLoop) {
-                        continue;
-                    }
+                    // if (continueLoop) {
+                    //     continue;
+                    // }
 
                     // let prevSignal = analyzeCandle(prePrevCandle, 'short');
 
@@ -267,23 +304,27 @@ export function Scalping({ fee, limit, data }: SignalEntry) {
                     //     continue;
                     // }
 
-                    // prevSignal = analyzeCandle(prevCandle, 'short');
+                    const prevSignal = analyzeCandle(prevCandle, 'short');
 
-                    // if (prevSignal == 'stopBoth' || prevSignal == 'stopShort') {
-                    //     continue;
-                    // }
+                    if (prevSignal == 'stopBoth' || prevSignal == 'stopShort') {
+                        continue;
+                    }
 
                     const highTail = lastCandle.high - lastCandle.open;
                     const body = lastCandle.open - lastCandle.close;
                     const lowTail = lastCandle.close - lastCandle.low;
 
                     if (
-                        lastCandle.high < props.mAvg /* &&
-                        lowTail < highTail &&
-                        body > lowTail */
+                        lastCandle.open < props.secMAvg &&
+                        rsi < 50 && rsi > 40 &&
+                        lowTail < highTail && body > lowTail
                     ) {
-                        const stopLoss = props.mAvg;
+                        let stopLoss = props.secMAvg;
                         // const takeProfit = lastCandle.close - (props.avgDownCdlBody - lastCandleSize);
+
+                        if (lastCandle.close + props.volatility > stopLoss) {
+                            stopLoss = lastCandle.close + props.volatility;
+                        }
 
                         const possibleLoss = (stopLoss - lastCandle.close) / (lastCandle.close / 100);
                         // const expectedProfit = (lastCandle.close - takeProfit) / (lastCandle.close / 100) - fee;

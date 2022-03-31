@@ -17,6 +17,7 @@
     "lodash-express": "^0.1.0",
     "multer": "^1.4.2",
     "node-binance-api": "^0.13.1",
+    "technicalindicators": "^3.1.0",
     "ws": "^7.2.1"
   },
   "devDependencies": {
