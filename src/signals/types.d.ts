@@ -3,8 +3,8 @@ export type SymbolResult = {
     position: 'long' | 'short';
     entryPrice: number;
     signal: string;
+    percentLoss?: number;
     preferIndex?: number;
-    stopLoss?: number;
     takeProfit?: number;
     possibleLoss?: number;
     expectedProfit?: number;
@@ -24,6 +24,7 @@ export type CdlDir = 'up' | 'down';
 
 export type SignalEntry = {
     fee: number;
-    limit: number;
     data: { [key: string]: Candle[] };
+    rsiPeriod?: number;
+    limit?: number;
 };

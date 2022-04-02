@@ -16,7 +16,6 @@ export class Position {
     entryPrice: number;
     realEntryPrice: number;
     quantity: number;
-    stopLoss: number;
     takeProfit: number;
     fee: number;
     usdtAmount: number;
@@ -36,7 +35,10 @@ export class Position {
     trailingStepPerc: number;
     signal?: string;
     expectedProfit?: number;
-    possibleLoss: number;
+    interval: string;
+    limit: number;
+    rsiPeriod: number;
+    percentLoss: number;
     deletePositionCallback: (positionKey: string) => void;
 
     constructor(opt: {
@@ -44,10 +46,8 @@ export class Position {
         position: 'long' | 'short';
         symbol: string;
         entryPrice: number;
-        stopLoss: number;
         takeProfit: number;
         fee: number;
-        usdtAmount: number;
         leverage: number;
         symbols: string[];
         symbolInfo: {
@@ -60,16 +60,18 @@ export class Position {
         trailingStepPerc: number;
         signal?: string;
         expectedProfit?: number;
+        interval: string;
+        limit: number;
+        rsiPeriod: number;
+        percentLoss: number;
     }) {
         this.positionKey = opt.positionKey;
         this.position = opt.position;
         this.symbol = opt.symbol;
         this.expectedProfit = opt.expectedProfit;
         this.entryPrice = opt.entryPrice;
-        this.stopLoss = opt.stopLoss;
         this.takeProfit = opt.takeProfit;
         this.fee = opt.fee;
-        this.usdtAmount = opt.usdtAmount;
         this.leverage = opt.leverage;
         this.symbols = opt.symbols;
         this.symbolInfo = opt.symbolInfo;
@@ -77,6 +79,10 @@ export class Position {
         this.trailingStopPricePerc = opt.trailingStopPricePerc; // first trailing move
         this.trailingStepPerc = opt.trailingStepPerc;
         this.signal = opt.signal;
+        this.interval = opt.interval;
+        this.limit = opt.limit;
+        this.rsiPeriod = opt.rsiPeriod;
+        this.percentLoss = opt.percentLoss;
     }
 
     async setEntryOrder(): Promise<{
@@ -108,7 +114,7 @@ export class Position {
         const exitParams = {
             type: 'STOP_MARKET',
             closePosition: true,
-            stopPrice: +this.stopLoss.toFixed(this.symbolInfo.pricePrecision)
+            // stopPrice: +this.stopLoss.toFixed(this.symbolInfo.pricePrecision)
         };
 
         const stopOrd = await binanceAuth.futuresOrder(exitSide, this.symbol, false, false, exitParams);
@@ -145,9 +151,9 @@ export class Position {
                 };
 
                 if (this.position === 'long') {
-                    profitParams.stopPrice = entryPrice + ((this.possibleLoss + this.fee) * (entryPrice / 100));
+                    profitParams.stopPrice = entryPrice + ((this.percentLoss + this.fee) * (entryPrice / 100));
                 } else {
-                    profitParams.stopPrice = entryPrice - ((this.possibleLoss + this.fee) * (entryPrice / 100));
+                    profitParams.stopPrice = entryPrice - ((this.percentLoss + this.fee) * (entryPrice / 100));
                 }
 
                 profitParams.stopPrice = +profitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
@@ -165,13 +171,11 @@ export class Position {
                 };
 
 
-                // if (this.position === 'long') {
-                //     exitParams.stopPrice = entryPrice - ((this.possibleLoss - this.fee) * (entryPrice / 100));
-                // } else {
-                //     exitParams.stopPrice = entryPrice + ((this.possibleLoss - this.fee) * (entryPrice / 100));
-                // }
-
-                exitParams.stopPrice = this.stopLoss;
+                if (this.position === 'long') {
+                    exitParams.stopPrice = entryPrice - ((this.percentLoss - this.fee) * (entryPrice / 100));
+                } else {
+                    exitParams.stopPrice = entryPrice + ((this.percentLoss - this.fee) * (entryPrice / 100));
+                }
 
                 exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
 
@@ -190,21 +194,18 @@ export class Position {
         // entry
         const entrySide = this.position === 'long' ? 'BUY' : 'SELL';
 
-        // let usdtAmount = 0;
+        // if (this.position === 'long') {
+        //     this.possibleLoss = (this.entryPrice - ) / (this.entryPrice / 100);
+        // } else {
+        //     this.possibleLoss = ( - this.entryPrice) / (this.entryPrice / 100);
+        // }
 
-
-        if (this.position === 'long') {
-            this.possibleLoss = (this.entryPrice - this.stopLoss) / (this.entryPrice / 100);
-            this.usdtAmount = .05 * ((100 / this.possibleLoss) - this.fee);
-        } else {
-            this.possibleLoss = (this.stopLoss - this.entryPrice) / (this.entryPrice / 100);
-            this.usdtAmount = .05 * ((100 / this.possibleLoss) - this.fee);
-        }
+        let usdtAmount = .1 * ((100 / this.percentLoss) - this.fee);
 
         console.log('Amount');
-        console.log(this.usdtAmount);
+        console.log(usdtAmount);
 
-        const quantity = +(this.usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
+        const quantity = +(usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
 
         console.log('Quantity');
         console.log(quantity);
@@ -222,9 +223,9 @@ export class Position {
             };
         }
 
-        if (this.usdtAmount < 5) {
-            return { error: 'SMALL_AMOUNT', errorMsg: 'Amount: ' + this.usdtAmount, positionKey: this.positionKey };
-        }
+        // if (usdtAmount < 5) {
+        //     return { error: 'SMALL_AMOUNT', errorMsg: 'Amount: ' + usdtAmount, positionKey: this.positionKey };
+        // }
 
         const entryOrd = await binanceAuth.futuresOrder(entrySide, this.symbol, quantity, false, entryParams);
 
@@ -236,20 +237,20 @@ export class Position {
 
     // WATCH POSITION
     watchPosition(): void {
-        candlesTicksStream({ symbols: this.symbols, interval: '5m', limit: 25 }, data => {
+        candlesTicksStream({ symbols: this.symbols, interval: this.interval, limit: this.limit }, data => {
             const candlesData = data[this.symbol],
-                rsi = RSI({ data: candlesData, lng: 9 }),
+                rsi = RSI({ data: candlesData, lng: this.rsiPeriod }),
                 lastPrice = candlesData[candlesData.length - 1].close;
 
-            if (this.position == 'long' && rsi >= 70) {
+            if (this.position == 'long' && rsi.last >= 70) {
                 this.closePositionMarket(lastPrice);
-            } else if (this.position == 'short' && rsi <= 30) {
+            } else if (this.position == 'short' && rsi.last <= 30) {
                 this.closePositionMarket(lastPrice);
             }
         });
 
         // priceStream(this.symbol, price => {
-        //     if (!this.stopLossHasBeenMoved) {
+        //     if (!HasBeenMoved) {
         //         let changePerc: number;
 
         //         if (this.position === 'long') {
@@ -259,7 +260,7 @@ export class Position {
         //         }
 
         //         if (changePerc >= this.trailingStopTriggerPerc) {
-        //             this.stopLossHasBeenMoved = true;
+        //             HasBeenMoved = true;
 
         //             this.moveStopLoss();
         //         }

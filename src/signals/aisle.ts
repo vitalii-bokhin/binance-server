@@ -138,7 +138,7 @@ export function Aisle({ fee, limit, data }: SignalEntry) {
                                 entryPrice: lastCandle.close,
                                 expectedProfit: expectedProfit,
                                 possibleLoss: possibleLoss,
-                                stopLoss,
+                                // stopLoss,
                                 signal: 'aisle',
                                 preferIndex: expectedProfit
                             };
@@ -168,7 +168,7 @@ export function Aisle({ fee, limit, data }: SignalEntry) {
                                 entryPrice: lastCandle.close,
                                 expectedProfit: expectedProfit,
                                 possibleLoss: possibleLoss,
-                                stopLoss,
+                                // stopLoss,
                                 signal: 'aisle',
                                 preferIndex: expectedProfit
                             };

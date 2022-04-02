@@ -61,7 +61,7 @@ function Fling({ fee, limit, data }) {
                                 entryPrice: lastCandle.close,
                                 expectedProfit: expectedProfit,
                                 possibleLoss: possibleLoss,
-                                stopLoss,
+                                // stopLoss,
                                 signal: 'fling',
                                 preferIndex: expectedProfit
                             };
@@ -83,7 +83,7 @@ function Fling({ fee, limit, data }) {
                                 entryPrice: lastCandle.close,
                                 expectedProfit: expectedProfit,
                                 possibleLoss: possibleLoss,
-                                stopLoss,
+                                // stopLoss,
                                 signal: 'fling',
                                 preferIndex: expectedProfit
                             };

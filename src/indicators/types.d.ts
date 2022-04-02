@@ -1,4 +1,7 @@
-export type Result = number;
+export type Result = {
+    stack: number[];
+    last: number;
+};
 
 export type Candle = {
     high: number;

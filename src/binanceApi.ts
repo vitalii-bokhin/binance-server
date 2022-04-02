@@ -263,3 +263,50 @@ export function priceStream(symbol: string, callback: (arg0: {
         });
     }
 }
+
+// ticker stream
+const tickerStreamSubscribers: ((arg0: any) => void)[] = [];
+
+let tickerStreamHasBeenRun = false;
+
+const tickerStreamCache: {
+    [key: string]: any;
+} = {};
+
+export function tickerStream(callback?: (arg0: any) => void): void {
+    if (callback) {
+        tickerStreamSubscribers.push(callback);
+    }
+
+    if (!tickerStreamHasBeenRun) {
+        tickerStreamHasBeenRun = true;
+
+        binance.futuresTickerStream(res => {
+            tickerStreamSubscribers.forEach(cb => cb(res));
+            res.forEach(obj => tickerStreamCache[obj.symbol] = obj);
+        });
+    }
+}
+
+export function getTickerStreamCache(symbol: string): {
+    eventType: string;
+    eventTime: number;
+    symbol: string;
+    priceChange: string;
+    percentChange: string;
+    averagePrice: string;
+    close: string;
+    closeQty: string;
+    open: string;
+    high: string;
+    low: string;
+    volume: string;
+    quoteVolume: string;
+    openTime: number;
+    closeTime: number;
+    firstTradeId: number;
+    lastTradeId: number;
+    numTrades: number;
+} {
+    return tickerStreamCache[symbol];
+}

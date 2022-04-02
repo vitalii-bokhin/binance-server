@@ -7,8 +7,11 @@ function RSI({ data, lng }) {
         values: candles.map(cdl => cdl.close),
         period: lng
     };
-    const rsi = new technicalindicators_1.RSI(inputRSI).nextValue(lastCandle.close);
-    return rsi;
+    const rsi = new technicalindicators_1.RSI(inputRSI);
+    return {
+        stack: rsi.getResult(),
+        last: rsi.nextValue(lastCandle.close)
+    };
 }
 exports.RSI = RSI;
 //# sourceMappingURL=rsi.js.map

@@ -105,7 +105,7 @@ function Aisle({ fee, limit, data }) {
                                 entryPrice: lastCandle.close,
                                 expectedProfit: expectedProfit,
                                 possibleLoss: possibleLoss,
-                                stopLoss,
+                                // stopLoss,
                                 signal: 'aisle',
                                 preferIndex: expectedProfit
                             };
@@ -127,7 +127,7 @@ function Aisle({ fee, limit, data }) {
                                 entryPrice: lastCandle.close,
                                 expectedProfit: expectedProfit,
                                 possibleLoss: possibleLoss,
-                                stopLoss,
+                                // stopLoss,
                                 signal: 'aisle',
                                 preferIndex: expectedProfit
                             };

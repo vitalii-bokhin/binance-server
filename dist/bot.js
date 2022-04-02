@@ -13,11 +13,13 @@ const botPositions = {};
 let positions = 0;
 async function Bot() {
     (0, binanceApi_1.ordersUpdateStream)();
+    (0, binanceApi_1.tickerStream)();
     const interval = '5m';
     const limit = 50;
-    const usdtAmount = 10;
     const leverage = 3;
+    const rsiPeriod = 4;
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
+    const _symbols = ['ALPHAUSDT']; //symbols; //['PEOPLEUSDT'];
     const setPosition = res => {
         res.forEach(s => {
             const pKey = s.symbol;
@@ -38,16 +40,18 @@ async function Bot() {
                     expectedProfit: s.expectedProfit,
                     entryPrice: s.entryPrice,
                     takeProfit: s.takeProfit,
-                    stopLoss: s.stopLoss,
+                    percentLoss: s.percentLoss,
                     fee,
-                    usdtAmount,
                     leverage,
-                    symbols,
+                    symbols: _symbols,
                     symbolInfo: symbolsObj[s.symbol],
                     trailingStopTriggerPerc,
                     trailingStopPricePerc,
                     trailingStepPerc,
-                    signal: s.signal
+                    signal: s.signal,
+                    interval,
+                    limit,
+                    rsiPeriod
                 });
                 if (s.signal == 'scalping') {
                     botPositions[pKey].setScalpingOrders().then((res) => {
@@ -73,8 +77,8 @@ async function Bot() {
             }
         });
     };
-    (0, binanceApi_1.candlesTicksStream)({ symbols, interval, limit }, data => {
-        (0, signals_1.Signals)({ fee, limit, data }).then(res => {
+    (0, binanceApi_1.candlesTicksStream)({ symbols: _symbols, interval, limit }, data => {
+        (0, signals_1.Signals)({ fee, limit, data, rsiPeriod }).then(res => {
             setPosition(res);
         });
     });

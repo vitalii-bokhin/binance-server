@@ -9,7 +9,10 @@ export function RSI({ data, lng }: IndicatorEntry): Result {
             period: lng
         }
 
-    const rsi = new tiRsi(inputRSI).nextValue(lastCandle.close);
+    const rsi = new tiRsi(inputRSI);
 
-    return rsi;
+    return {
+        stack: rsi.getResult(),
+        last: rsi.nextValue(lastCandle.close)
+    };
 }

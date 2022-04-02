@@ -1,4 +1,4 @@
-import { candlesTicksStream, ordersUpdateStream } from './binanceApi';
+import { candlesTicksStream, ordersUpdateStream, tickerStream } from './binanceApi';
 import { Position } from './position';
 import getSymbols from './symbols';
 import { Signals } from './signals';
@@ -13,13 +13,16 @@ let positions = 0;
 
 export async function Bot(): Promise<void> {
     ordersUpdateStream();
+    tickerStream();
 
     const interval = '5m';
     const limit = 50;
-    const usdtAmount = 10;
     const leverage = 3;
+    const rsiPeriod = 4;
 
     const { symbols, symbolsObj } = await getSymbols();
+
+    const _symbols = ['ALPHAUSDT']; //symbols; //['PEOPLEUSDT'];
 
     const setPosition = res => {
         res.forEach(s => {
@@ -45,16 +48,18 @@ export async function Bot(): Promise<void> {
                     expectedProfit: s.expectedProfit,
                     entryPrice: s.entryPrice,
                     takeProfit: s.takeProfit,
-                    stopLoss: s.stopLoss,
+                    percentLoss: s.percentLoss,
                     fee,
-                    usdtAmount,
                     leverage,
-                    symbols,
+                    symbols: _symbols,
                     symbolInfo: symbolsObj[s.symbol],
                     trailingStopTriggerPerc,
                     trailingStopPricePerc,
                     trailingStepPerc,
-                    signal: s.signal
+                    signal: s.signal,
+                    interval,
+                    limit,
+                    rsiPeriod
                 });
 
                 if (s.signal == 'scalping') {
@@ -86,8 +91,8 @@ export async function Bot(): Promise<void> {
         });
     }
 
-    candlesTicksStream({ symbols, interval, limit }, data => {
-        Signals({ fee, limit, data }).then(res => {
+    candlesTicksStream({ symbols: _symbols, interval, limit }, data => {
+        Signals({ fee, limit, data, rsiPeriod }).then(res => {
             setPosition(res);
         });
     });

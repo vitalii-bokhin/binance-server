@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.priceStream = exports.positionUpdateStream = exports.ordersUpdateStream = exports.candlesTicksStream = exports.candlesTicks = void 0;
+exports.getTickerStreamCache = exports.tickerStream = exports.priceStream = exports.positionUpdateStream = exports.ordersUpdateStream = exports.candlesTicksStream = exports.candlesTicks = void 0;
 const ws_1 = __importDefault(require("ws"));
 const node_binance_api_1 = __importDefault(require("node-binance-api"));
 const config_1 = require("./config");
@@ -157,4 +157,25 @@ function priceStream(symbol, callback) {
     }
 }
 exports.priceStream = priceStream;
+// ticker stream
+const tickerStreamSubscribers = [];
+let tickerStreamHasBeenRun = false;
+const tickerStreamCache = {};
+function tickerStream(callback) {
+    if (callback) {
+        tickerStreamSubscribers.push(callback);
+    }
+    if (!tickerStreamHasBeenRun) {
+        tickerStreamHasBeenRun = true;
+        binance.futuresTickerStream(res => {
+            tickerStreamSubscribers.forEach(cb => cb(res));
+            res.forEach(obj => tickerStreamCache[obj.symbol] = obj);
+        });
+    }
+}
+exports.tickerStream = tickerStream;
+function getTickerStreamCache(symbol) {
+    return tickerStreamCache[symbol];
+}
+exports.getTickerStreamCache = getTickerStreamCache;
 //# sourceMappingURL=binanceApi.js.map

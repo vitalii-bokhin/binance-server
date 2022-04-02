@@ -11,13 +11,10 @@ const analyzeCandle = function (cdl, pos) {
         if (body < lowTail && body < highTail) {
             return 'stopBoth';
         }
-        else if (pos == 'long' && highTail / (body + lowTail) > .35) {
+        else if (pos == 'long' && highTail / (body + lowTail) > .5) {
             return 'stopLong';
         }
-        else if (pos == 'short' && lowTail / (body + highTail) > .35) {
-            return 'stopShort';
-        }
-        else if (pos == 'short' && highTail / (body + lowTail) < .35) {
+        else if (pos == 'short' && lowTail / (body + highTail) > .5) {
             return 'stopShort';
         }
     }
@@ -29,13 +26,10 @@ const analyzeCandle = function (cdl, pos) {
         if (body < lowTail && body < highTail) {
             return 'stopBoth';
         }
-        else if (pos == 'short' && lowTail / (body + highTail) > .35) {
+        else if (pos == 'short' && lowTail / (body + highTail) > .5) {
             return 'stopShort';
         }
-        else if (pos == 'long' && highTail / (body + lowTail) > .35) {
-            return 'stopLong';
-        }
-        else if (pos == 'long' && lowTail / (body + highTail) < .35) {
+        else if (pos == 'long' && highTail / (body + lowTail) > .5) {
             return 'stopLong';
         }
     }
@@ -48,19 +42,66 @@ const analyzeCandle = function (cdl, pos) {
 //         ticks: number;
 //     }
 // } = {};
-function Scalping({ fee, limit, data }) {
+const checkRsi = function (dir, rsiStack) {
+    if (dir == 'toLong') {
+        let belowLow = false, toLong = false;
+        rsiStack.forEach(n => {
+            if (n <= 30) {
+                belowLow = true;
+                toLong = false;
+            }
+            else if (n > 30 && belowLow) {
+                belowLow = false;
+                toLong = true;
+            }
+        });
+        return toLong;
+    }
+    else if (dir == 'stopToLong') {
+        let stopLong = false;
+        rsiStack.forEach(n => {
+            if (n > 50) {
+                stopLong = true;
+            }
+        });
+        return stopLong;
+    }
+    else if (dir == 'toShort') {
+        let aboveHigh = false, toShort = false;
+        rsiStack.forEach(n => {
+            if (n >= 70) {
+                aboveHigh = true;
+                toShort = false;
+            }
+            else if (n < 70 && aboveHigh) {
+                aboveHigh = false;
+                toShort = true;
+            }
+        });
+        return toShort;
+    }
+    else if (dir == 'stopToShort') {
+        let stopShort = false;
+        rsiStack.forEach(n => {
+            if (n < 50) {
+                stopShort = true;
+            }
+        });
+        return stopShort;
+    }
+};
+function Scalping({ fee, data, rsiPeriod }) {
     return new Promise((resolve, reject) => {
         const result = [];
         for (const key in data) {
             if (Object.prototype.hasOwnProperty.call(data, key)) {
-                const _item = data[key];
-                const rsi = (0, indicators_1.RSI)({ data: _item, lng: 9 });
-                let item = [..._item];
-                const lastCandle = item.pop();
-                const prevCandle = item[item.length - 1];
-                const prePrevCandle = item[item.length - 2];
-                let itemFstPart = item.slice(item.length - 50 < 0 ? 0 : item.length - 50, item.length - 25);
-                let itemSecPart = item.slice(item.length - 25);
+                const _candles = data[key];
+                const rsi = (0, indicators_1.RSI)({ data: _candles, lng: rsiPeriod });
+                const rsiStack = rsi.stack.slice(rsiPeriod * -1);
+                let candles = [..._candles];
+                const lastCandle = candles.pop();
+                const prevCandle = candles[candles.length - 1];
+                const prePrevCandle = candles[candles.length - 2];
                 if (!lastCandle || !prevCandle || !prePrevCandle) {
                     continue;
                 }
@@ -108,10 +149,13 @@ function Scalping({ fee, limit, data }) {
                 //     preferIndex: changeDelta[key].changePerc
                 // };
                 // result.push(keyResult);
+                let lagCandlesStack = candles.slice(-36, -12);
+                let candlesStack = candles.slice(-24);
                 const props = {
-                    fstMAvg: 0,
-                    secMAvg: 0,
+                    lagMAvg: 0,
+                    MAvg: 0,
                     volatility: 0,
+                    relVolatility: 0,
                     avgUpCdlSize: 0,
                     avgDownCdlSize: 0,
                     avgUpCdlBody: 0,
@@ -123,18 +167,20 @@ function Scalping({ fee, limit, data }) {
                     maxLow: 0,
                     minLow: 99999
                 };
-                const fstMAvg = itemFstPart.reduce((pr, cur) => {
+                // console.log(lagCandlesStack.length);
+                // const lagMAvg: any = lagCandlesStack.reduce((pr, cur): any => {
+                //     return { close: pr.close + cur.close };
+                // });
+                // props.lagMAvg = lagMAvg.close / lagCandlesStack.length;
+                const MAvg = candlesStack.reduce((pr, cur) => {
                     return { close: pr.close + cur.close };
                 });
-                props.fstMAvg = fstMAvg.close / itemFstPart.length;
-                const secMAvg = itemSecPart.reduce((pr, cur) => {
-                    return { close: pr.close + cur.close };
-                });
-                props.secMAvg = (secMAvg.close + lastCandle.close) / (itemSecPart.length + 1);
+                props.MAvg = (MAvg.close + lastCandle.close) / (candlesStack.length + 1);
                 const upCandlesSizes = [], downCandlesSizes = [], upCandlesBodies = [], downCandlesBodies = [];
-                let sumHigh = 0, sumLow = 0, volatilitySum = 0;
-                itemSecPart.forEach((cdl) => {
+                let sumHigh = 0, sumLow = 0, volatilitySum = 0, relVolatilitySum = 0;
+                candlesStack.forEach((cdl) => {
                     volatilitySum += cdl.high - cdl.low;
+                    relVolatilitySum += (cdl.high - cdl.low) / (cdl.low / 100);
                     if (cdl.close > cdl.open) {
                         upCandlesSizes.push(cdl.high - cdl.low);
                         upCandlesBodies.push(cdl.close - cdl.open);
@@ -158,120 +204,159 @@ function Scalping({ fee, limit, data }) {
                         props.minLow = cdl.low;
                     }
                 });
-                props.volatility = volatilitySum / itemSecPart.length;
+                props.volatility = volatilitySum / candlesStack.length;
+                props.relVolatility = relVolatilitySum / candlesStack.length;
                 props.avgUpCdlSize = upCandlesSizes.reduce((a, c) => a + c, 0) / upCandlesSizes.length;
                 props.avgDownCdlSize = downCandlesSizes.reduce((a, c) => a + c, 0) / downCandlesSizes.length;
                 props.avgUpCdlBody = upCandlesBodies.reduce((a, c) => a + c, 0) / upCandlesBodies.length;
                 props.avgDownCdlBody = downCandlesBodies.reduce((a, c) => a + c, 0) / downCandlesBodies.length;
-                props.avgHigh = sumHigh / itemSecPart.length;
-                props.avgLow = sumLow / itemSecPart.length;
+                props.avgHigh = sumHigh / candlesStack.length;
+                props.avgLow = sumLow / candlesStack.length;
                 const lastCandleSize = lastCandle.high - lastCandle.low;
-                if (lastCandle.close > lastCandle.open) {
-                    // UP CANDLE
-                    if (props.secMAvg < props.fstMAvg) {
-                        continue;
-                    }
-                    // if (lastCandleSize > props.avgUpCdlBody / 2) {
-                    //     continue;
-                    // }
-                    // let continueLoop = false;
-                    // for (let i = itemSecPart.length - 1; i > itemSecPart.length - 6; i--) {
-                    //     const prevCdl = item[i];
-                    //     const prevSignal = analyzeCandle(prevCdl, 'short');
-                    //     if (prevSignal == 'stopBoth' || prevSignal == 'stopLong') {
-                    //         continueLoop = true;
-                    //     }
-                    // }
-                    // if (continueLoop) {
-                    //     continue;
-                    // }
-                    // let prevSignal = analyzeCandle(prePrevCandle, 'long');
-                    // if (prevSignal == 'stopLong') {
-                    //     continue;
-                    // }
-                    const prevSignal = analyzeCandle(prevCandle, 'long');
-                    if (prevSignal == 'stopBoth' || prevSignal == 'stopLong') {
-                        continue;
-                    }
-                    const highTail = lastCandle.high - lastCandle.close;
-                    const body = lastCandle.close - lastCandle.open;
-                    const lowTail = lastCandle.open - lastCandle.low;
-                    if (lastCandle.open > props.secMAvg &&
-                        rsi > 50 && rsi < 60 &&
-                        highTail < lowTail && body > highTail) {
-                        let stopLoss = props.secMAvg;
-                        // const takeProfit = lastCandle.close + (props.avgUpCdlBody - lastCandleSize);
-                        if (lastCandle.close - props.volatility < stopLoss) {
-                            stopLoss = lastCandle.close - props.volatility;
-                        }
-                        const possibleLoss = (lastCandle.close - stopLoss) / (lastCandle.close / 100);
-                        // const expectedProfit = (takeProfit - lastCandle.close) / (lastCandle.close / 100) - fee;
-                        if (true) {
-                            const keyResult = {
-                                symbol: key,
-                                position: 'long',
-                                entryPrice: lastCandle.close,
-                                stopLoss,
-                                possibleLoss,
-                                signal: 'scalping'
-                            };
-                            result.push(keyResult);
-                        }
-                    }
+                if (rsi.last < 40) {
+                    const keyResult = {
+                        symbol: key,
+                        position: 'long',
+                        entryPrice: lastCandle.close,
+                        percentLoss: (lastCandle.close - (lastCandle.close - props.volatility * 1.5)) / (lastCandle.close / 100),
+                        signal: 'scalping',
+                        preferIndex: props.relVolatility
+                    };
+                    result.push(keyResult);
                 }
-                else if (lastCandle.open > lastCandle.close) {
-                    // DOWN CANDLE
-                    if (props.secMAvg > props.fstMAvg) {
-                        continue;
-                    }
-                    // if (lastCandleSize > props.avgDownCdlBody / 2) {
-                    //     continue;
-                    // }
-                    // let continueLoop = false;
-                    // for (let i = itemSecPart.length - 1; i > itemSecPart.length - 6; i--) {
-                    //     const prevCdl = item[i];
-                    //     const prevSignal = analyzeCandle(prevCdl, 'short');
-                    //     if (prevSignal == 'stopBoth' || prevSignal == 'stopShort') {
-                    //         continueLoop = true;
-                    //     }
-                    // }
-                    // if (continueLoop) {
-                    //     continue;
-                    // }
-                    // let prevSignal = analyzeCandle(prePrevCandle, 'short');
-                    // if (prevSignal == 'stopShort') {
-                    //     continue;
-                    // }
-                    const prevSignal = analyzeCandle(prevCandle, 'short');
-                    if (prevSignal == 'stopBoth' || prevSignal == 'stopShort') {
-                        continue;
-                    }
-                    const highTail = lastCandle.high - lastCandle.open;
-                    const body = lastCandle.open - lastCandle.close;
-                    const lowTail = lastCandle.close - lastCandle.low;
-                    if (lastCandle.open < props.secMAvg &&
-                        rsi < 50 && rsi > 40 &&
-                        lowTail < highTail && body > lowTail) {
-                        let stopLoss = props.secMAvg;
-                        // const takeProfit = lastCandle.close - (props.avgDownCdlBody - lastCandleSize);
-                        if (lastCandle.close + props.volatility > stopLoss) {
-                            stopLoss = lastCandle.close + props.volatility;
-                        }
-                        const possibleLoss = (stopLoss - lastCandle.close) / (lastCandle.close / 100);
-                        // const expectedProfit = (lastCandle.close - takeProfit) / (lastCandle.close / 100) - fee;
-                        if (true) {
-                            const keyResult = {
-                                symbol: key,
-                                position: 'short',
-                                entryPrice: lastCandle.close,
-                                stopLoss,
-                                possibleLoss,
-                                signal: 'scalping'
-                            };
-                            result.push(keyResult);
-                        }
-                    }
+                else if (rsi.last > 60) {
+                    const keyResult = {
+                        symbol: key,
+                        position: 'short',
+                        entryPrice: lastCandle.close,
+                        percentLoss: ((lastCandle.close + props.volatility * 1.5) - lastCandle.close) / (lastCandle.close / 100),
+                        signal: 'scalping',
+                        preferIndex: props.relVolatility
+                    };
+                    result.push(keyResult);
                 }
+                // if (lastCandle.close > lastCandle.open) {
+                //     // UP CANDLE
+                //     // if (props.MAvg < props.lagMAvg) {
+                //     //     continue;
+                //     // }
+                //     // if (lastCandleSize > props.avgUpCdlBody / 2) {
+                //     //     continue;
+                //     // }
+                //     // let continueLoop = false;
+                //     // for (let i = candlesStack.length - 1; i > candlesStack.length - 6; i--) {
+                //     //     const prevCdl = item[i];
+                //     //     const prevSignal = analyzeCandle(prevCdl, 'short');
+                //     //     if (prevSignal == 'stopBoth' || prevSignal == 'stopLong') {
+                //     //         continueLoop = true;
+                //     //     }
+                //     // }
+                //     // if (continueLoop) {
+                //     //     continue;
+                //     // }
+                //     // let prevSignal = analyzeCandle(prePrevCandle, 'long');
+                //     // if (prevSignal == 'stopLong') {
+                //     //     continue;
+                //     // }
+                //     // const prevSignal = analyzeCandle(prevCandle, 'long');
+                //     // if (prevSignal == 'stopBoth' || prevSignal == 'stopLong') {
+                //     //     continue;
+                //     // }
+                //     const highTail = lastCandle.high - lastCandle.close;
+                //     const body = lastCandle.close - lastCandle.open;
+                //     const lowTail = lastCandle.open - lastCandle.low;
+                //     if (highTail < lowTail && body > highTail) {
+                //         let stopLoss: number;
+                //         if (
+                //             rsi.last < 40
+                //             // lastCandle.open > props.MAvg &&
+                //             // rsi.last > 50 && rsi.last < 60 &&
+                //             // !checkRsi('stopToLong', rsiStack)
+                //         ) {
+                //             // stopLoss = props.MAvg;
+                //             // const takeProfit = lastCandle.close + (props.avgUpCdlBody - lastCandleSize);
+                //             // if (lastCandle.close - props.volatility < stopLoss) {
+                //             //     stopLoss = lastCandle.close - props.volatility;
+                //             // }
+                //             stopLoss = lastCandle.close - props.volatility * 2;
+                //         } /* else if (checkRsi('toLong', rsiStack) && rsi.last > 30 && rsi.last < 40) {
+                //             stopLoss = lastCandle.close - props.volatility;
+                //         } */
+                //         const possibleLoss = (lastCandle.close - stopLoss) / (lastCandle.close / 100);
+                //         // const expectedProfit = (takeProfit - lastCandle.close) / (lastCandle.close / 100) - fee;
+                //         if (stopLoss) {
+                //             const keyResult: SymbolResult = {
+                //                 symbol: key,
+                //                 position: 'long',
+                //                 entryPrice: lastCandle.close,
+                //                 percentLoss: possibleLoss,
+                //                 signal: 'scalping',
+                //                 preferIndex: props.relVolatility/*  + (getTickerStreamCache(key) ? Number(getTickerStreamCache(key).percentChange) : 0) */
+                //             };
+                //             result.push(keyResult);
+                //         }
+                //     }
+                // } else if (lastCandle.open > lastCandle.close) {
+                //     // DOWN CANDLE
+                //     // if (props.MAvg > props.lagMAvg) {
+                //     //     continue;
+                //     // }
+                //     // if (lastCandleSize > props.avgDownCdlBody / 2) {
+                //     //     continue;
+                //     // }
+                //     // let continueLoop = false;
+                //     // for (let i = candlesStack.length - 1; i > candlesStack.length - 6; i--) {
+                //     //     const prevCdl = item[i];
+                //     //     const prevSignal = analyzeCandle(prevCdl, 'short');
+                //     //     if (prevSignal == 'stopBoth' || prevSignal == 'stopShort') {
+                //     //         continueLoop = true;
+                //     //     }
+                //     // }
+                //     // if (continueLoop) {
+                //     //     continue;
+                //     // }
+                //     // let prevSignal = analyzeCandle(prePrevCandle, 'short');
+                //     // if (prevSignal == 'stopShort') {
+                //     //     continue;
+                //     // }
+                //     // const prevSignal = analyzeCandle(prevCandle, 'short');
+                //     // if (prevSignal == 'stopBoth' || prevSignal == 'stopShort') {
+                //     //     continue;
+                //     // }
+                //     const highTail = lastCandle.high - lastCandle.open;
+                //     const body = lastCandle.open - lastCandle.close;
+                //     const lowTail = lastCandle.close - lastCandle.low;
+                //     if (lowTail < highTail && body > lowTail) {
+                //         let stopLoss: number;
+                //         if (
+                //             rsi.last > 60
+                //             /*lastCandle.open < props.MAvg &&
+                //             rsi.last < 50 && rsi.last > 40  &&
+                //             !checkRsi('stopToShort', rsiStack) */
+                //         ) {
+                //             // stopLoss = props.MAvg;
+                //             // const takeProfit = lastCandle.close - (props.avgDownCdlBody - lastCandleSize);
+                //             // if (lastCandle.close + props.volatility > stopLoss) {
+                //             //     stopLoss = lastCandle.close + props.volatility;
+                //             // }
+                //             stopLoss = lastCandle.close + props.volatility * 2;
+                //         } /* else if (checkRsi('toShort', rsiStack) && rsi.last < 70 && rsi.last > 60) {
+                //             stopLoss = lastCandle.close + props.volatility;
+                //         } */
+                //         const possibleLoss = (stopLoss - lastCandle.close) / (lastCandle.close / 100);
+                //         if (stopLoss) {
+                //             const keyResult: SymbolResult = {
+                //                 symbol: key,
+                //                 position: 'short',
+                //                 entryPrice: lastCandle.close,
+                //                 percentLoss: possibleLoss,
+                //                 signal: 'scalping',
+                //                 preferIndex: props.relVolatility/*  + (getTickerStreamCache(key) ? Number(getTickerStreamCache(key).percentChange) : 0) */
+                //             };
+                //             result.push(keyResult);
+                //         }
+                //     }
+                // }
             }
         }
         resolve(result);
