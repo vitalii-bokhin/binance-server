@@ -2,16 +2,16 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RSI = void 0;
 const technicalindicators_1 = require("technicalindicators");
-function RSI({ data, period }) {
-    const candles = [...data], lastCandle = candles.pop(), input = {
+function RSI({ data, lng }) {
+    const candles = [...data], lastCandle = candles.pop(), inputRSI = {
         values: candles.map(cdl => cdl.close),
-        period
+        period: lng
     };
-    const rsi = new technicalindicators_1.RSI(input);
+    const rsi = new technicalindicators_1.RSI(inputRSI);
     return {
         stack: rsi.getResult(),
         last: rsi.nextValue(lastCandle.close)
     };
 }
 exports.RSI = RSI;
-//# sourceMappingURL=rsi.js.map
+//# sourceMappingURL=rsi%20copy.js.map

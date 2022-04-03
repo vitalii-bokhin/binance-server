@@ -33,6 +33,7 @@ export class Position {
     trailingStopTriggerPerc: number;
     trailingStopPricePerc: number;
     trailingStepPerc: number;
+    trailingSteps: number = 0;
     signal?: string;
     expectedProfit?: number;
     interval: string;
@@ -172,9 +173,9 @@ export class Position {
 
 
                 if (this.position === 'long') {
-                    exitParams.stopPrice = entryPrice - ((this.percentLoss - this.fee) * (entryPrice / 100));
+                    exitParams.stopPrice = entryPrice - (this.percentLoss * (entryPrice / 100));
                 } else {
-                    exitParams.stopPrice = entryPrice + ((this.percentLoss - this.fee) * (entryPrice / 100));
+                    exitParams.stopPrice = entryPrice + (this.percentLoss * (entryPrice / 100));
                 }
 
                 exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
@@ -200,7 +201,7 @@ export class Position {
         //     this.possibleLoss = ( - this.entryPrice) / (this.entryPrice / 100);
         // }
 
-        let usdtAmount = .1 * ((100 / this.percentLoss) - this.fee);
+        let usdtAmount = .05 * ((100 / this.percentLoss) - this.fee);
 
         console.log('Amount');
         console.log(usdtAmount);
@@ -235,19 +236,31 @@ export class Position {
         // return {};
     }
 
+    candlesTicksStreamHandler(data) {
+        const candlesData = data[this.symbol],
+            rsi = RSI({ data: candlesData, period: this.rsiPeriod }),
+            lastPrice = candlesData[candlesData.length - 1].close;
+
+        const rsiAvg = rsi.stack.reduce((p, c) => p + c) / rsi.stack.length;
+        const rsiShift = rsiAvg - 50;
+
+        if (this.position == 'long' && rsi.last >= 70 + rsiShift) {
+            this.closePositionMarket(lastPrice);
+        } else if (this.position == 'short' && rsi.last <= 30 + rsiShift) {
+            this.closePositionMarket(lastPrice);
+        }
+
+        // // traling
+        // if (this.position === 'long') {
+        //     const profitPrice = entryPrice + ((this.percentLoss + this.fee) * (entryPrice / 100));
+        // } else {
+        //     profitParams.stopPrice = entryPrice - ((this.percentLoss + this.fee) * (entryPrice / 100));
+        // }
+    }
+
     // WATCH POSITION
     watchPosition(): void {
-        candlesTicksStream({ symbols: this.symbols, interval: this.interval, limit: this.limit }, data => {
-            const candlesData = data[this.symbol],
-                rsi = RSI({ data: candlesData, lng: this.rsiPeriod }),
-                lastPrice = candlesData[candlesData.length - 1].close;
-
-            if (this.position == 'long' && rsi.last >= 70) {
-                this.closePositionMarket(lastPrice);
-            } else if (this.position == 'short' && rsi.last <= 30) {
-                this.closePositionMarket(lastPrice);
-            }
-        });
+        candlesTicksStream({ symbols: this.symbols, interval: this.interval, limit: this.limit }, this.candlesTicksStreamHandler.bind(this));
 
         // priceStream(this.symbol, price => {
         //     if (!HasBeenMoved) {
@@ -272,9 +285,14 @@ export class Position {
             console.log(pos);
 
             if (pos.positionAmount == '0') {
-                if (this.deletePositionCallback !== undefined) {
-                    this.deletePositionCallback(this.positionKey);
-                }
+                ordersUpdateStream(this.symbol, null, true);
+                positionUpdateStream(this.symbol, null, true);
+
+                binanceAuth.futuresCancelAll(this.symbol).then(() => {
+                    if (this.deletePositionCallback !== undefined) {
+                        this.deletePositionCallback(this.positionKey);
+                    }
+                });
             }
         });
     }

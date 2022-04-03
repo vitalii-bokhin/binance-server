@@ -17,6 +17,7 @@ class Position {
     constructor(opt) {
         this.stopLossHasBeenMoved = false;
         this.marketCloseOrderHasBeenCalled = false;
+        this.trailingSteps = 0;
         this.positionKey = opt.positionKey;
         this.position = opt.position;
         this.symbol = opt.symbol;
@@ -95,10 +96,10 @@ class Position {
                     stopPrice: null
                 };
                 if (this.position === 'long') {
-                    exitParams.stopPrice = entryPrice - ((this.percentLoss - this.fee) * (entryPrice / 100));
+                    exitParams.stopPrice = entryPrice - (this.percentLoss * (entryPrice / 100));
                 }
                 else {
-                    exitParams.stopPrice = entryPrice + ((this.percentLoss - this.fee) * (entryPrice / 100));
+                    exitParams.stopPrice = entryPrice + (this.percentLoss * (entryPrice / 100));
                 }
                 exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
                 binanceAuth.futuresOrder(exitSide, this.symbol, false, false, exitParams).then(ord => {
@@ -117,7 +118,7 @@ class Position {
         // } else {
         //     this.possibleLoss = ( - this.entryPrice) / (this.entryPrice / 100);
         // }
-        let usdtAmount = .1 * ((100 / this.percentLoss) - this.fee);
+        let usdtAmount = .05 * ((100 / this.percentLoss) - this.fee);
         console.log('Amount');
         console.log(usdtAmount);
         const quantity = +(usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
@@ -142,17 +143,26 @@ class Position {
         return { entryOrder: entryOrd };
         // return {};
     }
+    candlesTicksStreamHandler(data) {
+        const candlesData = data[this.symbol], rsi = (0, indicators_1.RSI)({ data: candlesData, period: this.rsiPeriod }), lastPrice = candlesData[candlesData.length - 1].close;
+        const rsiAvg = rsi.stack.reduce((p, c) => p + c) / rsi.stack.length;
+        const rsiShift = rsiAvg - 50;
+        if (this.position == 'long' && rsi.last >= 70 + rsiShift) {
+            this.closePositionMarket(lastPrice);
+        }
+        else if (this.position == 'short' && rsi.last <= 30 + rsiShift) {
+            this.closePositionMarket(lastPrice);
+        }
+        // // traling
+        // if (this.position === 'long') {
+        //     const profitPrice = entryPrice + ((this.percentLoss + this.fee) * (entryPrice / 100));
+        // } else {
+        //     profitParams.stopPrice = entryPrice - ((this.percentLoss + this.fee) * (entryPrice / 100));
+        // }
+    }
     // WATCH POSITION
     watchPosition() {
-        (0, binanceApi_1.candlesTicksStream)({ symbols: this.symbols, interval: this.interval, limit: this.limit }, data => {
-            const candlesData = data[this.symbol], rsi = (0, indicators_1.RSI)({ data: candlesData, lng: this.rsiPeriod }), lastPrice = candlesData[candlesData.length - 1].close;
-            if (this.position == 'long' && rsi.last >= 70) {
-                this.closePositionMarket(lastPrice);
-            }
-            else if (this.position == 'short' && rsi.last <= 30) {
-                this.closePositionMarket(lastPrice);
-            }
-        });
+        (0, binanceApi_1.candlesTicksStream)({ symbols: this.symbols, interval: this.interval, limit: this.limit }, this.candlesTicksStreamHandler.bind(this));
         // priceStream(this.symbol, price => {
         //     if (!HasBeenMoved) {
         //         let changePerc: number;
@@ -171,9 +181,13 @@ class Position {
             console.log('--position--');
             console.log(pos);
             if (pos.positionAmount == '0') {
-                if (this.deletePositionCallback !== undefined) {
-                    this.deletePositionCallback(this.positionKey);
-                }
+                (0, binanceApi_1.ordersUpdateStream)(this.symbol, null, true);
+                (0, binanceApi_1.positionUpdateStream)(this.symbol, null, true);
+                binanceAuth.futuresCancelAll(this.symbol).then(() => {
+                    if (this.deletePositionCallback !== undefined) {
+                        this.deletePositionCallback(this.positionKey);
+                    }
+                });
             }
         });
     }

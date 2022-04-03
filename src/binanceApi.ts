@@ -118,7 +118,7 @@ export function candlesTicksStream({ symbols, interval, limit }: CandlesTicksEnt
 
             result[symbol][result[symbol].length - 1] = candle;
 
-            candlesTicksStreamSubscribers[streams].forEach(cb => cb(result));
+            candlesTicksStreamSubscribers[streams].forEach(cb => cb && cb(result));
 
             if (isFinal) {
                 result[symbol].shift();
@@ -195,7 +195,7 @@ export function ordersUpdateStream(symbol?: string, callback?: (arg0: {
     activationPrice: any;
     callbackRate: any;
     realizedProfit: any;
-}) => void) {
+}) => void, clearSymbolCallback?: boolean) {
     if (symbol && callback) {
         if (!orderUpdateSubscribers[symbol]) {
             orderUpdateSubscribers[symbol] = [];
@@ -211,9 +211,13 @@ export function ordersUpdateStream(symbol?: string, callback?: (arg0: {
             }
         });
     }
+
+    if (clearSymbolCallback && orderUpdateSubscribers[symbol]) {
+        orderUpdateSubscribers[symbol] = [];
+    }
 }
 
-export function positionUpdateStream(symbol: string, callback: (arg0: {}) => void) {
+export function positionUpdateStream(symbol: string, callback: (arg0: {}) => void, clearSymbolCallback?: boolean) {
     if (!positionUpdateSubscribers[symbol]) {
         positionUpdateSubscribers[symbol] = [];
     }
@@ -226,6 +230,10 @@ export function positionUpdateStream(symbol: string, callback: (arg0: {}) => voi
                 positionUpdateSubscribers[pos.symbol].forEach(cb => cb(pos));
             });
         });
+    }
+
+    if (clearSymbolCallback && positionUpdateSubscribers[symbol]) {
+        positionUpdateSubscribers[symbol] = [];
     }
 }
 

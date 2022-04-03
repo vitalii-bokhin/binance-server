@@ -1,6 +1,6 @@
-import { Candle, CdlDir, SymbolResult, SignalEntry, Result } from './types';
+import { Candle, CdlDir, SymbolResult, Entry, Result } from './types';
 
-export function Aisle({ fee, limit, data }: SignalEntry) {
+export function Aisle({ fee, limit, data }: Entry) {
     return new Promise<Result>((resolve, reject) => {
         const result: Result = [];
 

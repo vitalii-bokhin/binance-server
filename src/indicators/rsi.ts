@@ -1,15 +1,15 @@
-import { Candle, IndicatorEntry, Result } from './types';
+import { IndicatorEntry, Result } from './types';
 import { RSI as tiRsi } from 'technicalindicators';
 
-export function RSI({ data, lng }: IndicatorEntry): Result {
+export function RSI({ data, period }: IndicatorEntry): Result {
     const candles = [...data],
         lastCandle = candles.pop(),
-        inputRSI = {
+        input = {
             values: candles.map(cdl => cdl.close),
-            period: lng
+            period
         }
 
-    const rsi = new tiRsi(inputRSI);
+    const rsi = new tiRsi(input);
 
     return {
         stack: rsi.getResult(),

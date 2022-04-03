@@ -8,6 +8,7 @@ export type SymbolResult = {
     takeProfit?: number;
     possibleLoss?: number;
     expectedProfit?: number;
+    rsiPeriod?: number;
 };
 
 export type Result = SymbolResult[];
@@ -22,9 +23,8 @@ export type Candle = {
 
 export type CdlDir = 'up' | 'down';
 
-export type SignalEntry = {
+export type Entry = {
     fee: number;
     data: { [key: string]: Candle[] };
-    rsiPeriod?: number;
     limit?: number;
 };

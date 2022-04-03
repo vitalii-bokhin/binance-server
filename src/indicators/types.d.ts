@@ -1,6 +1,8 @@
 export type Result = {
-    stack: number[];
     last: number;
+    stack: number[];
+    stackHigh?: number[];
+    stackLow?: number[];
 };
 
 export type Candle = {
@@ -13,5 +15,5 @@ export type Candle = {
 
 export type IndicatorEntry = {
     data: Candle[];
-    lng: number;
+    period: number;
 };

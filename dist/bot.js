@@ -7,19 +7,18 @@ exports.Bot = void 0;
 const binanceApi_1 = require("./binanceApi");
 const position_1 = require("./position");
 const symbols_1 = __importDefault(require("./symbols"));
-const signals_1 = require("./signals");
+const strategy_1 = require("./strategy");
 const fee = .08;
 const botPositions = {};
 let positions = 0;
 async function Bot() {
     (0, binanceApi_1.ordersUpdateStream)();
     (0, binanceApi_1.tickerStream)();
-    const interval = '5m';
+    const interval = '1m';
     const limit = 50;
     const leverage = 3;
-    const rsiPeriod = 4;
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
-    const _symbols = ['ALPHAUSDT']; //symbols; //['PEOPLEUSDT'];
+    const _symbols = ['1000XECUSDT']; //symbols; //['PEOPLEUSDT'];
     const setPosition = res => {
         res.forEach(s => {
             const pKey = s.symbol;
@@ -51,7 +50,7 @@ async function Bot() {
                     signal: s.signal,
                     interval,
                     limit,
-                    rsiPeriod
+                    rsiPeriod: s.rsiPeriod
                 });
                 if (s.signal == 'scalping') {
                     botPositions[pKey].setScalpingOrders().then((res) => {
@@ -70,15 +69,18 @@ async function Bot() {
                     });
                 }
                 botPositions[pKey].deletePosition(positionKey => {
+                    console.log('DELETE POS');
+                    console.log(positionKey);
+                    console.log(botPositions[positionKey]);
                     delete botPositions[positionKey];
-                    // positions--;
+                    positions--;
                 });
                 console.log(botPositions);
             }
         });
     };
     (0, binanceApi_1.candlesTicksStream)({ symbols: _symbols, interval, limit }, data => {
-        (0, signals_1.Signals)({ fee, limit, data, rsiPeriod }).then(res => {
+        (0, strategy_1.Strategy)({ fee, limit, data }).then(res => {
             setPosition(res);
         });
     });
