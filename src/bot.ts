@@ -2,6 +2,7 @@ import { candlesTicksStream, ordersUpdateStream, tickerStream } from './binanceA
 import { Position } from './position';
 import getSymbols from './symbols';
 import { Strategy } from './strategy';
+import { consoleLog } from './console';
 
 const fee: number = .08;
 
@@ -15,13 +16,13 @@ export async function Bot(): Promise<void> {
     ordersUpdateStream();
     tickerStream();
 
-    const interval = '1m';
+    const interval = '5m';
     const limit = 50;
     const leverage = 3;
 
     const { symbols, symbolsObj } = await getSymbols();
 
-    const _symbols = ['1000XECUSDT']; //symbols; //['PEOPLEUSDT'];
+    const _symbols = ['ZILUSDT', 'WAVESUSDT']; //symbols; //['PEOPLEUSDT'];
 
     const setPosition = res => {
         res.forEach(s => {
@@ -58,37 +59,36 @@ export async function Bot(): Promise<void> {
                     signal: s.signal,
                     interval,
                     limit,
-                    rsiPeriod: s.rsiPeriod
+                    rsiPeriod: s.rsiPeriod,
+                    signalDetails: s.signalDetails
                 });
 
                 if (s.signal == 'scalping') {
                     botPositions[pKey].setScalpingOrders().then((res) => {
-                        console.log(res);
+                        consoleLog({error: ''});
 
                         if (res.error) {
-                            positions--;
+                            consoleLog({error: new Error(res.errorMsg)});
                         }
                     });
 
                 } else {
-                    botPositions[pKey].setEntryOrder().then((res) => {
-                        console.log(res);
+                    // botPositions[pKey].setEntryOrder().then((res) => {
+                    //     console.log(res);
 
-                        if (res.error) {
-                            positions--;
-                        }
-                    });
+                    //     if (res.error) {
+                    //         positions--;
+                    //     }
+                    // });
                 }
 
-                botPositions[pKey].deletePosition(positionKey => {
-                    console.log('DELETE POS');
-                    console.log(positionKey);
-                    console.log(botPositions[positionKey]);
+                botPositions[pKey].deletePosition = function (positionKey) {
+                    consoleLog({posMsg: 'DELETE POS', scalpOrder: ''});
                     delete botPositions[positionKey];
                     positions--;
-                });
+                }
 
-                console.log(botPositions);
+                consoleLog({botPositions});
             }
         });
     }

@@ -4,7 +4,7 @@
   "description": "binance trade bot",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node -r source-map-support/register dist/test.js",
     "start": "node -r source-map-support/register dist/index.js",
     "dev": "nodemon -r source-map-support/register dist/index.js"
   },

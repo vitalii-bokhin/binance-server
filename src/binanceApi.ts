@@ -30,11 +30,19 @@ type CandlesTicksEntry = {
 
 type CandlesTicksCallback = (arg0: { [key: string]: Candle[] }) => void;
 
+type SymbolCandlesTicksCallback = (arg0: Candle[]) => void;
+
 const streamsSubscribers: {
     [key: string]: WebSocket;
 } = {};
 
 const candlesTicksStreamSubscribers: {
+    [key: string]: ((arg0: any) => void)[];
+} = {};
+
+let candlesTicksStreamExecuted = false;
+
+const symbolCandlesTicksStreamSubscribers: {
     [key: string]: ((arg0: any) => void)[];
 } = {};
 
@@ -82,49 +90,69 @@ export function candlesTicksStream({ symbols, interval, limit }: CandlesTicksEnt
 
     candlesTicksStreamSubscribers[streams].push(callback);
 
-    if (candlesTicksStreamSubscribers[streams].length > 1) {
-        return;
+    if (!candlesTicksStreamExecuted) {
+        candlesTicksStreamExecuted = true;
+
+        candlesTicks({ symbols, interval, limit }, data => {
+            const result = data;
+            let ws: WebSocket;
+
+            if (streamsSubscribers[streams] !== undefined) {
+                ws = streamsSubscribers[streams];
+            } else {
+                ws = new WebSocket(streamApi + streams);
+                streamsSubscribers[streams] = ws;
+            }
+
+            ws.on('message', function message(data: any) {
+                const { e: eventType, E: eventTime, s: symbol, k: ticks } = JSON.parse(data).data;
+                const { t: openTime, o: open, h: high, l: low, c: close, x: isFinal } = ticks;
+
+                const candle: Candle = {
+                    openTime: openTime,
+                    open: +open,
+                    high: +high,
+                    low: +low,
+                    close: +close,
+                    interval,
+                    limit,
+                    isFinal
+                };
+
+                if (result[symbol][result[symbol].length - 1].openTime !== openTime) {
+                    result[symbol].push(candle);
+                }
+
+                result[symbol][result[symbol].length - 1] = candle;
+
+                candlesTicksStreamSubscribers[streams].forEach(cb => cb(result));
+
+                for (const sym in symbolCandlesTicksStreamSubscribers) {
+                    if (Object.prototype.hasOwnProperty.call(symbolCandlesTicksStreamSubscribers, sym)) {
+                        symbolCandlesTicksStreamSubscribers[sym].forEach(cb => cb(result[sym]));
+                    }
+                }
+
+                if (isFinal) {
+                    result[symbol].shift();
+                }
+            });
+        });
     }
+}
 
-    candlesTicks({ symbols, interval, limit }, data => {
-        const result = data;
-        let ws: WebSocket;
-
-        if (streamsSubscribers[streams] !== undefined) {
-            ws = streamsSubscribers[streams];
-        } else {
-            ws = new WebSocket(streamApi + streams);
-            streamsSubscribers[streams] = ws;
+export function symbolCandlesTicksStream(symbol: string, callback: SymbolCandlesTicksCallback, clearSymbolCallback?: boolean) {
+    if (symbol && callback) {
+        if (!symbolCandlesTicksStream[symbol]) {
+            symbolCandlesTicksStream[symbol] = [];
         }
 
-        ws.on('message', function message(data: any) {
-            const { e: eventType, E: eventTime, s: symbol, k: ticks } = JSON.parse(data).data;
-            const { t: openTime, o: open, h: high, l: low, c: close, x: isFinal } = ticks;
+        symbolCandlesTicksStream[symbol].push(callback);
+    }
 
-            const candle: Candle = {
-                openTime: openTime,
-                open: +open,
-                high: +high,
-                low: +low,
-                close: +close,
-                interval,
-                limit,
-                isFinal
-            };
-
-            if (result[symbol][result[symbol].length - 1].openTime !== openTime) {
-                result[symbol].push(candle);
-            }
-
-            result[symbol][result[symbol].length - 1] = candle;
-
-            candlesTicksStreamSubscribers[streams].forEach(cb => cb && cb(result));
-
-            if (isFinal) {
-                result[symbol].shift();
-            }
-        });
-    });
+    if (clearSymbolCallback && symbolCandlesTicksStreamSubscribers[symbol]) {
+        delete symbolCandlesTicksStreamSubscribers[symbol];
+    }
 }
 
 // account data stream (position, order update)
@@ -218,11 +246,13 @@ export function ordersUpdateStream(symbol?: string, callback?: (arg0: {
 }
 
 export function positionUpdateStream(symbol: string, callback: (arg0: {}) => void, clearSymbolCallback?: boolean) {
-    if (!positionUpdateSubscribers[symbol]) {
-        positionUpdateSubscribers[symbol] = [];
-    }
+    if (symbol && callback) {
+        if (!positionUpdateSubscribers[symbol]) {
+            positionUpdateSubscribers[symbol] = [];
+        }
 
-    positionUpdateSubscribers[symbol].push(callback);
+        positionUpdateSubscribers[symbol].push(callback);
+    }
 
     if (!userFutureDataSubscribers['positions_update']) {
         userFutureDataSubscribe('positions_update', function (positions: any[]) {
@@ -252,12 +282,14 @@ export function priceStream(symbol: string, callback: (arg0: {
     indexPrice?: string;
     fundingRate?: string;
     fundingTime?: number;
-}) => void) {
-    if (!priceSubscribers[symbol]) {
-        priceSubscribers[symbol] = [];
-    }
+}) => void, clearSymbolCallback?: boolean) {
+    if (symbol && callback) {
+        if (!priceSubscribers[symbol]) {
+            priceSubscribers[symbol] = [];
+        }
 
-    priceSubscribers[symbol].push(callback);
+        priceSubscribers[symbol].push(callback);
+    }
 
     if (!priceStreamWsHasBeenRun) {
         priceStreamWsHasBeenRun = true;
@@ -269,6 +301,10 @@ export function priceStream(symbol: string, callback: (arg0: {
                 }
             });
         });
+    }
+
+    if (clearSymbolCallback && priceSubscribers[symbol]) {
+        priceSubscribers[symbol] = [];
     }
 }
 

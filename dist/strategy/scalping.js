@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Scalping = void 0;
+const console_1 = require("../console");
 const indicators_1 = require("../indicators");
 const analyzeCandle = function (cdl, pos) {
     if (cdl.close >= cdl.open) {
@@ -91,7 +92,7 @@ const checkRsi = function (dir, rsiStack) {
     }
 };
 const smaPeriod = 24;
-const rsiPeriod = 8;
+const rsiPeriod = 9;
 function Scalping({ fee, data }) {
     return new Promise((resolve, reject) => {
         const result = [];
@@ -99,18 +100,21 @@ function Scalping({ fee, data }) {
             if (Object.prototype.hasOwnProperty.call(data, key)) {
                 const _candles = data[key];
                 const rsi = (0, indicators_1.RSI)({ data: _candles, period: rsiPeriod });
-                const rsiAvg = rsi.stack.reduce((p, c) => p + c) / rsi.stack.length;
-                const rsiShift = rsiAvg - 50;
+                const avgRsiAbove = rsi.avgRsiAbove;
+                const avgRsiBelow = rsi.avgRsiBelow;
+                // const rsiPerStack = rsi.stack.slice(rsiPeriod * -1);
+                // const rsiAvg = rsiPerStack.reduce((p, c) => p + c, rsi.last) / (rsi.stack.length + 1);
+                // const rsiShift = rsiAvg - 50;
                 // console.log('rsiAvg');
                 // console.log(rsiAvg);
                 // console.log(rsiShift);
                 const sma = (0, indicators_1.SMA)({ data: _candles, period: smaPeriod });
-                const smaLag = sma.stack[smaPeriod / 2];
+                const smaLag = sma.stack[sma.stack.length - smaPeriod / 2];
                 const smaChange = Math.abs((sma.last - smaLag) / (sma.last / 100));
-                const candles = [..._candles];
-                const lastCandle = candles.pop();
+                const candles = _candles.slice(smaPeriod * -1);
+                const lastCandle = candles[candles.length - 1];
                 const lastPrice = lastCandle.close;
-                const prevCandle = candles[candles.length - 1];
+                const prevCandle = candles[candles.length - 2];
                 // const prePrevCandle: Candle = candles[candles.length - 2];
                 // if (sma.last > smaLag && rsi.last > 50 && rsi.last < 70) {
                 //     console.log('up');
@@ -130,18 +134,19 @@ function Scalping({ fee, data }) {
                 });
                 avgCandleMove = avgCandleMove / candles.length;
                 percentAverageCandleMove = percentAverageCandleMove / candles.length;
+                const signalDetails = {
+                    lastPrice,
+                    rsiTopEdge: avgRsiAbove,
+                    rsiLast: rsi.last,
+                    rsiBottomEdge: avgRsiBelow,
+                    smaChange,
+                    percentAverageCandleMove
+                };
                 if (smaChange < percentAverageCandleMove) {
-                    console.log('=============', smaChange, percentAverageCandleMove);
-                    console.log('*******************');
-                    console.log(70 + rsiShift);
-                    console.log('----------');
-                    console.log(rsi.last);
-                    console.log('----------');
-                    console.log(30 + rsiShift);
-                    console.log('********************');
-                    if (rsi.last >= 70 + rsiShift) {
+                    if (rsi.last >= avgRsiAbove) {
                         let stopLoss = lastPrice + avgCandleMove;
                         const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);
+                        signalDetails.stopLoss = stopLoss;
                         const keyResult = {
                             symbol: key,
                             position: 'short',
@@ -149,13 +154,15 @@ function Scalping({ fee, data }) {
                             percentLoss,
                             signal: 'scalping',
                             preferIndex: percentAverageCandleMove,
-                            rsiPeriod
+                            rsiPeriod,
+                            signalDetails
                         };
                         result.push(keyResult);
                     }
-                    else if (rsi.last <= 30 + rsiShift) {
+                    else if (rsi.last <= avgRsiBelow) {
                         let stopLoss = lastPrice - avgCandleMove;
                         const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
+                        signalDetails.stopLoss = stopLoss;
                         const keyResult = {
                             symbol: key,
                             position: 'long',
@@ -163,18 +170,18 @@ function Scalping({ fee, data }) {
                             percentLoss,
                             signal: 'scalping',
                             preferIndex: percentAverageCandleMove,
-                            rsiPeriod
+                            rsiPeriod,
+                            signalDetails
                         };
                         result.push(keyResult);
                     }
                 }
                 else {
                     if (lastPrice > sma.last &&
-                        prevCandle.close > prevCandle.open &&
                         prevCandle.close > sma.last &&
                         lastCandle.close > lastCandle.open &&
-                        lastCandle.high - lastCandle.low >= minCandleMove &&
-                        rsi.last < 70 + rsiShift) {
+                        lastCandle.close - lastCandle.open >= minCandleMove &&
+                        rsi.last < avgRsiAbove) {
                         // console.log('long');
                         // let stopLoss = sma.last;
                         let stopLoss = lastPrice - avgCandleMove;
@@ -182,6 +189,7 @@ function Scalping({ fee, data }) {
                         //     stopLoss = lastPrice - maxCandleMove;
                         // }
                         // console.log(stopLoss);
+                        signalDetails.stopLoss = stopLoss;
                         const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
                         const keyResult = {
                             symbol: key,
@@ -190,16 +198,16 @@ function Scalping({ fee, data }) {
                             percentLoss,
                             signal: 'scalping',
                             preferIndex: percentAverageCandleMove,
-                            rsiPeriod
+                            rsiPeriod,
+                            signalDetails
                         };
                         result.push(keyResult);
                     }
                     else if (lastPrice < sma.last &&
-                        prevCandle.close < prevCandle.open &&
                         prevCandle.close < sma.last &&
                         lastCandle.close < lastCandle.open &&
-                        lastCandle.high - lastCandle.low >= minCandleMove &&
-                        rsi.last > 30 + rsiShift) {
+                        lastCandle.open - lastCandle.close >= minCandleMove &&
+                        rsi.last > avgRsiBelow) {
                         // console.log('short');
                         // let stopLoss = sma.last;
                         let stopLoss = lastPrice + avgCandleMove;
@@ -207,6 +215,7 @@ function Scalping({ fee, data }) {
                         //     stopLoss = lastPrice + maxCandleMove;
                         // }
                         // console.log(stopLoss);
+                        signalDetails.stopLoss = stopLoss;
                         const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);
                         const keyResult = {
                             symbol: key,
@@ -215,11 +224,13 @@ function Scalping({ fee, data }) {
                             percentLoss,
                             signal: 'scalping',
                             preferIndex: percentAverageCandleMove,
-                            rsiPeriod
+                            rsiPeriod,
+                            signalDetails
                         };
                         result.push(keyResult);
                     }
                 }
+                (0, console_1.consoleLog)({ ['signalDetails_' + key]: signalDetails });
                 // console.log(result);
                 // if (!lastCandle || !prevCandle || !prePrevCandle) {
                 //     continue;

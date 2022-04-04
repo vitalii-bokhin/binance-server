@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getTickerStreamCache = exports.tickerStream = exports.priceStream = exports.positionUpdateStream = exports.ordersUpdateStream = exports.candlesTicksStream = exports.candlesTicks = void 0;
+exports.getTickerStreamCache = exports.tickerStream = exports.priceStream = exports.positionUpdateStream = exports.ordersUpdateStream = exports.symbolCandlesTicksStream = exports.candlesTicksStream = exports.candlesTicks = void 0;
 const ws_1 = __importDefault(require("ws"));
 const node_binance_api_1 = __importDefault(require("node-binance-api"));
 const config_1 = require("./config");
@@ -16,6 +16,8 @@ const binanceAuth = new node_binance_api_1.default().options({
 const streamApi = 'wss://fstream.binance.com/stream?streams=';
 const streamsSubscribers = {};
 const candlesTicksStreamSubscribers = {};
+let candlesTicksStreamExecuted = false;
+const symbolCandlesTicksStreamSubscribers = {};
 function candlesTicks({ symbols, interval, limit }, callback) {
     const result = {};
     let i = 0;
@@ -49,44 +51,61 @@ function candlesTicksStream({ symbols, interval, limit }, callback) {
         candlesTicksStreamSubscribers[streams] = [];
     }
     candlesTicksStreamSubscribers[streams].push(callback);
-    if (candlesTicksStreamSubscribers[streams].length > 1) {
-        return;
-    }
-    candlesTicks({ symbols, interval, limit }, data => {
-        const result = data;
-        let ws;
-        if (streamsSubscribers[streams] !== undefined) {
-            ws = streamsSubscribers[streams];
-        }
-        else {
-            ws = new ws_1.default(streamApi + streams);
-            streamsSubscribers[streams] = ws;
-        }
-        ws.on('message', function message(data) {
-            const { e: eventType, E: eventTime, s: symbol, k: ticks } = JSON.parse(data).data;
-            const { t: openTime, o: open, h: high, l: low, c: close, x: isFinal } = ticks;
-            const candle = {
-                openTime: openTime,
-                open: +open,
-                high: +high,
-                low: +low,
-                close: +close,
-                interval,
-                limit,
-                isFinal
-            };
-            if (result[symbol][result[symbol].length - 1].openTime !== openTime) {
-                result[symbol].push(candle);
+    if (!candlesTicksStreamExecuted) {
+        candlesTicksStreamExecuted = true;
+        candlesTicks({ symbols, interval, limit }, data => {
+            const result = data;
+            let ws;
+            if (streamsSubscribers[streams] !== undefined) {
+                ws = streamsSubscribers[streams];
             }
-            result[symbol][result[symbol].length - 1] = candle;
-            candlesTicksStreamSubscribers[streams].forEach(cb => cb && cb(result));
-            if (isFinal) {
-                result[symbol].shift();
+            else {
+                ws = new ws_1.default(streamApi + streams);
+                streamsSubscribers[streams] = ws;
             }
+            ws.on('message', function message(data) {
+                const { e: eventType, E: eventTime, s: symbol, k: ticks } = JSON.parse(data).data;
+                const { t: openTime, o: open, h: high, l: low, c: close, x: isFinal } = ticks;
+                const candle = {
+                    openTime: openTime,
+                    open: +open,
+                    high: +high,
+                    low: +low,
+                    close: +close,
+                    interval,
+                    limit,
+                    isFinal
+                };
+                if (result[symbol][result[symbol].length - 1].openTime !== openTime) {
+                    result[symbol].push(candle);
+                }
+                result[symbol][result[symbol].length - 1] = candle;
+                candlesTicksStreamSubscribers[streams].forEach(cb => cb(result));
+                for (const sym in symbolCandlesTicksStreamSubscribers) {
+                    if (Object.prototype.hasOwnProperty.call(symbolCandlesTicksStreamSubscribers, sym)) {
+                        symbolCandlesTicksStreamSubscribers[sym].forEach(cb => cb(result[sym]));
+                    }
+                }
+                if (isFinal) {
+                    result[symbol].shift();
+                }
+            });
         });
-    });
+    }
 }
 exports.candlesTicksStream = candlesTicksStream;
+function symbolCandlesTicksStream(symbol, callback, clearSymbolCallback) {
+    if (symbol && callback) {
+        if (!symbolCandlesTicksStream[symbol]) {
+            symbolCandlesTicksStream[symbol] = [];
+        }
+        symbolCandlesTicksStream[symbol].push(callback);
+    }
+    if (clearSymbolCallback && symbolCandlesTicksStreamSubscribers[symbol]) {
+        delete symbolCandlesTicksStreamSubscribers[symbol];
+    }
+}
+exports.symbolCandlesTicksStream = symbolCandlesTicksStream;
 // account data stream (position, order update)
 const orderUpdateSubscribers = {};
 const positionUpdateSubscribers = {};
@@ -127,10 +146,12 @@ function ordersUpdateStream(symbol, callback, clearSymbolCallback) {
 }
 exports.ordersUpdateStream = ordersUpdateStream;
 function positionUpdateStream(symbol, callback, clearSymbolCallback) {
-    if (!positionUpdateSubscribers[symbol]) {
-        positionUpdateSubscribers[symbol] = [];
+    if (symbol && callback) {
+        if (!positionUpdateSubscribers[symbol]) {
+            positionUpdateSubscribers[symbol] = [];
+        }
+        positionUpdateSubscribers[symbol].push(callback);
     }
-    positionUpdateSubscribers[symbol].push(callback);
     if (!userFutureDataSubscribers['positions_update']) {
         userFutureDataSubscribe('positions_update', function (positions) {
             positions.forEach((pos) => {
@@ -146,11 +167,13 @@ exports.positionUpdateStream = positionUpdateStream;
 // price stream
 const priceSubscribers = {};
 let priceStreamWsHasBeenRun = false;
-function priceStream(symbol, callback) {
-    if (!priceSubscribers[symbol]) {
-        priceSubscribers[symbol] = [];
+function priceStream(symbol, callback, clearSymbolCallback) {
+    if (symbol && callback) {
+        if (!priceSubscribers[symbol]) {
+            priceSubscribers[symbol] = [];
+        }
+        priceSubscribers[symbol].push(callback);
     }
-    priceSubscribers[symbol].push(callback);
     if (!priceStreamWsHasBeenRun) {
         priceStreamWsHasBeenRun = true;
         binance.futuresMarkPriceStream((res) => {
@@ -160,6 +183,9 @@ function priceStream(symbol, callback) {
                 }
             });
         });
+    }
+    if (clearSymbolCallback && priceSubscribers[symbol]) {
+        priceSubscribers[symbol] = [];
     }
 }
 exports.priceStream = priceStream;

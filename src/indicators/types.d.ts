@@ -1,6 +1,8 @@
 export type Result = {
     last: number;
     stack: number[];
+    avgRsiAbove?: number;
+    avgRsiBelow?: number;
     stackHigh?: number[];
     stackLow?: number[];
 };
