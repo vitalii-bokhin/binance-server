@@ -8,7 +8,6 @@ const node_binance_api_1 = __importDefault(require("node-binance-api"));
 const config_1 = require("./config");
 const binanceApi_1 = require("./binanceApi");
 const indicators_1 = require("./indicators");
-const console_1 = require("./console");
 const binanceAuth = new node_binance_api_1.default().options({
     APIKEY: config_1.BINANCE_KEY,
     APISECRET: config_1.BINANCE_SECRET,
@@ -122,9 +121,9 @@ class Position {
         // entry
         const entrySide = this.position === 'long' ? 'BUY' : 'SELL';
         let usdtAmount = 0.1 * ((100 / this.percentLoss) - this.fee);
-        (0, console_1.consoleLog)({ usdtAmount });
+        console.log({ usdtAmount });
         const quantity = +(usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
-        (0, console_1.consoleLog)({ quantity });
+        console.log({ quantity });
         const entryParams = {
             type: 'MARKET',
             newClientOrderId: this.entryClientOrderId
@@ -146,6 +145,7 @@ class Position {
     }
     // WATCH POSITION
     watchPosition() {
+        console.log('watch pos');
         (0, binanceApi_1.symbolCandlesTicksStream)(this.symbol, data => {
             const rsi = (0, indicators_1.RSI)({ data, period: this.rsiPeriod }), lastPrice = data[data.length - 1].close;
             if (this.position == 'long' && rsi.last >= rsi.avgRsiAbove) {
@@ -170,7 +170,7 @@ class Position {
         //     }
         // });
         (0, binanceApi_1.positionUpdateStream)(this.symbol, (pos) => {
-            (0, console_1.consoleLog)(pos);
+            console.log(pos);
             if (pos.positionAmount == '0') {
                 (0, binanceApi_1.ordersUpdateStream)(this.symbol, null, true);
                 (0, binanceApi_1.positionUpdateStream)(this.symbol, null, true);

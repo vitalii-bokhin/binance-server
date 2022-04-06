@@ -81,10 +81,8 @@ function candlesTicksStream({ symbols, interval, limit }, callback) {
                 }
                 result[symbol][result[symbol].length - 1] = candle;
                 candlesTicksStreamSubscribers[streams].forEach(cb => cb(result));
-                for (const sym in symbolCandlesTicksStreamSubscribers) {
-                    if (Object.prototype.hasOwnProperty.call(symbolCandlesTicksStreamSubscribers, sym)) {
-                        symbolCandlesTicksStreamSubscribers[sym].forEach(cb => cb(result[sym]));
-                    }
+                if (symbolCandlesTicksStreamSubscribers[symbol]) {
+                    symbolCandlesTicksStreamSubscribers[symbol].forEach(cb => cb(result[symbol]));
                 }
                 if (isFinal) {
                     result[symbol].shift();
@@ -96,14 +94,15 @@ function candlesTicksStream({ symbols, interval, limit }, callback) {
 exports.candlesTicksStream = candlesTicksStream;
 function symbolCandlesTicksStream(symbol, callback, clearSymbolCallback) {
     if (symbol && callback) {
-        if (!symbolCandlesTicksStream[symbol]) {
-            symbolCandlesTicksStream[symbol] = [];
+        if (!symbolCandlesTicksStreamSubscribers[symbol]) {
+            symbolCandlesTicksStreamSubscribers[symbol] = [];
         }
-        symbolCandlesTicksStream[symbol].push(callback);
+        symbolCandlesTicksStreamSubscribers[symbol].push(callback);
     }
     if (clearSymbolCallback && symbolCandlesTicksStreamSubscribers[symbol]) {
         delete symbolCandlesTicksStreamSubscribers[symbol];
     }
+    console.log(symbolCandlesTicksStreamSubscribers);
 }
 exports.symbolCandlesTicksStream = symbolCandlesTicksStream;
 // account data stream (position, order update)

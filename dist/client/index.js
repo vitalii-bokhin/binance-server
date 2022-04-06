@@ -1,45 +1,60 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const session = require("express-session");
-const express = require("express");
-const http = require("http");
-const lodashExpress = require("lodash-express");
-const multer = require("multer");
-const websocket = require("ws");
-const api_1 = require("./api");
-const chart_1 = require("./chart");
-const db = require('./database'), user = require('./user'), watch = require('./watch'), order = require('./order');
-const app = express(), upload = multer();
+const express_1 = __importDefault(require("express"));
+const express_ws_1 = __importDefault(require("express-ws"));
+const express_session_1 = __importDefault(require("express-session"));
+const body_parser_1 = __importDefault(require("body-parser"));
+const multer_1 = __importDefault(require("multer"));
+// import websocket from 'ws';
+const api_1 = __importDefault(require("./api"));
+const db = require('../database'), user = require('../user'), watch = require('../watch'), order = require('../order');
+const upload = (0, multer_1.default)();
+const { app } = (0, express_ws_1.default)((0, express_1.default)());
 app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
 });
+app.use(body_parser_1.default.json());
 // session
-const sessionParser = session({
+const sessionParser = (0, express_session_1.default)({
     saveUninitialized: false,
     secret: 'GyHltUf$swN21Cx',
     resave: false
 });
 app.use(sessionParser);
 // view template
-lodashExpress(app, 'html');
-app.set('views', './templates');
-app.set('view engine', 'html');
-app.use('./templates/static', express.static('./templates/static'));
-// post
-app.use(express.urlencoded({ extended: true }));
+// lodashExpress(app, 'html');
+// app.set('views', './templates');
+// app.set('view engine', 'html');
+// app.use('./templates/static', express.static('./templates/static'));
+// post  
+app.use(express_1.default.urlencoded({ extended: true }));
 // create server
-const server = http.createServer(app), wss = new websocket.Server({ noServer: true });
+// const server = http.createServer(app);
+// wss = new websocket.Server({ noServer: true });
+// ws
+// const expressWs = websocket(app);
+app.ws('/echo', function (ws, req) {
+    console.log('dsasdsad');
+    ws.on('message', function (msg) {
+        ws.send(msg);
+    });
+});
 // api
-app.use('/api', api_1.api);
+const api = express_1.default.Router();
+app.use('/api', (0, api_1.default)(api));
 // queries
 app.get('/', function (req, res) {
-    const opt = {
-        title: 'This is Home page',
-        userName: req.session.userEmail
-    };
-    res.render('index', opt);
+    // const opt = {
+    //     title: 'This is Home page',
+    //     userName: req.session.userEmail
+    // };
+    // res.render('index', opt);
+    res.json({ key: "Halllow worrldd" });
 });
 app.get('/bot', function (req, res) {
     // Volatility().then((data) => {
@@ -53,6 +68,9 @@ app.get('/bot', function (req, res) {
     // Chart.wsCandlesTicks('BTC');
     res.render('index', { title: 'Bot', data: '' });
 });
+app.get('/test', function (req, res) {
+    res.json({ key: "Halllow worrldd" });
+});
 app.post('/auth', upload.none(), function (req, res) {
     const user = db.user(null, req.body.email);
     if (user && user.pass == req.body.pass) {
@@ -65,9 +83,9 @@ app.post('/auth', upload.none(), function (req, res) {
     }
 });
 app.get('/exchange-info', function (req, res) {
-    chart_1.Chart.exchangeInfo(function (data) {
-        res.json(data);
-    });
+    // Chart.exchangeInfo(function (data) {
+    //     res.json(data);
+    // });
 });
 app.get('/candlesticks', function (req, res) {
     const { symbols, interval, limit } = req.query;
@@ -77,9 +95,9 @@ app.get('/candlesticks', function (req, res) {
 });
 app.post('/symbols-change-24', function (req, res) {
     const symbols = req.body.symbols || false;
-    chart_1.Chart.symbolsChange24(symbols, function (data) {
-        res.json(data);
-    });
+    // Chart.symbolsChange24(symbols, function (data) {
+    //     res.json(data);
+    // });
 });
 app.post('/balance', function (req, res) {
     if (req.session.userId) {
@@ -249,7 +267,7 @@ app.post('/order', function (req, res) {
 //     return wss.clients.size;
 // }
 // start server
-server.listen(8080, () => {
+app.listen(8080, () => {
     console.log('Listening on port 8080');
 });
-//# sourceMappingURL=client.js.map
+//# sourceMappingURL=index.js.map

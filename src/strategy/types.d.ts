@@ -10,6 +10,7 @@ export type SymbolResult = {
     possibleLoss?: number;
     expectedProfit?: number;
     rsiPeriod?: number;
+    resolvePosition: boolean;
 };
 
 export type Result = SymbolResult[];

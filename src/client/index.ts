@@ -1,21 +1,23 @@
-import session = require('express-session');
-import express = require('express');
-import http = require('http');
-import lodashExpress = require('lodash-express');
-import multer = require('multer');
-import websocket = require('ws');
+import express from 'express';
+import websocket from 'express-ws';
+import session from 'express-session';
+import bodyParser from 'body-parser';
+// import http from 'http';
+import lodashExpress from 'lodash-express';
+import multer from 'multer';
+// import websocket from 'ws';
+import apiRouter from './api';
+// import { Chart } from './chart';
+// import { Bot } from './bot';
+import path from 'path';
 
-import { api } from './api';
-import { Chart } from './chart';
-import { Bot } from './bot';
+const db = require('../database'),
+    user = require('../user'),
+    watch = require('../watch'),
+    order = require('../order');
 
-const db = require('./database'),
-    user = require('./user'),
-    watch = require('./watch'),
-    order = require('./order');
-
-const app = express(),
-    upload = multer();
+const upload = multer();
+const {app} = websocket(express());
 
 declare module 'express-session' {
     interface SessionData {
@@ -30,6 +32,8 @@ app.use(function (req, res, next) {
     next();
 });
 
+app.use(bodyParser.json());
+
 // session
 const sessionParser = session({
     saveUninitialized: false,
@@ -40,31 +44,43 @@ const sessionParser = session({
 app.use(sessionParser);
 
 // view template
-lodashExpress(app, 'html');
+// lodashExpress(app, 'html');
 
-app.set('views', './templates');
-app.set('view engine', 'html');
+// app.set('views', './templates');
+// app.set('view engine', 'html');
 
-app.use('./templates/static', express.static('./templates/static'));
+// app.use('./templates/static', express.static('./templates/static'));
 
-// post
+// post  
 app.use(express.urlencoded({ extended: true }));
-
+ 
 // create server
-const server = http.createServer(app),
-    wss = new websocket.Server({ noServer: true });
+// const server = http.createServer(app);
+    // wss = new websocket.Server({ noServer: true });
+
+// ws
+// const expressWs = websocket(app);
+
+app.ws('/echo', function(ws, req) {
+    console.log('dsasdsad');
+    ws.on('message', function(msg) {
+      ws.send(msg);
+    });
+});
 
 // api
-app.use('/api', api);
+const api = express.Router();
+app.use('/api', apiRouter(api));
 
 // queries
 app.get('/', function (req, res) {
-    const opt = {
-        title: 'This is Home page',
-        userName: req.session.userEmail
-    };
+    // const opt = {
+    //     title: 'This is Home page',
+    //     userName: req.session.userEmail
+    // };
 
-    res.render('index', opt);
+    // res.render('index', opt);
+    res.json({key: "Halllow worrldd"});
 });
 
 app.get('/bot', function (req, res) {
@@ -79,6 +95,9 @@ app.get('/bot', function (req, res) {
     // Bot();
     // Chart.wsCandlesTicks('BTC');
     res.render('index', {title: 'Bot', data: ''});
+});
+app.get('/test', function (req, res) {
+    res.json({key: "Halllow worrldd"});
 });
 
 app.post('/auth', upload.none(), function (req, res) {
@@ -95,9 +114,9 @@ app.post('/auth', upload.none(), function (req, res) {
 });
 
 app.get('/exchange-info', function (req, res) {
-    Chart.exchangeInfo(function (data) {
-        res.json(data);
-    });
+    // Chart.exchangeInfo(function (data) {
+    //     res.json(data);
+    // });
 });
 
 app.get('/candlesticks', function (req, res) {
@@ -111,9 +130,9 @@ app.get('/candlesticks', function (req, res) {
 app.post('/symbols-change-24', function (req, res) {
     const symbols = req.body.symbols || false;
 
-    Chart.symbolsChange24(symbols, function (data) {
-        res.json(data);
-    });
+    // Chart.symbolsChange24(symbols, function (data) {
+    //     res.json(data);
+    // });
 });
 
 app.post('/balance', function (req, res) {
@@ -310,6 +329,6 @@ app.post('/order', function (req, res) {
 
 
 // start server
-server.listen(8080, () => {
+app.listen(8080, () => {
     console.log('Listening on port 8080');
 });

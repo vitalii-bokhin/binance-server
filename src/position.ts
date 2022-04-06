@@ -2,7 +2,6 @@ import Binance from 'node-binance-api';
 import { BINANCE_KEY, BINANCE_SECRET } from './config';
 import { candlesTicksStream, ordersUpdateStream, positionUpdateStream, priceStream, symbolCandlesTicksStream } from './binanceApi';
 import { RSI } from './indicators';
-import { consoleLog } from './console';
 
 const binanceAuth = new Binance().options({
     APIKEY: BINANCE_KEY,
@@ -201,11 +200,11 @@ export class Position {
 
         let usdtAmount = 0.1 * ((100 / this.percentLoss) - this.fee);
 
-        consoleLog({usdtAmount});
+        console.log({usdtAmount});
 
         const quantity = +(usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
 
-        consoleLog({quantity});
+        console.log({quantity});
 
         const entryParams = {
             type: 'MARKET',
@@ -235,10 +234,11 @@ export class Position {
 
     // WATCH POSITION
     watchPosition(): void {
+        console.log('watch pos');
         symbolCandlesTicksStream(this.symbol, data => {
             const rsi = RSI({ data, period: this.rsiPeriod }),
                 lastPrice = data[data.length - 1].close;
-
+                
             if (this.position == 'long' && rsi.last >= rsi.avgRsiAbove) {
                 this.closePositionMarket(lastPrice);
             } else if (this.position == 'short' && rsi.last <= rsi.avgRsiBelow) {
@@ -265,7 +265,7 @@ export class Position {
         // });
 
         positionUpdateStream(this.symbol, (pos: any) => {
-            consoleLog(pos);
+            console.log(pos);
 
             if (pos.positionAmount == '0') {
                 ordersUpdateStream(this.symbol, null, true);

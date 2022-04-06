@@ -5,7 +5,7 @@ import getSymbols from './symbols';
 // import getSymbols from './symbols';
 
 
-Bot();
+// Bot();
 
 // const item = ['a','b','c','d','e','f','j'];
 

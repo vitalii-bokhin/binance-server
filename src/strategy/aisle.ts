@@ -140,7 +140,8 @@ export function Aisle({ fee, limit, data }: Entry) {
                                 possibleLoss: possibleLoss,
                                 // stopLoss,
                                 signal: 'aisle',
-                                preferIndex: expectedProfit
+                                preferIndex: expectedProfit,
+                                resolvePosition: false
                             };
 
                             result.push(keyResult);
@@ -170,7 +171,8 @@ export function Aisle({ fee, limit, data }: Entry) {
                                 possibleLoss: possibleLoss,
                                 // stopLoss,
                                 signal: 'aisle',
-                                preferIndex: expectedProfit
+                                preferIndex: expectedProfit,
+                                resolvePosition: false
                             };
 
                             result.push(keyResult);

@@ -6,7 +6,7 @@ console.log(arr.slice(-2));
 
 const eksemps = {};
 
-class TestCl {
+class TestCl { 
     someProp = 'lalalal';
 
     priceStreamHandler(arg) {
