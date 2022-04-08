@@ -41,7 +41,7 @@ export class Position {
     rsiPeriod: number;
     percentLoss: number;
     signalDetails?: any;
-    deletePosition: (positionKey: string) => void;
+    deletePosition: (positionKey: string, opt: any) => void;
 
     constructor(opt: {
         positionKey: string;
@@ -132,13 +132,7 @@ export class Position {
     // }
 
     // SCALPING Orders
-    async setScalpingOrders(): Promise<{
-        entryOrder?: any;
-        stopLossOrder?: any;
-        error?: string;
-        errorMsg?: string;
-        positionKey?: string;
-    }> {
+    async setScalpingOrders(): Promise<any> {
         this.entryClientOrderId = 'luf21_scalp_' + this.symbol;
 
         ordersUpdateStream(this.symbol, order => {
@@ -176,9 +170,9 @@ export class Position {
 
 
                 if (this.position === 'long') {
-                    exitParams.stopPrice = entryPrice - ((this.percentLoss - this.fee) * (entryPrice / 100));
+                    exitParams.stopPrice = entryPrice - (this.percentLoss * (entryPrice / 100));
                 } else {
-                    exitParams.stopPrice = entryPrice + ((this.percentLoss - this.fee) * (entryPrice / 100));
+                    exitParams.stopPrice = entryPrice + (this.percentLoss * (entryPrice / 100));
                 }
 
                 exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
@@ -200,11 +194,11 @@ export class Position {
 
         let usdtAmount = 0.1 * ((100 / this.percentLoss) - this.fee);
 
-        console.log({usdtAmount});
+        console.log({ usdtAmount });
 
         const quantity = +(usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
 
-        console.log({quantity});
+        console.log({ quantity });
 
         const entryParams = {
             type: 'MARKET',
@@ -212,15 +206,19 @@ export class Position {
         };
 
         if (quantity < this.symbolInfo.minMarketLotSize) {
-            return {
-                error: 'SMALL_LOT_SIZE',
-                errorMsg: 'Min: ' + this.symbolInfo.minMarketLotSize + '; Current: ' + quantity,
-                positionKey: this.positionKey
-            };
+            console.log(` error: 'SMALL_LOT_SIZE', errorMsg: 'Min: ' + ${this.symbolInfo.minMarketLotSize} + '; Current: ' + ${quantity}, positionKey: ${this.positionKey}`);
+            
+            this.deletePositionInner({excludeKey: this.positionKey});
+
+            return;
         }
 
         if (usdtAmount < 5) {
-            return { error: 'SMALL_AMOUNT', errorMsg: 'Small Amount: ' + usdtAmount, positionKey: this.positionKey };
+            console.log(` error: 'SMALL_AMOUNT', errorMsg: 'Small Amount: ' + ${usdtAmount}, positionKey: ${this.positionKey}`); 
+            
+            this.deletePositionInner({excludeKey: this.positionKey});
+
+            return;
         }
 
         // return {};
@@ -234,11 +232,10 @@ export class Position {
 
     // WATCH POSITION
     watchPosition(): void {
-        console.log('watch pos');
         symbolCandlesTicksStream(this.symbol, data => {
-            const rsi = RSI({ data, period: this.rsiPeriod }),
+            const rsi = RSI({ data, period: this.rsiPeriod, symbol: this.symbol }),
                 lastPrice = data[data.length - 1].close;
-                
+
             if (this.position == 'long' && rsi.last >= rsi.avgRsiAbove) {
                 this.closePositionMarket(lastPrice);
             } else if (this.position == 'short' && rsi.last <= rsi.avgRsiBelow) {
@@ -268,15 +265,7 @@ export class Position {
             console.log(pos);
 
             if (pos.positionAmount == '0') {
-                ordersUpdateStream(this.symbol, null, true);
-                positionUpdateStream(this.symbol, null, true);
-                symbolCandlesTicksStream(this.symbol, null, true);
-
-                binanceAuth.futuresCancelAll(this.symbol).then(() => {
-                    if (this.deletePosition !== undefined) {
-                        this.deletePosition(this.positionKey);
-                    }
-                });
+                this.deletePositionInner();
             }
         });
     }
@@ -339,6 +328,18 @@ export class Position {
         binanceAuth.futuresOrder(closeSide, this.symbol, this.quantity, false, ordParams).then(arg => {
             // console.log('Market close position');
             // console.log(arg);
+        });
+    }
+
+    deletePositionInner(opt?: any) {
+        ordersUpdateStream(this.symbol, null, true);
+        positionUpdateStream(this.symbol, null, true);
+        symbolCandlesTicksStream(this.symbol, null, true);
+
+        binanceAuth.futuresCancelAll(this.symbol).then(() => {
+            if (this.deletePosition !== undefined) {
+                this.deletePosition(this.positionKey, opt);
+            }
         });
     }
 }

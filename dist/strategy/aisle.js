@@ -1,182 +1,85 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Aisle = void 0;
-function Aisle({ fee, limit, data }) {
-    return new Promise((resolve, reject) => {
-        const result = [];
-        for (const key in data) {
-            if (Object.prototype.hasOwnProperty.call(data, key)) {
-                const _item = data[key];
-                let firstCdlDir, expectedLastCdlDir, falseAccum = 0;
-                let item = [..._item];
-                const lastCandle = item.pop();
-                item.forEach((cdl, i) => {
-                    if (!i) {
-                        if (cdl.close >= cdl.open) {
-                            firstCdlDir = 'up';
-                            if (limit % 2 == 0) {
-                                expectedLastCdlDir = 'down';
-                            }
-                            else {
-                                expectedLastCdlDir = 'up';
-                            }
-                        }
-                        else {
-                            firstCdlDir = 'down';
-                            if (limit % 2 == 0) {
-                                expectedLastCdlDir = 'up';
-                            }
-                            else {
-                                expectedLastCdlDir = 'down';
-                            }
-                        }
-                    }
-                    else {
-                        if (firstCdlDir === 'up') {
-                            if ((i % 2 === 0 && cdl.close < cdl.open) ||
-                                (i % 2 !== 0 && cdl.close >= cdl.open)) {
-                                falseAccum++;
-                            }
-                        }
-                        if (firstCdlDir === 'down') {
-                            if ((i % 2 !== 0 && cdl.close < cdl.open) ||
-                                (i % 2 === 0 && cdl.close >= cdl.open)) {
-                                falseAccum++;
-                            }
-                        }
-                    }
-                });
-                if (!falseAccum) {
-                    const volatility = {
-                        // minLong: 999,
-                        // minShort: 999,
-                        // maxLong: 0,
-                        // maxShort: 0,
-                        maxHigh: 0,
-                        minHigh: 99999,
-                        maxLow: 0,
-                        minLow: 99999
-                    };
-                    let sumChange = 0, sumClose = 0;
-                    item.forEach((cdl) => {
-                        // const changeLongPerc = (cdl.high - cdl.low) / (cdl.low / 100);
-                        // const changeShortPerc = (cdl.high - cdl.low) / (cdl.high / 100);
-                        // if (changeLongPerc > volatility.maxLong) {
-                        //     volatility.maxLong = changeLongPerc;
-                        // }
-                        // if (changeLongPerc < volatility.minLong) {
-                        //     volatility.minLong = changeLongPerc;
-                        // }
-                        // if (changeShortPerc > volatility.maxShort) {
-                        //     volatility.maxShort = changeShortPerc;
-                        // }
-                        // if (changeShortPerc < volatility.minShort) {
-                        //     volatility.minShort = changeShortPerc;
-                        // }
-                        sumClose += cdl.close;
-                        sumChange += (cdl.high - cdl.low) / (cdl.low / 100);
-                        if (cdl.high > volatility.maxHigh) {
-                            volatility.maxHigh = cdl.high;
-                        }
-                        if (cdl.high < volatility.minHigh) {
-                            volatility.minHigh = cdl.high;
-                        }
-                        if (cdl.low > volatility.maxLow) {
-                            volatility.maxLow = cdl.low;
-                        }
-                        if (cdl.low < volatility.minLow) {
-                            volatility.minLow = cdl.low;
-                        }
-                    });
-                    const avrgClose = (sumClose + lastCandle.close) / limit;
-                    const partOfAvrgChange = sumChange / item.length / 2;
-                    const lowDtPerc = (volatility.maxLow - volatility.minLow) / (volatility.minLow / 100);
-                    if (expectedLastCdlDir === 'up' &&
-                        lowDtPerc < partOfAvrgChange &&
-                        lastCandle.close > lastCandle.open &&
-                        lastCandle.high - lastCandle.close < lastCandle.close - lastCandle.low) {
-                        const expectedProfit = (volatility.minHigh - lastCandle.close) / (lastCandle.close / 100) - fee;
-                        const stopLoss = (lastCandle.low < volatility.minLow ? lastCandle.low : volatility.minLow) - (volatility.maxLow - volatility.minLow);
-                        const possibleLoss = (lastCandle.close - stopLoss) / (lastCandle.close / 100) + fee;
-                        if (expectedProfit > possibleLoss && expectedProfit > fee) {
-                            const keyResult = {
-                                symbol: key,
-                                position: 'long',
-                                entryPrice: lastCandle.close,
-                                expectedProfit: expectedProfit,
-                                possibleLoss: possibleLoss,
-                                // stopLoss,
-                                signal: 'aisle',
-                                preferIndex: expectedProfit,
-                                resolvePosition: false
-                            };
-                            result.push(keyResult);
-                        }
-                    }
-                    const highDtPerc = (volatility.maxHigh - volatility.minHigh) / (volatility.minHigh / 100);
-                    if (expectedLastCdlDir === 'down' &&
-                        highDtPerc < partOfAvrgChange &&
-                        lastCandle.close < lastCandle.open &&
-                        lastCandle.close - lastCandle.low < lastCandle.high - lastCandle.close) {
-                        const expectedProfit = (lastCandle.close - volatility.maxLow) / (lastCandle.close / 100) - fee;
-                        const stopLoss = (lastCandle.high > volatility.maxHigh ? lastCandle.high : volatility.maxHigh) + (volatility.maxHigh - volatility.minHigh);
-                        const possibleLoss = (stopLoss - lastCandle.close) / (lastCandle.close / 100) + fee;
-                        if (expectedProfit > possibleLoss && expectedProfit > fee) {
-                            const keyResult = {
-                                symbol: key,
-                                position: 'short',
-                                entryPrice: lastCandle.close,
-                                expectedProfit: expectedProfit,
-                                possibleLoss: possibleLoss,
-                                // stopLoss,
-                                signal: 'aisle',
-                                preferIndex: expectedProfit,
-                                resolvePosition: false
-                            };
-                            result.push(keyResult);
-                        }
-                    }
-                    // if (expectedLastCdlDir === 'up') {
-                    //     const changePerc = (lastCandle.high - lastCandle.low) / (lastCandle.low / 100);
-                    //     if (changePerc < volatility.minLong - fee) {
-                    //         const expectedProfit = volatility.minLong - fee - changePerc;
-                    //         const possibleLoss = ((lastCandle.close - lastCandle.low) / (lastCandle.close / 100)) + fee;
-                    //         if (expectedProfit > possibleLoss) {
-                    //             const keyResult: SymbolResult = {
-                    //                 symbol: key,
-                    //                 position: 'long',
-                    //                 entryPrice: lastCandle.close,
-                    //                 expectedProfit: expectedProfit,
-                    //                 possibleLoss: possibleLoss,
-                    //                 stopLoss: lastCandle.low,
-                    //             };
-                    //             result.push(keyResult);
-                    //         }
-                    //     }
-                    // }
-                    // if (expectedLastCdlDir === 'down') {
-                    //     const changePerc = (lastCandle.high - lastCandle.low) / (lastCandle.high / 100);
-                    //     if (changePerc < volatility.minShort - fee && lastCandle.close < lastCandle.open) {
-                    //         const expectedProfit = volatility.minShort - fee - changePerc;
-                    //         const possibleLoss = ((lastCandle.high - lastCandle.close) / (lastCandle.close / 100)) + fee;
-                    //         if (expectedProfit > possibleLoss) {
-                    //             const keyResult: SymbolResult = {
-                    //                 symbol: key,
-                    //                 position: 'short',
-                    //                 entryPrice: lastCandle.close,
-                    //                 expectedProfit: expectedProfit,
-                    //                 possibleLoss: possibleLoss,
-                    //                 stopLoss: lastCandle.high,
-                    //             };
-                    //             result.push(keyResult);
-                    //         }
-                    //     }
-                    // }
-                }
-            }
-        }
-        resolve(result);
+const indicators_1 = require("../indicators");
+function Aisle({ symbol, candlesData, tiSettings }) {
+    const _candles = candlesData;
+    const tdl = (0, indicators_1.TDL)({
+        candles: _candles,
+        topLineOpt: tiSettings.tdlTopLineOpt,
+        bottomLineOpt: tiSettings.tdlbottomLineOpt
     });
+    const atr = (0, indicators_1.ATR)({ data: _candles, period: tiSettings.atrPeriod });
+    const lastCandle = _candles[_candles.length - 1];
+    const lastPrice = lastCandle.close;
+    const prevCandle = _candles[_candles.length - 2];
+    const thirdCandle = _candles[_candles.length - 3];
+    const fourthCandle = _candles[_candles.length - 4];
+    const fifthCandle = _candles[_candles.length - 5];
+    const candles = _candles.slice(tiSettings.smaPeriod * -1);
+    let maxCandleMove = 0, minCandleMove = 9999, avgCandleMove = 0, percentAverageCandleMove = 0;
+    candles.pop();
+    candles.forEach(cdl => {
+        if (cdl.high - cdl.low > maxCandleMove) {
+            maxCandleMove = cdl.high - cdl.low;
+        }
+        if (cdl.high - cdl.low < minCandleMove) {
+            minCandleMove = cdl.high - cdl.low;
+        }
+        avgCandleMove += cdl.high - cdl.low;
+        percentAverageCandleMove += (cdl.high - cdl.low) / (cdl.low / 100);
+    });
+    minCandleMove = minCandleMove || 9999;
+    avgCandleMove = avgCandleMove / candles.length;
+    percentAverageCandleMove = percentAverageCandleMove / candles.length;
+    const signalDetails = {
+        lastPrice,
+        percentAverageCandleMove,
+        minCandleMove,
+        avgCandleMove,
+        lastCandleMove: lastCandle.open - lastCandle.close,
+        prevCandleClose: prevCandle.close,
+        atr,
+        candleHasOpened: false
+    };
+    const symbolResult = {
+        symbol,
+        position: null,
+        entryPrice: lastPrice,
+        percentLoss: null,
+        signal: 'scalping',
+        preferIndex: percentAverageCandleMove,
+        rsiPeriod: tiSettings.rsiPeriod,
+        signalDetails,
+        resolvePosition: false
+    };
+    if (tdl.signal == 'overBottom' &&
+        lastCandle.close - lastCandle.open >= minCandleMove) {
+        let stopLoss = lastPrice - atr;
+        if (stopLoss > tdl.bottomLinePrice) {
+            stopLoss = tdl.bottomLinePrice - atr;
+        }
+        const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
+        signalDetails.stopLoss = stopLoss;
+        signalDetails.lastCandleMove = lastCandle.close - lastCandle.open;
+        symbolResult.position = 'long';
+        symbolResult.percentLoss = percentLoss;
+        symbolResult.resolvePosition = true;
+    }
+    else if (tdl.signal == 'underTop' &&
+        lastCandle.open - lastCandle.close >= minCandleMove) {
+        let stopLoss = lastPrice + atr;
+        if (stopLoss < tdl.topLinePrice) {
+            stopLoss = tdl.topLinePrice + atr;
+        }
+        const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);
+        signalDetails.stopLoss = stopLoss;
+        signalDetails.lastCandleMove = lastCandle.open - lastCandle.close;
+        symbolResult.position = 'short';
+        symbolResult.percentLoss = percentLoss;
+        symbolResult.resolvePosition = true;
+    }
+    return symbolResult;
 }
 exports.Aisle = Aisle;
 //# sourceMappingURL=aisle.js.map

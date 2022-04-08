@@ -7,13 +7,17 @@ exports.getTickerStreamCache = exports.tickerStream = exports.priceStream = expo
 const ws_1 = __importDefault(require("ws"));
 const node_binance_api_1 = __importDefault(require("node-binance-api"));
 const config_1 = require("./config");
-const binance = new node_binance_api_1.default();
+const binance = new node_binance_api_1.default().options({ useServerTime: true });
 const binanceAuth = new node_binance_api_1.default().options({
     APIKEY: config_1.BINANCE_KEY,
     APISECRET: config_1.BINANCE_SECRET,
     useServerTime: true
 });
 const streamApi = 'wss://fstream.binance.com/stream?streams=';
+// check server time
+binance.time().then(res => {
+    console.log('Server Time: ' + new Date(res.serverTime));
+});
 const streamsSubscribers = {};
 const candlesTicksStreamSubscribers = {};
 let candlesTicksStreamExecuted = false;
@@ -28,6 +32,7 @@ function candlesTicks({ symbols, interval, limit }, callback) {
                 let [time, open, high, low, close, volume, closeTime, assetVolume, trades, buyBaseVolume, buyAssetVolume, ignored] = tick;
                 ticksArr[i] = {
                     openTime: time,
+                    closeTime,
                     open: +open,
                     high: +high,
                     low: +low,
@@ -65,27 +70,27 @@ function candlesTicksStream({ symbols, interval, limit }, callback) {
             }
             ws.on('message', function message(data) {
                 const { e: eventType, E: eventTime, s: symbol, k: ticks } = JSON.parse(data).data;
-                const { t: openTime, o: open, h: high, l: low, c: close, x: isFinal } = ticks;
+                const { t: openTime, T: closeTime, o: open, h: high, l: low, c: close, x: isFinal } = ticks;
                 const candle = {
                     openTime: openTime,
+                    closeTime,
                     open: +open,
                     high: +high,
                     low: +low,
                     close: +close,
                     interval,
-                    limit,
-                    isFinal
+                    limit
                 };
                 if (result[symbol][result[symbol].length - 1].openTime !== openTime) {
                     result[symbol].push(candle);
+                    result[symbol].shift();
                 }
-                result[symbol][result[symbol].length - 1] = candle;
+                else {
+                    result[symbol][result[symbol].length - 1] = candle;
+                }
                 candlesTicksStreamSubscribers[streams].forEach(cb => cb(result));
                 if (symbolCandlesTicksStreamSubscribers[symbol]) {
                     symbolCandlesTicksStreamSubscribers[symbol].forEach(cb => cb(result[symbol]));
-                }
-                if (isFinal) {
-                    result[symbol].shift();
                 }
             });
         });

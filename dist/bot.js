@@ -9,8 +9,9 @@ const position_1 = require("./position");
 const symbols_1 = __importDefault(require("./symbols"));
 const strategy_1 = require("./strategy");
 const events_1 = __importDefault(require("events"));
-const fee = .08;
+const fee = .08, interval = '5m', limit = 72, leverage = 5;
 const botPositions = {};
+const excludedPositions = [];
 const ev = new events_1.default.EventEmitter();
 let positions = 0;
 let botIsRun = false;
@@ -22,18 +23,18 @@ async function Bot() {
         console.log('Bot was run!');
         return ev;
     }
-    console.log('Bot has been run.');
+    console.log(`Bot has been run. Candles (${limit}) with interval: ${interval}. Leverage: ${leverage}.`);
     botIsRun = true;
     (0, binanceApi_1.ordersUpdateStream)();
     (0, binanceApi_1.tickerStream)();
-    const interval = '5m';
-    const limit = 100;
-    const leverage = 3;
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
-    const _symbols = symbols; //['ZILUSDT', 'WAVESUSDT', 'GMTUSDT']; //symbols; //['PEOPLEUSDT'];
+    const _symbols = symbols; // ['ZILUSDT', 'WAVESUSDT', 'GMTUSDT'];
     const setPosition = function (s) {
         const pKey = s.symbol;
-        if (!botPositions[pKey] && positions < 2 && s.resolvePosition) {
+        if (excludedPositions.includes(pKey)) {
+            return;
+        }
+        if (!botPositions[pKey] && positions < 2 && s.resolvePosition && s.percentLoss > fee) {
             positions++;
             let trailingStopTriggerPerc;
             let trailingStopPricePerc;
@@ -65,12 +66,7 @@ async function Bot() {
                 signalDetails: s.signalDetails
             });
             if (s.signal == 'scalping') {
-                botPositions[pKey].setScalpingOrders().then((res) => {
-                    console.log({ error: '' });
-                    if (res.error) {
-                        console.log({ error: new Error(res.errorMsg) });
-                    }
-                });
+                botPositions[pKey].setScalpingOrders();
             }
             else {
                 // botPositions[pKey].setEntryOrder().then((res) => {
@@ -80,15 +76,19 @@ async function Bot() {
                 //     }
                 // });
             }
-            botPositions[pKey].deletePosition = function (positionKey) {
-                console.log({ posMsg: 'DELETE POS', scalpOrder: '' });
+            botPositions[pKey].deletePosition = function (positionKey, opt) {
+                if (opt && opt.excludeKey) {
+                    excludedPositions.push(opt.excludeKey);
+                    console.log('EXCLUDED =' + positionKey);
+                }
                 delete botPositions[positionKey];
                 positions--;
+                console.log('DELETE =' + positionKey + '= POSITION OBJECT');
             };
         }
     };
     (0, binanceApi_1.candlesTicksStream)({ symbols: _symbols, interval, limit }, data => {
-        (0, strategy_1.Strategy)({ fee, limit, data }).then(res => {
+        (0, strategy_1.Strategy)({ data, symbols: _symbols }).then(res => {
             if (controls.resolvePositionMaking) {
                 res.forEach(setPosition);
             }

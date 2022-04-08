@@ -1,6 +1,6 @@
 export type Result = {
     last: number;
-    stack: number[];
+    stack?: number[];
     avgRsiAbove?: number;
     avgRsiBelow?: number;
     stackHigh?: number[];
@@ -12,10 +12,31 @@ export type Candle = {
     open: number;
     close: number;
     low: number;
-    isFinal?: boolean;
+    openTime: number;
+    closeTime: number;
 };
 
 export type IndicatorEntry = {
     data: Candle[];
     period: number;
+};
+
+export type InputTime = { d: number; h: number; m: number; };
+
+export type TradelinesInput = {
+    candles: Candle[];
+    topLineOpt: {
+        price: number;
+        time: InputTime;
+    }[];
+    bottomLineOpt: {
+        price: number;
+        time: InputTime;
+    }[];
+};
+
+export type TradelinesResult = {
+    signal: 'crossAboveTop' | 'crossBelowTop' | 'crossBelowBottom' | 'crossAboveBottom' | 'overTop' | 'overBottom' | 'underTop' | 'underBottom';
+    topLinePrice: number;
+    bottomLinePrice: number;
 };

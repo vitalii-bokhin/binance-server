@@ -103,10 +103,10 @@ class Position {
                     stopPrice: null
                 };
                 if (this.position === 'long') {
-                    exitParams.stopPrice = entryPrice - ((this.percentLoss - this.fee) * (entryPrice / 100));
+                    exitParams.stopPrice = entryPrice - (this.percentLoss * (entryPrice / 100));
                 }
                 else {
-                    exitParams.stopPrice = entryPrice + ((this.percentLoss - this.fee) * (entryPrice / 100));
+                    exitParams.stopPrice = entryPrice + (this.percentLoss * (entryPrice / 100));
                 }
                 exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
                 binanceAuth.futuresOrder(exitSide, this.symbol, false, false, exitParams).then(ord => {
@@ -129,14 +129,14 @@ class Position {
             newClientOrderId: this.entryClientOrderId
         };
         if (quantity < this.symbolInfo.minMarketLotSize) {
-            return {
-                error: 'SMALL_LOT_SIZE',
-                errorMsg: 'Min: ' + this.symbolInfo.minMarketLotSize + '; Current: ' + quantity,
-                positionKey: this.positionKey
-            };
+            console.log(` error: 'SMALL_LOT_SIZE', errorMsg: 'Min: ' + ${this.symbolInfo.minMarketLotSize} + '; Current: ' + ${quantity}, positionKey: ${this.positionKey}`);
+            this.deletePositionInner({ excludeKey: this.positionKey });
+            return;
         }
         if (usdtAmount < 5) {
-            return { error: 'SMALL_AMOUNT', errorMsg: 'Small Amount: ' + usdtAmount, positionKey: this.positionKey };
+            console.log(` error: 'SMALL_AMOUNT', errorMsg: 'Small Amount: ' + ${usdtAmount}, positionKey: ${this.positionKey}`);
+            this.deletePositionInner({ excludeKey: this.positionKey });
+            return;
         }
         // return {};
         const entryOrd = await binanceAuth.futuresOrder(entrySide, this.symbol, quantity, false, entryParams);
@@ -145,9 +145,8 @@ class Position {
     }
     // WATCH POSITION
     watchPosition() {
-        console.log('watch pos');
         (0, binanceApi_1.symbolCandlesTicksStream)(this.symbol, data => {
-            const rsi = (0, indicators_1.RSI)({ data, period: this.rsiPeriod }), lastPrice = data[data.length - 1].close;
+            const rsi = (0, indicators_1.RSI)({ data, period: this.rsiPeriod, symbol: this.symbol }), lastPrice = data[data.length - 1].close;
             if (this.position == 'long' && rsi.last >= rsi.avgRsiAbove) {
                 this.closePositionMarket(lastPrice);
             }
@@ -172,14 +171,7 @@ class Position {
         (0, binanceApi_1.positionUpdateStream)(this.symbol, (pos) => {
             console.log(pos);
             if (pos.positionAmount == '0') {
-                (0, binanceApi_1.ordersUpdateStream)(this.symbol, null, true);
-                (0, binanceApi_1.positionUpdateStream)(this.symbol, null, true);
-                (0, binanceApi_1.symbolCandlesTicksStream)(this.symbol, null, true);
-                binanceAuth.futuresCancelAll(this.symbol).then(() => {
-                    if (this.deletePosition !== undefined) {
-                        this.deletePosition(this.positionKey);
-                    }
-                });
+                this.deletePositionInner();
             }
         });
     }
@@ -228,6 +220,16 @@ class Position {
         binanceAuth.futuresOrder(closeSide, this.symbol, this.quantity, false, ordParams).then(arg => {
             // console.log('Market close position');
             // console.log(arg);
+        });
+    }
+    deletePositionInner(opt) {
+        (0, binanceApi_1.ordersUpdateStream)(this.symbol, null, true);
+        (0, binanceApi_1.positionUpdateStream)(this.symbol, null, true);
+        (0, binanceApi_1.symbolCandlesTicksStream)(this.symbol, null, true);
+        binanceAuth.futuresCancelAll(this.symbol).then(() => {
+            if (this.deletePosition !== undefined) {
+                this.deletePosition(this.positionKey, opt);
+            }
         });
     }
 }

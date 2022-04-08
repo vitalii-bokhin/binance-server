@@ -12,7 +12,7 @@ function User(user) {
 	this.bin = new Binance().options({
 		APIKEY: user.api_key,
 		APISECRET: user.api_secret,
-		useServerTime: true
+		// useServerTime: true
 	});
 
 	this.userData();

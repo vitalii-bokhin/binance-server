@@ -1,7 +1,11 @@
 import { IndicatorEntry, Result } from './types';
 import { RSI as tiRsi } from 'technicalindicators';
 
-export function RSI({ data, period }: IndicatorEntry): Result {
+const cache: {
+    [symbol: string]: { stack: number[]; lastCandleOpenTime: number; };
+} = {};
+
+export function RSI({ data, period, symbol }: { symbol: string } & IndicatorEntry): Result {
     const candles = [...data],
         lastCandle = candles.pop(),
         input = {
@@ -11,27 +15,19 @@ export function RSI({ data, period }: IndicatorEntry): Result {
 
     const rsi = new tiRsi(input);
 
-    const result: {
-        stack: number[];
-        last: number;
-        avgRsiAbove: number;
-        avgRsiBelow: number;
-    } = {
-        stack: rsi.getResult(),
-        last: rsi.nextValue(lastCandle.close),
+    const stack = cache[symbol] ? cache[symbol].stack : rsi.getResult();
+
+    const last = rsi.nextValue(lastCandle.close);
+
+    const result: Result = {
+        stack,
+        last,
         avgRsiAbove: 0,
         avgRsiBelow: 0
     };
 
-
     let rsiAbove = [];
     let rsiBelow = [];
-
-    // if (result.last > 60) {
-    //     rsiAbove.push(result.last);
-    // } else if (result.last < 40) {
-    //     rsiBelow.push(result.last);
-    // }
 
     result.stack.forEach(el => {
         if (el > 60) {
@@ -43,6 +39,16 @@ export function RSI({ data, period }: IndicatorEntry): Result {
 
     result.avgRsiAbove = rsiAbove.reduce((p, c) => p + c, 0) / rsiAbove.length || 60;
     result.avgRsiBelow = rsiBelow.reduce((p, c) => p + c, 0) / rsiBelow.length || 40;
+
+    if (!cache[symbol]) {
+        cache[symbol] = {
+            stack: stack,
+            lastCandleOpenTime: lastCandle.openTime
+        };
+    } else if (lastCandle.openTime !== cache[symbol].lastCandleOpenTime) {
+        cache[symbol].lastCandleOpenTime = lastCandle.openTime;
+        cache[symbol].stack.push(last);
+    }
 
     return result;
 }

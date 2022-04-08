@@ -3,12 +3,18 @@ import { Position } from './position';
 import getSymbols from './symbols';
 import { Strategy } from './strategy';
 import events from 'events';
+import { SymbolResult } from './strategy/types';
 
-const fee: number = .08;
+const fee: number = .08,
+    interval: string = '5m',
+    limit: number = 72,
+    leverage: number = 5;
 
 const botPositions: {
     [key: string]: Position;
 } = {};
+
+const excludedPositions: string[] = [];
 
 const ev = new events.EventEmitter();
 
@@ -27,25 +33,25 @@ export async function Bot(): Promise<events> {
         return ev;
     }
 
-    console.log('Bot has been run.');
+    console.log(`Bot has been run. Candles (${limit}) with interval: ${interval}. Leverage: ${leverage}.`);
 
     botIsRun = true;
 
     ordersUpdateStream();
     tickerStream();
 
-    const interval = '5m';
-    const limit = 100;
-    const leverage = 3;
-
     const { symbols, symbolsObj } = await getSymbols();
 
-    const _symbols = symbols; //['ZILUSDT', 'WAVESUSDT', 'GMTUSDT']; //symbols; //['PEOPLEUSDT'];
+    const _symbols = symbols;// ['ZILUSDT', 'WAVESUSDT', 'GMTUSDT'];
 
-    const setPosition = function (s) {
+    const setPosition = function (s: SymbolResult): void {
         const pKey = s.symbol;
 
-        if (!botPositions[pKey] && positions < 2 && s.resolvePosition) {
+        if (excludedPositions.includes(pKey)) {
+            return;
+        }
+
+        if (!botPositions[pKey] && positions < 2 && s.resolvePosition && s.percentLoss > fee) {
             positions++;
 
             let trailingStopTriggerPerc: number;
@@ -81,13 +87,7 @@ export async function Bot(): Promise<events> {
             });
 
             if (s.signal == 'scalping') {
-                botPositions[pKey].setScalpingOrders().then((res) => {
-                    console.log({ error: '' });
-
-                    if (res.error) {
-                        console.log({ error: new Error(res.errorMsg) });
-                    }
-                });
+                botPositions[pKey].setScalpingOrders();
 
             } else {
                 // botPositions[pKey].setEntryOrder().then((res) => {
@@ -99,16 +99,22 @@ export async function Bot(): Promise<events> {
                 // });
             }
 
-            botPositions[pKey].deletePosition = function (positionKey) {
-                console.log({ posMsg: 'DELETE POS', scalpOrder: '' });
+            botPositions[pKey].deletePosition = function (positionKey, opt) {
+                if (opt && opt.excludeKey) {
+                    excludedPositions.push(opt.excludeKey);
+                    console.log('EXCLUDED =' + positionKey);
+                }
+
                 delete botPositions[positionKey];
                 positions--;
+
+                console.log('DELETE =' + positionKey + '= POSITION OBJECT');
             }
         }
     }
 
     candlesTicksStream({ symbols: _symbols, interval, limit }, data => {
-        Strategy({ fee, limit, data }).then(res => {
+        Strategy({ data, symbols: _symbols }).then(res => {
             if (controls.resolvePositionMaking) {
                 res.forEach(setPosition);
             }
