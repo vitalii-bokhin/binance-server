@@ -8,22 +8,23 @@ const topLineOpt = [
         time: { d: 8, h: 4, m: 30 }
     },
     {
-        price: 29.4921,
-        time: { d: 8, h: 10, m: 15 }
-    },
+        price: 27.0748,
+        time: { d: 9, h: 0, m: 45 }
+    }
 ];
 const bottomLineOpt = [
     {
-        price: 29.9266,
-        time: { d: 8, h: 2, m: 10 }
+        price: 29.8772,
+        time: { d: 8, h: 3, m: 15 }
     },
     {
-        price: 29.3618,
-        time: { d: 8, h: 10, m: 20 }
-    },
+        price: 26.4089,
+        time: { d: 9, h: 0, m: 25 }
+    }
 ];
 (0, binanceApi_1.candlesTicks)({ symbols: ['WAVESUSDT'], interval: '5m', limit: 10 }, res => {
     const candles = res['WAVESUSDT'];
-    (0, indicators_1.TDL)({ candles, topLineOpt, bottomLineOpt });
+    const tdl = (0, indicators_1.TDL)({ candles, topLineOpt, bottomLineOpt });
+    console.log(tdl);
 });
 //# sourceMappingURL=test.js.map

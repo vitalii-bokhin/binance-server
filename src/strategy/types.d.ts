@@ -28,22 +28,28 @@ export type Candle = {
 
 export type CdlDir = 'up' | 'down';
 
+export type TiSettings = {
+    smaPeriod: number;
+    rsiPeriod: number;
+    atrPeriod: number;
+    tdlLines?: {
+        [symbol: string]: {
+            tdlTopLineOpt: {
+                price: number;
+                time: InputTime;
+            }[];
+            tdlbottomLineOpt: {
+                price: number;
+                time: InputTime;
+            }[];
+        }
+    };
+};
+
 export type Entry = {
     symbol: string;
     candlesData: Candle[];
     fee?: number;
     limit?: number;
-    tiSettings?: {
-        smaPeriod: number;
-        rsiPeriod: number;
-        atrPeriod: number;
-        tdlTopLineOpt?: {
-            price: number;
-            time: InputTime;
-        }[];
-        tdlbottomLineOpt?: {
-            price: number;
-            time: InputTime;
-        }[];
-    }
+    tiSettings?: TiSettings
 };

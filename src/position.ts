@@ -232,16 +232,16 @@ export class Position {
 
     // WATCH POSITION
     watchPosition(): void {
-        symbolCandlesTicksStream(this.symbol, data => {
-            const rsi = RSI({ data, period: this.rsiPeriod, symbol: this.symbol }),
-                lastPrice = data[data.length - 1].close;
+        // symbolCandlesTicksStream(this.symbol, data => {
+        //     const rsi = RSI({ data, period: this.rsiPeriod, symbol: this.symbol }),
+        //         lastPrice = data[data.length - 1].close;
 
-            if (this.position == 'long' && rsi.last >= rsi.avgRsiAbove) {
-                this.closePositionMarket(lastPrice);
-            } else if (this.position == 'short' && rsi.last <= rsi.avgRsiBelow) {
-                this.closePositionMarket(lastPrice);
-            }
-        });
+        //     if (this.position == 'long' && rsi.last >= rsi.avgRsiAbove) {
+        //         this.closePositionMarket(lastPrice);
+        //     } else if (this.position == 'short' && rsi.last <= rsi.avgRsiBelow) {
+        //         this.closePositionMarket(lastPrice);
+        //     }
+        // });
 
         // priceStream(this.symbol, price => {
         //     if (!HasBeenMoved) {

@@ -8,8 +8,8 @@ export function Aisle({ symbol, candlesData, tiSettings }: Entry): SymbolResult 
 
     const tdl = TDL({
         candles: _candles,
-        topLineOpt: tiSettings.tdlTopLineOpt,
-        bottomLineOpt: tiSettings.tdlbottomLineOpt
+        topLineOpt: tiSettings.tdlLines[symbol].tdlTopLineOpt,
+        bottomLineOpt: tiSettings.tdlLines[symbol].tdlbottomLineOpt
     });
 
     const atr = ATR({ data: _candles, period: tiSettings.atrPeriod });
@@ -74,15 +74,14 @@ export function Aisle({ symbol, candlesData, tiSettings }: Entry): SymbolResult 
     };
 
     if (
-        tdl.signal == 'overBottom' &&
+        (tdl.signal == 'overBottom' || tdl.signal == 'crossAboveBottom' || tdl.signal == 'overTop') &&
         lastCandle.close - lastCandle.open >= minCandleMove
     ) {
-
         let stopLoss = lastPrice - atr;
 
-        if (stopLoss > tdl.bottomLinePrice) {
-            stopLoss = tdl.bottomLinePrice - atr;
-        }
+        // if (stopLoss > tdl.bottomLinePrice) {
+        //     stopLoss = tdl.bottomLinePrice;
+        // }
 
         const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
 
@@ -94,15 +93,14 @@ export function Aisle({ symbol, candlesData, tiSettings }: Entry): SymbolResult 
         symbolResult.resolvePosition = true;
 
     } else if (
-        tdl.signal == 'underTop' &&
+        (tdl.signal == 'underTop' || tdl.signal == 'crossBelowTop' || tdl.signal == 'underBottom') &&
         lastCandle.open - lastCandle.close >= minCandleMove
     ) {
-
         let stopLoss = lastPrice + atr;
 
-        if (stopLoss < tdl.topLinePrice) {
-            stopLoss = tdl.topLinePrice + atr;
-        }
+        // if (stopLoss < tdl.topLinePrice) {
+        //     stopLoss = tdl.topLinePrice + atr;
+        // }
 
         const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);
 

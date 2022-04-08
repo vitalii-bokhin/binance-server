@@ -6,8 +6,8 @@ function Aisle({ symbol, candlesData, tiSettings }) {
     const _candles = candlesData;
     const tdl = (0, indicators_1.TDL)({
         candles: _candles,
-        topLineOpt: tiSettings.tdlTopLineOpt,
-        bottomLineOpt: tiSettings.tdlbottomLineOpt
+        topLineOpt: tiSettings.tdlLines[symbol].tdlTopLineOpt,
+        bottomLineOpt: tiSettings.tdlLines[symbol].tdlbottomLineOpt
     });
     const atr = (0, indicators_1.ATR)({ data: _candles, period: tiSettings.atrPeriod });
     const lastCandle = _candles[_candles.length - 1];
@@ -53,12 +53,12 @@ function Aisle({ symbol, candlesData, tiSettings }) {
         signalDetails,
         resolvePosition: false
     };
-    if (tdl.signal == 'overBottom' &&
+    if ((tdl.signal == 'overBottom' || tdl.signal == 'crossAboveBottom' || tdl.signal == 'overTop') &&
         lastCandle.close - lastCandle.open >= minCandleMove) {
         let stopLoss = lastPrice - atr;
-        if (stopLoss > tdl.bottomLinePrice) {
-            stopLoss = tdl.bottomLinePrice - atr;
-        }
+        // if (stopLoss > tdl.bottomLinePrice) {
+        //     stopLoss = tdl.bottomLinePrice;
+        // }
         const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
         signalDetails.stopLoss = stopLoss;
         signalDetails.lastCandleMove = lastCandle.close - lastCandle.open;
@@ -66,12 +66,12 @@ function Aisle({ symbol, candlesData, tiSettings }) {
         symbolResult.percentLoss = percentLoss;
         symbolResult.resolvePosition = true;
     }
-    else if (tdl.signal == 'underTop' &&
+    else if ((tdl.signal == 'underTop' || tdl.signal == 'crossBelowTop' || tdl.signal == 'underBottom') &&
         lastCandle.open - lastCandle.close >= minCandleMove) {
         let stopLoss = lastPrice + atr;
-        if (stopLoss < tdl.topLinePrice) {
-            stopLoss = tdl.topLinePrice + atr;
-        }
+        // if (stopLoss < tdl.topLinePrice) {
+        //     stopLoss = tdl.topLinePrice + atr;
+        // }
         const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);
         signalDetails.stopLoss = stopLoss;
         signalDetails.lastCandleMove = lastCandle.open - lastCandle.close;

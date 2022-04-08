@@ -7,8 +7,7 @@ exports.getTickerStreamCache = exports.tickerStream = exports.priceStream = expo
 const ws_1 = __importDefault(require("ws"));
 const node_binance_api_1 = __importDefault(require("node-binance-api"));
 const config_1 = require("./config");
-const binance = new node_binance_api_1.default().options({ useServerTime: true });
-const binanceAuth = new node_binance_api_1.default().options({
+const binance = new node_binance_api_1.default().options({
     APIKEY: config_1.BINANCE_KEY,
     APISECRET: config_1.BINANCE_SECRET,
     useServerTime: true
@@ -119,7 +118,7 @@ const userFutureDataSubscribe = function (key, callback) {
     userFutureDataSubscribers[key] = callback;
     if (!userFutureDataExecuted) {
         userFutureDataExecuted = true;
-        binanceAuth.websockets.userFutureData(null, (res) => {
+        binance.websockets.userFutureData(null, (res) => {
             if (userFutureDataSubscribers['positions_update']) {
                 userFutureDataSubscribers['positions_update'](res.updateData.positions);
             }

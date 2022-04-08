@@ -1,5 +1,5 @@
-import { Result, Entry, Candle } from './types';
-// import { Aisle } from './aisle';
+import { Result, Entry, Candle, TiSettings } from './types';
+import { Aisle } from './aisle';
 // import { Fling } from './fling';
 import { Scalping } from './scalping';
 import { RSI, SMA } from '../indicators';
@@ -21,12 +21,16 @@ let analizedSymbolsCount = 0;
 const purpose: {
     scalping: string[];
     scalpingMax: number;
+    aisle: string[];
+    aisleMax: number;
 } = {
     scalping: [],
-    scalpingMax: 5
+    scalpingMax: 5,
+    aisle: [],
+    aisleMax: 1
 };
 
-const tiSettings = {
+const tiSettings: TiSettings = {
     smaPeriod: 24,
     rsiPeriod: 9,
     atrPeriod: 14,
@@ -34,61 +38,119 @@ const tiSettings = {
 
 export async function Strategy({ data, symbols }: { data: { [sym: string]: Candle[] }; symbols: string[] }): Promise<Result> {
 
-    if (analizedSymbolsCount < symbols.length) {
-        console.log('-----analize symbols-----');
-        console.log(symbols.length);
+    // if (analizedSymbolsCount < symbols.length) {
+    //     console.log('-----analize symbols-----');
+    //     console.log(symbols.length);
 
-        for (const symbol in data) {
-            if (Object.prototype.hasOwnProperty.call(data, symbol)) {
-                if (!analizedSymbols[symbol]) {
-                    const _candles = data[symbol];
-                    const rsi = RSI({ data: _candles, period: tiSettings.rsiPeriod, symbol });
-                    const avgRsiAbove = rsi.avgRsiAbove;
-                    const avgRsiBelow = rsi.avgRsiBelow;
+    //     for (const symbol in data) {
+    //         if (Object.prototype.hasOwnProperty.call(data, symbol)) {
+    //             if (!analizedSymbols[symbol]) {
+    //                 const _candles = data[symbol];
+    //                 const rsi = RSI({ data: _candles, period: tiSettings.rsiPeriod, symbol });
+    //                 const avgRsiAbove = rsi.avgRsiAbove;
+    //                 const avgRsiBelow = rsi.avgRsiBelow;
 
-                    const sma = SMA({ data: _candles, period: tiSettings.smaPeriod });
-                    const smaLag = sma.stack[sma.stack.length - tiSettings.smaPeriod / 2];
-                    const smaChange = Math.abs((sma.last - smaLag) / (sma.last / 100));
+    //                 const sma = SMA({ data: _candles, period: tiSettings.smaPeriod });
+    //                 const smaLag = sma.stack[sma.stack.length - tiSettings.smaPeriod / 2];
+    //                 const smaChange = Math.abs((sma.last - smaLag) / (sma.last / 100));
 
-                    const candles = [..._candles];
+    //                 const candles = [..._candles];
 
-                    candles.pop();
+    //                 candles.pop();
 
-                    let percentAverageCandleMove = 0;
+    //                 let percentAverageCandleMove = 0;
 
-                    candles.forEach(cdl => {
-                        percentAverageCandleMove += (cdl.high - cdl.low) / (cdl.low / 100);
-                    });
+    //                 candles.forEach(cdl => {
+    //                     percentAverageCandleMove += (cdl.high - cdl.low) / (cdl.low / 100);
+    //                 });
 
-                    percentAverageCandleMove = percentAverageCandleMove / candles.length;
+    //                 percentAverageCandleMove = percentAverageCandleMove / candles.length;
 
-                    analizedSymbols[symbol] = {
-                        symbol,
-                        avgRsiAbove,
-                        avgRsiBelow,
-                        percentAverageCandleMove,
-                        smaChange
-                    };
+    //                 analizedSymbols[symbol] = {
+    //                     symbol,
+    //                     avgRsiAbove,
+    //                     avgRsiBelow,
+    //                     percentAverageCandleMove,
+    //                     smaChange
+    //                 };
 
-                    analizedSymbolsCount++;
+    //                 analizedSymbolsCount++;
 
-                    console.log(analizedSymbolsCount);
+    //                 console.log(analizedSymbolsCount);
+    //             }
+    //         }
+    //     }
+
+    //     return [];
+    // }
+
+    // if (!purpose.scalping.length) {
+    //     const symbArr = Object.keys(analizedSymbols).map(sym => analizedSymbols[sym]);
+
+    //     symbArr.sort((a, b) => (b.smaChange / b.percentAverageCandleMove) - (a.smaChange / a.percentAverageCandleMove));
+
+    //     purpose.scalping = symbArr.slice(0, purpose.scalpingMax).map(it => it.symbol);
+
+    //     return [];
+    // }
+
+    // if (!purpose.aisle.length) {
+    //     const symbArr = Object.keys(analizedSymbols).map(sym => analizedSymbols[sym]);
+
+    //     symbArr.sort((a, b) => (b.smaChange / b.percentAverageCandleMove) - (a.smaChange / a.percentAverageCandleMove));
+
+    //     purpose.aisle = symbArr.slice(0, purpose.aisleMax).map(it => it.symbol);
+
+    //     return [];
+    // }
+
+    purpose.aisle = ['WAVESUSDT'];
+
+    tiSettings.tdlLines = {
+        ['WAVESUSDT']: {
+            tdlTopLineOpt: [
+                {
+                    price: 26.9065,
+                    time: { d: 8, h: 19, m: 20 }
+                },
+                {
+                    price: 26.8579,
+                    time: { d: 9, h: 3, m: 50 }
                 }
-            }
+            ],
+            tdlbottomLineOpt: [
+                {
+                    price: 26.1405,
+                    time: { d: 8, h: 19, m: 35 }
+                },
+                {
+                    price: 26.5957,
+                    time: { d: 9, h: 4, m: 0 }
+                }
+            ]
         }
+    };
 
-        return [];
-    }
-
-    if (!purpose.scalping.length) {
-        const symbArr = Object.keys(analizedSymbols).map(sym => analizedSymbols[sym]);
-
-        symbArr.sort((a, b) => (b.smaChange / b.percentAverageCandleMove) - (a.smaChange / a.percentAverageCandleMove));
-
-        purpose.scalping = symbArr.slice(0, purpose.scalpingMax).map(it => it.symbol);
-
-        return [];
-    }
+    const topLineOpt = [
+        {
+            price: 30.4315,
+            time: { d: 8, h: 4, m: 30 }
+        },
+        {
+            price: 29.4921,
+            time: { d: 8, h: 10, m: 15 }
+        },
+    ];
+    const bottomLineOpt = [
+        {
+            price: 29.9266,
+            time: { d: 8, h: 2, m: 10 }
+        },
+        {
+            price: 29.3618,
+            time: { d: 8, h: 10, m: 20 }
+        },
+    ];
 
     const signals: Result = [];
 
@@ -96,8 +158,12 @@ export async function Strategy({ data, symbols }: { data: { [sym: string]: Candl
         if (Object.prototype.hasOwnProperty.call(data, symbol)) {
             const candlesData = data[symbol];
 
-            if (purpose.scalping.includes(symbol)) {
-                signals.push(Scalping({ symbol, candlesData, tiSettings }));
+            // if (purpose.scalping.includes(symbol)) {
+            //     signals.push(Scalping({ symbol, candlesData, tiSettings }));
+            // }
+
+            if (purpose.aisle.includes(symbol)) {
+                signals.push(Aisle({ symbol, candlesData, tiSettings }));
             }
 
 

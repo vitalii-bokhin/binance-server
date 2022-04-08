@@ -2,8 +2,7 @@ import WebSocket from 'ws';
 import Binance from 'node-binance-api';
 import { BINANCE_KEY, BINANCE_SECRET } from './config';
 
-const binance = new Binance().options({useServerTime: true});
-const binanceAuth: Binance = new Binance().options({
+const binance: Binance = new Binance().options({
     APIKEY: BINANCE_KEY,
     APISECRET: BINANCE_SECRET,
     useServerTime: true
@@ -179,7 +178,7 @@ const userFutureDataSubscribe = function (key: string, callback: { (order: any):
     if (!userFutureDataExecuted) {
         userFutureDataExecuted = true;
 
-        binanceAuth.websockets.userFutureData(
+        binance.websockets.userFutureData(
             null,
             (res: { updateData: { positions: any; }; }) => {
                 if (userFutureDataSubscribers['positions_update']) {

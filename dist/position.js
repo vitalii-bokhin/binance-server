@@ -7,7 +7,6 @@ exports.Position = void 0;
 const node_binance_api_1 = __importDefault(require("node-binance-api"));
 const config_1 = require("./config");
 const binanceApi_1 = require("./binanceApi");
-const indicators_1 = require("./indicators");
 const binanceAuth = new node_binance_api_1.default().options({
     APIKEY: config_1.BINANCE_KEY,
     APISECRET: config_1.BINANCE_SECRET,
@@ -145,15 +144,15 @@ class Position {
     }
     // WATCH POSITION
     watchPosition() {
-        (0, binanceApi_1.symbolCandlesTicksStream)(this.symbol, data => {
-            const rsi = (0, indicators_1.RSI)({ data, period: this.rsiPeriod, symbol: this.symbol }), lastPrice = data[data.length - 1].close;
-            if (this.position == 'long' && rsi.last >= rsi.avgRsiAbove) {
-                this.closePositionMarket(lastPrice);
-            }
-            else if (this.position == 'short' && rsi.last <= rsi.avgRsiBelow) {
-                this.closePositionMarket(lastPrice);
-            }
-        });
+        // symbolCandlesTicksStream(this.symbol, data => {
+        //     const rsi = RSI({ data, period: this.rsiPeriod, symbol: this.symbol }),
+        //         lastPrice = data[data.length - 1].close;
+        //     if (this.position == 'long' && rsi.last >= rsi.avgRsiAbove) {
+        //         this.closePositionMarket(lastPrice);
+        //     } else if (this.position == 'short' && rsi.last <= rsi.avgRsiBelow) {
+        //         this.closePositionMarket(lastPrice);
+        //     }
+        // });
         // priceStream(this.symbol, price => {
         //     if (!HasBeenMoved) {
         //         let changePerc: number;
