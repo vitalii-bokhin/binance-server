@@ -3,6 +3,7 @@ import { Aisle } from './aisle';
 // import { Fling } from './fling';
 import { Scalping } from './scalping';
 import { RSI, SMA } from '../indicators';
+import { LevelOpt, LineOpt } from '../indicators/types';
 
 // export { Aisle, Fling };
 
@@ -106,51 +107,42 @@ export async function Strategy({ data, symbols }: { data: { [sym: string]: Candl
 
     purpose.aisle = ['WAVESUSDT'];
 
-    tiSettings.tdlLines = {
-        ['WAVESUSDT']: {
-            tdlTopLineOpt: [
-                {
+    const aisleTdlOpt: {
+        [s: string]: LineOpt[];
+    } = {
+        ['WAVESUSDT']: [
+            {
+                start: {
                     price: 26.9065,
                     time: { d: 8, h: 19, m: 20 }
                 },
-                {
+                end: {
                     price: 26.8579,
                     time: { d: 9, h: 3, m: 50 }
-                }
-            ],
-            tdlbottomLineOpt: [
-                {
-                    price: 26.1405,
-                    time: { d: 8, h: 19, m: 35 }
                 },
-                {
-                    price: 26.5957,
-                    time: { d: 9, h: 4, m: 0 }
-                }
-            ]
-        }
+                spread: .05
+            }
+        ]
     };
 
-    const topLineOpt = [
-        {
-            price: 30.4315,
-            time: { d: 8, h: 4, m: 30 }
-        },
-        {
-            price: 29.4921,
-            time: { d: 8, h: 10, m: 15 }
-        },
-    ];
-    const bottomLineOpt = [
-        {
-            price: 29.9266,
-            time: { d: 8, h: 2, m: 10 }
-        },
-        {
-            price: 29.3618,
-            time: { d: 8, h: 10, m: 20 }
-        },
-    ];
+    const aisleLvlOpt: {
+        [s: string]: LevelOpt[];
+    } = {
+        ['WAVESUSDT']: [
+            {
+                price: 25.9026,
+                spread: .12
+            },
+            {
+                price: 26.2940,
+                spread: .12
+            },
+            {
+                price: 25.0702,
+                spread: .12
+            },
+        ]
+    };
 
     const signals: Result = [];
 
@@ -163,7 +155,13 @@ export async function Strategy({ data, symbols }: { data: { [sym: string]: Candl
             // }
 
             if (purpose.aisle.includes(symbol)) {
-                signals.push(Aisle({ symbol, candlesData, tiSettings }));
+                signals.push(Aisle({
+                    symbol,
+                    candlesData,
+                    tiSettings,
+                    tdlOpt: aisleTdlOpt[symbol],
+                    lvlOpt: aisleLvlOpt[symbol]
+                }));
             }
 
 

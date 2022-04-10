@@ -23,20 +23,31 @@ export type IndicatorEntry = {
 
 export type InputTime = { d: number; h: number; m: number; };
 
-export type TradelinesInput = {
-    candles: Candle[];
-    topLineOpt: {
+export type LineOpt = {
+    start: {
         price: number;
         time: InputTime;
-    }[];
-    bottomLineOpt: {
+    };
+    end: {
         price: number;
         time: InputTime;
-    }[];
+    };
+    spread: number;  
 };
 
-export type TradelinesResult = {
-    signal: 'crossAboveTop' | 'crossBelowTop' | 'crossBelowBottom' | 'crossAboveBottom' | 'overTop' | 'overBottom' | 'underTop' | 'underBottom';
-    topLinePrice: number;
-    bottomLinePrice: number;
+export type TrendlineInput = {
+    candles: Candle[];
+    lineOpt: LineOpt;
+    symbol: string;
+};
+
+export type LevelOpt = {
+    price: number;
+    spread: number;  
+};
+
+export type LevelInput = {
+    candles: Candle[];
+    levelOpt: LevelOpt;
+    symbol: string;
 };

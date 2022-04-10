@@ -2,13 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Aisle = void 0;
 const indicators_1 = require("../indicators");
-function Aisle({ symbol, candlesData, tiSettings }) {
+function Aisle({ symbol, candlesData, tiSettings, tdlOpt, lvlOpt }) {
     const _candles = candlesData;
-    const tdl = (0, indicators_1.TDL)({
-        candles: _candles,
-        topLineOpt: tiSettings.tdlLines[symbol].tdlTopLineOpt,
-        bottomLineOpt: tiSettings.tdlLines[symbol].tdlbottomLineOpt
-    });
+    // const tdl = TDL({ candles: _candles, lineOpt: tdlOpt[0], symbol });
+    const lvl0 = (0, indicators_1.LVL)({ candles: _candles, levelOpt: lvlOpt[0], symbol });
+    const lvl1 = (0, indicators_1.LVL)({ candles: _candles, levelOpt: lvlOpt[1], symbol });
+    const lvl2 = (0, indicators_1.LVL)({ candles: _candles, levelOpt: lvlOpt[2], symbol });
     const atr = (0, indicators_1.ATR)({ data: _candles, period: tiSettings.atrPeriod });
     const lastCandle = _candles[_candles.length - 1];
     const lastPrice = lastCandle.close;
@@ -47,13 +46,13 @@ function Aisle({ symbol, candlesData, tiSettings }) {
         position: null,
         entryPrice: lastPrice,
         percentLoss: null,
-        signal: 'scalping',
+        strategy: 'aisle',
         preferIndex: percentAverageCandleMove,
         rsiPeriod: tiSettings.rsiPeriod,
         signalDetails,
         resolvePosition: false
     };
-    if ((tdl.signal == 'overBottom' || tdl.signal == 'crossAboveBottom' || tdl.signal == 'overTop') &&
+    if ((lvl0.signal == 'bounceUp' || lvl1.signal == 'bounceUp' || lvl2.signal == 'bounceUp') &&
         lastCandle.close - lastCandle.open >= minCandleMove) {
         let stopLoss = lastPrice - atr;
         // if (stopLoss > tdl.bottomLinePrice) {
@@ -65,8 +64,11 @@ function Aisle({ symbol, candlesData, tiSettings }) {
         symbolResult.position = 'long';
         symbolResult.percentLoss = percentLoss;
         symbolResult.resolvePosition = true;
+        lvl0.clearChache();
+        lvl1.clearChache();
+        lvl2.clearChache();
     }
-    else if ((tdl.signal == 'underTop' || tdl.signal == 'crossBelowTop' || tdl.signal == 'underBottom') &&
+    else if ((lvl0.signal == 'bounceDown' || lvl1.signal == 'bounceDown' || lvl2.signal == 'bounceDown') &&
         lastCandle.open - lastCandle.close >= minCandleMove) {
         let stopLoss = lastPrice + atr;
         // if (stopLoss < tdl.topLinePrice) {
@@ -78,6 +80,9 @@ function Aisle({ symbol, candlesData, tiSettings }) {
         symbolResult.position = 'short';
         symbolResult.percentLoss = percentLoss;
         symbolResult.resolvePosition = true;
+        lvl0.clearChache();
+        lvl1.clearChache();
+        lvl2.clearChache();
     }
     return symbolResult;
 }

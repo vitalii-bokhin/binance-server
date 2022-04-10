@@ -27,9 +27,10 @@ class Position {
         this.leverage = opt.leverage;
         this.symbols = opt.symbols;
         this.symbolInfo = opt.symbolInfo;
-        this.trailingStopTriggerPerc = opt.trailingStopTriggerPerc; // first trailing move
-        this.trailingStopPricePerc = opt.trailingStopPricePerc; // first trailing move
-        this.trailingStepPerc = opt.trailingStepPerc;
+        this.trailingStopStartTriggerPrice = opt.trailingStopStartTriggerPrice;
+        this.trailingStopStartOrder = opt.trailingStopStartOrder;
+        this.trailingStopTriggerPriceStep = opt.trailingStopTriggerPriceStep;
+        this.trailingStopOrderStep = opt.trailingStopOrderStep;
         this.signal = opt.signal;
         this.interval = opt.interval;
         this.limit = opt.limit;
@@ -71,29 +72,31 @@ class Position {
     //     return { entryOrder: entryOrd, stopLossOrder: stopOrd };
     // }
     // SCALPING Orders
-    async setScalpingOrders() {
+    async setOrders(setTakeProfit) {
         this.entryClientOrderId = 'luf21_scalp_' + this.symbol;
         (0, binanceApi_1.ordersUpdateStream)(this.symbol, order => {
             if (order.clientOrderId == this.entryClientOrderId && order.orderStatus == 'FILLED') {
                 const entryPrice = +order.averagePrice;
                 this.realEntryPrice = entryPrice;
                 // take profit
-                const profitSide = this.position === 'long' ? 'SELL' : 'BUY';
-                const profitParams = {
-                    type: 'TAKE_PROFIT_MARKET',
-                    closePosition: true,
-                    stopPrice: null
-                };
-                if (this.position === 'long') {
-                    profitParams.stopPrice = entryPrice + ((this.percentLoss + this.fee) * (entryPrice / 100));
+                if (setTakeProfit) {
+                    const profitSide = this.position === 'long' ? 'SELL' : 'BUY';
+                    const profitParams = {
+                        type: 'TAKE_PROFIT_MARKET',
+                        closePosition: true,
+                        stopPrice: null
+                    };
+                    if (this.position === 'long') {
+                        profitParams.stopPrice = entryPrice + ((this.percentLoss + this.fee) * (entryPrice / 100));
+                    }
+                    else {
+                        profitParams.stopPrice = entryPrice - ((this.percentLoss + this.fee) * (entryPrice / 100));
+                    }
+                    profitParams.stopPrice = +profitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
+                    binanceAuth.futuresOrder(profitSide, this.symbol, false, false, profitParams).then(ord => {
+                        // console.log(ord);
+                    });
                 }
-                else {
-                    profitParams.stopPrice = entryPrice - ((this.percentLoss + this.fee) * (entryPrice / 100));
-                }
-                profitParams.stopPrice = +profitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
-                binanceAuth.futuresOrder(profitSide, this.symbol, false, false, profitParams).then(ord => {
-                    // console.log(ord);
-                });
                 // stop loss
                 const exitSide = this.position === 'long' ? 'SELL' : 'BUY';
                 const exitParams = {
@@ -109,7 +112,7 @@ class Position {
                 }
                 exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
                 binanceAuth.futuresOrder(exitSide, this.symbol, false, false, exitParams).then(ord => {
-                    // console.log(ord);
+                    this.stopLossClientOrderId = ord.clientOrderId;
                 });
             }
         });
@@ -119,7 +122,7 @@ class Position {
         const lvr = await binanceAuth.futuresLeverage(this.symbol, this.leverage);
         // entry
         const entrySide = this.position === 'long' ? 'BUY' : 'SELL';
-        let usdtAmount = 0.1 * ((100 / this.percentLoss) - this.fee);
+        let usdtAmount = 0.25 * ((100 / this.percentLoss) - this.fee);
         console.log({ usdtAmount });
         const quantity = +(usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
         console.log({ quantity });
@@ -144,29 +147,29 @@ class Position {
     }
     // WATCH POSITION
     watchPosition() {
-        // symbolCandlesTicksStream(this.symbol, data => {
-        //     const rsi = RSI({ data, period: this.rsiPeriod, symbol: this.symbol }),
-        //         lastPrice = data[data.length - 1].close;
-        //     if (this.position == 'long' && rsi.last >= rsi.avgRsiAbove) {
-        //         this.closePositionMarket(lastPrice);
-        //     } else if (this.position == 'short' && rsi.last <= rsi.avgRsiBelow) {
-        //         this.closePositionMarket(lastPrice);
-        //     }
-        // });
-        // priceStream(this.symbol, price => {
-        //     if (!HasBeenMoved) {
-        //         let changePerc: number;
-        //         if (this.position === 'long') {
-        //             changePerc = (+price.markPrice - this.entryPrice) / (this.entryPrice / 100);
-        //         } else {
-        //             changePerc = (this.entryPrice - (+price.markPrice)) / (this.entryPrice / 100);
-        //         }
-        //         if (changePerc >= this.trailingStopTriggerPerc) {
-        //             HasBeenMoved = true;
-        //             this.moveStopLoss();
-        //         }
-        //     }
-        // });
+        (0, binanceApi_1.symbolCandlesTicksStream)(this.symbol, data => {
+            const lastPrice = data[data.length - 1].close;
+            if (!this.stopLossHasBeenMoved) {
+                let changePerc;
+                const triggerPerc = this.trailingSteps === 0 ? this.trailingStopStartTriggerPrice : this.trailingStopStartTriggerPrice + this.trailingStopTriggerPriceStep * this.trailingSteps;
+                if (this.position === 'long') {
+                    changePerc = (lastPrice - this.realEntryPrice) / (this.realEntryPrice / 100);
+                }
+                else {
+                    changePerc = (this.realEntryPrice - lastPrice) / (this.realEntryPrice / 100);
+                }
+                if (changePerc >= triggerPerc) {
+                    this.stopLossHasBeenMoved = true;
+                    this.moveStopLoss();
+                }
+            }
+            // const rsi = RSI({ data, period: this.rsiPeriod, symbol: this.symbol });
+            // if (this.position == 'long' && rsi.last >= rsi.avgRsiAbove) {
+            //     this.closePositionMarket(lastPrice);
+            // } else if (this.position == 'short' && rsi.last <= rsi.avgRsiBelow) {
+            //     this.closePositionMarket(lastPrice);
+            // }
+        });
         (0, binanceApi_1.positionUpdateStream)(this.symbol, (pos) => {
             console.log(pos);
             if (pos.positionAmount == '0') {
@@ -180,19 +183,19 @@ class Position {
         const exitParams = {
             type: 'STOP_MARKET',
             closePosition: true,
-            stopPrice: 0
+            stopPrice: null
         };
+        const percentLoss = this.trailingSteps === 0 ? this.trailingStopStartOrder : this.trailingStopStartOrder + this.trailingStopOrderStep * this.trailingSteps;
         if (this.position === 'long') {
-            exitParams.stopPrice = this.entryPrice + (this.trailingStopPricePerc * (this.entryPrice / 100));
+            exitParams.stopPrice = this.realEntryPrice - (percentLoss * (this.realEntryPrice / 100));
         }
         else {
-            exitParams.stopPrice = this.entryPrice - (this.trailingStopPricePerc * (this.entryPrice / 100));
+            exitParams.stopPrice = this.realEntryPrice + (percentLoss * (this.realEntryPrice / 100));
         }
         exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
         const stopOrd = await binanceAuth.futuresOrder(exitSide, this.symbol, false, false, exitParams);
         this.stopLossClientOrderId = stopOrd.clientOrderId;
-        this.trailingStopTriggerPerc = this.trailingStopTriggerPerc + this.trailingStepPerc;
-        this.trailingStopPricePerc = this.trailingStopPricePerc + this.trailingStepPerc;
+        this.trailingSteps++;
         this.stopLossHasBeenMoved = false;
     }
     closePositionMarket(lastPrice) {

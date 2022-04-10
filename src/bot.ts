@@ -42,7 +42,7 @@ export async function Bot(): Promise<events> {
 
     const { symbols, symbolsObj } = await getSymbols();
 
-    const _symbols = symbols;// ['ZILUSDT', 'WAVESUSDT', 'GMTUSDT'];
+    const _symbols = ['ZILUSDT', 'WAVESUSDT', 'GMTUSDT'];
 
     const setPosition = function (s: SymbolResult): void {
         const pKey = s.symbol;
@@ -54,15 +54,17 @@ export async function Bot(): Promise<events> {
         if (!botPositions[pKey] && positions < 2 && s.resolvePosition && s.percentLoss > fee) {
             positions++;
 
-            let trailingStopTriggerPerc: number;
-            let trailingStopPricePerc: number;
-            let trailingStepPerc: number;
+            let trailingStopStartTriggerPrice: number;
+            let trailingStopStartOrder: number;
+            let trailingStopTriggerPriceStep: number;
+            let trailingStopOrderStep: number;
 
-            // if (s.signal == 'scalping') {
-            //     trailingStopTriggerPerc = .4;
-            //     trailingStopPricePerc = .2;
-            //     trailingStepPerc = .1;
-            // }
+            if (s.strategy == 'aisle') {
+                trailingStopStartTriggerPrice = s.percentLoss;
+                trailingStopStartOrder = s.percentLoss / 2;
+                trailingStopTriggerPriceStep = s.percentLoss;
+                trailingStopOrderStep = s.percentLoss;
+            }
 
             botPositions[pKey] = new Position({
                 positionKey: pKey,
@@ -76,9 +78,10 @@ export async function Bot(): Promise<events> {
                 leverage,
                 symbols: _symbols,
                 symbolInfo: symbolsObj[s.symbol],
-                trailingStopTriggerPerc,
-                trailingStopPricePerc,
-                trailingStepPerc,
+                trailingStopStartTriggerPrice,
+                trailingStopStartOrder,
+                trailingStopTriggerPriceStep,
+                trailingStopOrderStep,
                 signal: s.signal,
                 interval,
                 limit,
@@ -86,18 +89,19 @@ export async function Bot(): Promise<events> {
                 signalDetails: s.signalDetails
             });
 
-            if (s.signal == 'scalping') {
-                botPositions[pKey].setScalpingOrders();
+            botPositions[pKey].setOrders();
+            
+            // if (s.signal == 'scalping') {
 
-            } else {
-                // botPositions[pKey].setEntryOrder().then((res) => {
-                //     console.log(res);
+            // } else {
+            //     // botPositions[pKey].setEntryOrder().then((res) => {
+            //     //     console.log(res);
 
-                //     if (res.error) {
-                //         positions--;
-                //     }
-                // });
-            }
+            //     //     if (res.error) {
+            //     //         positions--;
+            //     //     }
+            //     // });
+            // }
 
             botPositions[pKey].deletePosition = function (positionKey, opt) {
                 if (opt && opt.excludeKey) {

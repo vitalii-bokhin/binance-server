@@ -1,32 +1,25 @@
-import { candlesTicks } from './binanceApi';
-import { TDL } from './indicators';
+// import { candlesTicksStream } from './binanceApi';
+// import { LVL, TDL } from './indicators';
 
+// const lineOpt = {
+//     start: {
+//         price: 23.7273,
+//         time: { d: 9, h: 21, m: 55 }
+//     },
+//     end: {
+//         price: 24.4211,
+//         time: { d: 10, h: 1, m: 55 }
+//     },
+//     spread: .15
+// };
 
-const topLineOpt = [
-    {
-        price: 30.4315,
-        time: { d: 8, h: 4, m: 30 }
-    },
-    {
-        price: 27.0748,
-        time: { d: 9, h: 0, m: 45 }
-    }
-];
-const bottomLineOpt = [
-    {
-        price: 29.8772,
-        time: { d: 8, h: 3, m: 15 }
-    },
-    {
-        price: 26.4089,
-        time: { d: 9, h: 0, m: 25 }
-    }
-];
+// candlesTicksStream({ symbols: ['WAVESUSDT'], interval: '5m', limit: 50 }, res => {
+//     const candles = res['WAVESUSDT'];
 
-candlesTicks({symbols:['WAVESUSDT'], interval: '5m', limit: 10}, res => {
-    const candles = res['WAVESUSDT'];
+//     // const tdl = TDL({ candles, lineOpt, symbol: 'WAVESUSDT' });
 
-    const tdl = TDL({candles, topLineOpt, bottomLineOpt});
+//     const lvl = LVL({ candles, levelOpt: {price: 25.7594, spread: .2}, symbol: 'WAVESUSDT' });
 
-    console.log(tdl);
-});
+//     // console.log('TDL===' + tdl);
+//     console.log('LVL===' + lvl);
+// });

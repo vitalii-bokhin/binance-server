@@ -166,6 +166,7 @@ export function Scalping({ symbol, candlesData, tiSettings }: Entry): SymbolResu
         entryPrice: lastPrice,
         percentLoss: null,
         signal: 'scalping',
+        strategy: 'scalping',
         preferIndex: smaChange / percentAverageCandleMove,
         rsiPeriod: tiSettings.rsiPeriod,
         signalDetails,

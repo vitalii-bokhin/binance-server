@@ -137,6 +137,7 @@ function Scalping({ symbol, candlesData, tiSettings }) {
         entryPrice: lastPrice,
         percentLoss: null,
         signal: 'scalping',
+        strategy: 'scalping',
         preferIndex: smaChange / percentAverageCandleMove,
         rsiPeriod: tiSettings.rsiPeriod,
         signalDetails,

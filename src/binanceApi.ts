@@ -278,7 +278,7 @@ let priceStreamWsHasBeenRun = false;
 
 export function priceStream(symbol: string, callback: (arg0: {
     symbol: string;
-    markPrice: string;
+    markPrice?: string;
     eventType?: string;
     eventTime?: number;
     indexPrice?: string;

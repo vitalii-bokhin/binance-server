@@ -30,9 +30,10 @@ export class Position {
         pricePrecision: number;
         minMarketLotSize: number;
     };
-    trailingStopTriggerPerc: number;
-    trailingStopPricePerc: number;
-    trailingStepPerc: number;
+    trailingStopStartTriggerPrice: number;
+    trailingStopStartOrder: number;
+    trailingStopTriggerPriceStep: number;
+    trailingStopOrderStep: number;
     trailingSteps: number = 0;
     signal?: string;
     expectedProfit?: number;
@@ -57,9 +58,10 @@ export class Position {
             pricePrecision: number;
             minMarketLotSize: number;
         };
-        trailingStopTriggerPerc: number;
-        trailingStopPricePerc: number;
-        trailingStepPerc: number;
+        trailingStopStartTriggerPrice: number;
+        trailingStopStartOrder: number;
+        trailingStopTriggerPriceStep: number;
+        trailingStopOrderStep: number;
         signal?: string;
         expectedProfit?: number;
         interval: string;
@@ -78,9 +80,10 @@ export class Position {
         this.leverage = opt.leverage;
         this.symbols = opt.symbols;
         this.symbolInfo = opt.symbolInfo;
-        this.trailingStopTriggerPerc = opt.trailingStopTriggerPerc; // first trailing move
-        this.trailingStopPricePerc = opt.trailingStopPricePerc; // first trailing move
-        this.trailingStepPerc = opt.trailingStepPerc;
+        this.trailingStopStartTriggerPrice = opt.trailingStopStartTriggerPrice;
+        this.trailingStopStartOrder = opt.trailingStopStartOrder;
+        this.trailingStopTriggerPriceStep = opt.trailingStopTriggerPriceStep;
+        this.trailingStopOrderStep = opt.trailingStopOrderStep;
         this.signal = opt.signal;
         this.interval = opt.interval;
         this.limit = opt.limit;
@@ -132,7 +135,7 @@ export class Position {
     // }
 
     // SCALPING Orders
-    async setScalpingOrders(): Promise<any> {
+    async setOrders(setTakeProfit?: boolean): Promise<any> {
         this.entryClientOrderId = 'luf21_scalp_' + this.symbol;
 
         ordersUpdateStream(this.symbol, order => {
@@ -141,24 +144,26 @@ export class Position {
                 this.realEntryPrice = entryPrice;
 
                 // take profit
-                const profitSide = this.position === 'long' ? 'SELL' : 'BUY';
-                const profitParams = {
-                    type: 'TAKE_PROFIT_MARKET',
-                    closePosition: true,
-                    stopPrice: null
-                };
+                if (setTakeProfit) {
+                    const profitSide = this.position === 'long' ? 'SELL' : 'BUY';
+                    const profitParams = {
+                        type: 'TAKE_PROFIT_MARKET',
+                        closePosition: true,
+                        stopPrice: null
+                    };
 
-                if (this.position === 'long') {
-                    profitParams.stopPrice = entryPrice + ((this.percentLoss + this.fee) * (entryPrice / 100));
-                } else {
-                    profitParams.stopPrice = entryPrice - ((this.percentLoss + this.fee) * (entryPrice / 100));
+                    if (this.position === 'long') {
+                        profitParams.stopPrice = entryPrice + ((this.percentLoss + this.fee) * (entryPrice / 100));
+                    } else {
+                        profitParams.stopPrice = entryPrice - ((this.percentLoss + this.fee) * (entryPrice / 100));
+                    }
+
+                    profitParams.stopPrice = +profitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
+
+                    binanceAuth.futuresOrder(profitSide, this.symbol, false, false, profitParams).then(ord => {
+                        // console.log(ord);
+                    });
                 }
-
-                profitParams.stopPrice = +profitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
-
-                binanceAuth.futuresOrder(profitSide, this.symbol, false, false, profitParams).then(ord => {
-                    // console.log(ord);
-                });
 
                 // stop loss
                 const exitSide = this.position === 'long' ? 'SELL' : 'BUY';
@@ -167,7 +172,6 @@ export class Position {
                     closePosition: true,
                     stopPrice: null
                 };
-
 
                 if (this.position === 'long') {
                     exitParams.stopPrice = entryPrice - (this.percentLoss * (entryPrice / 100));
@@ -178,7 +182,7 @@ export class Position {
                 exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
 
                 binanceAuth.futuresOrder(exitSide, this.symbol, false, false, exitParams).then(ord => {
-                    // console.log(ord);
+                    this.stopLossClientOrderId = ord.clientOrderId;
                 });
             }
         });
@@ -192,7 +196,7 @@ export class Position {
         // entry
         const entrySide = this.position === 'long' ? 'BUY' : 'SELL';
 
-        let usdtAmount = 0.1 * ((100 / this.percentLoss) - this.fee);
+        let usdtAmount = 0.25 * ((100 / this.percentLoss) - this.fee);
 
         console.log({ usdtAmount });
 
@@ -207,16 +211,16 @@ export class Position {
 
         if (quantity < this.symbolInfo.minMarketLotSize) {
             console.log(` error: 'SMALL_LOT_SIZE', errorMsg: 'Min: ' + ${this.symbolInfo.minMarketLotSize} + '; Current: ' + ${quantity}, positionKey: ${this.positionKey}`);
-            
-            this.deletePositionInner({excludeKey: this.positionKey});
+
+            this.deletePositionInner({ excludeKey: this.positionKey });
 
             return;
         }
 
         if (usdtAmount < 5) {
-            console.log(` error: 'SMALL_AMOUNT', errorMsg: 'Small Amount: ' + ${usdtAmount}, positionKey: ${this.positionKey}`); 
-            
-            this.deletePositionInner({excludeKey: this.positionKey});
+            console.log(` error: 'SMALL_AMOUNT', errorMsg: 'Small Amount: ' + ${usdtAmount}, positionKey: ${this.positionKey}`);
+
+            this.deletePositionInner({ excludeKey: this.positionKey });
 
             return;
         }
@@ -232,34 +236,36 @@ export class Position {
 
     // WATCH POSITION
     watchPosition(): void {
-        // symbolCandlesTicksStream(this.symbol, data => {
-        //     const rsi = RSI({ data, period: this.rsiPeriod, symbol: this.symbol }),
-        //         lastPrice = data[data.length - 1].close;
+        symbolCandlesTicksStream(this.symbol, data => {
+            const lastPrice = data[data.length - 1].close;
 
-        //     if (this.position == 'long' && rsi.last >= rsi.avgRsiAbove) {
-        //         this.closePositionMarket(lastPrice);
-        //     } else if (this.position == 'short' && rsi.last <= rsi.avgRsiBelow) {
-        //         this.closePositionMarket(lastPrice);
-        //     }
-        // });
+            if (!this.stopLossHasBeenMoved) {
+                let changePerc: number;
 
-        // priceStream(this.symbol, price => {
-        //     if (!HasBeenMoved) {
-        //         let changePerc: number;
+                const triggerPerc = this.trailingSteps === 0 ? this.trailingStopStartTriggerPrice : this.trailingStopStartTriggerPrice + this.trailingStopTriggerPriceStep * this.trailingSteps;
 
-        //         if (this.position === 'long') {
-        //             changePerc = (+price.markPrice - this.entryPrice) / (this.entryPrice / 100);
-        //         } else {
-        //             changePerc = (this.entryPrice - (+price.markPrice)) / (this.entryPrice / 100);
-        //         }
+                if (this.position === 'long') {
+                    changePerc = (lastPrice - this.realEntryPrice) / (this.realEntryPrice / 100);
+                } else {
+                    changePerc = (this.realEntryPrice - lastPrice) / (this.realEntryPrice / 100);
+                }
 
-        //         if (changePerc >= this.trailingStopTriggerPerc) {
-        //             HasBeenMoved = true;
+                if (changePerc >= triggerPerc) {
+                    this.stopLossHasBeenMoved = true;
 
-        //             this.moveStopLoss();
-        //         }
-        //     }
-        // });
+                    this.moveStopLoss();
+                }
+            }
+
+
+            // const rsi = RSI({ data, period: this.rsiPeriod, symbol: this.symbol });
+
+            // if (this.position == 'long' && rsi.last >= rsi.avgRsiAbove) {
+            //     this.closePositionMarket(lastPrice);
+            // } else if (this.position == 'short' && rsi.last <= rsi.avgRsiBelow) {
+            //     this.closePositionMarket(lastPrice);
+            // }
+        });
 
         positionUpdateStream(this.symbol, (pos: any) => {
             console.log(pos);
@@ -277,13 +283,15 @@ export class Position {
         const exitParams = {
             type: 'STOP_MARKET',
             closePosition: true,
-            stopPrice: 0
+            stopPrice: null
         };
 
+        const percentLoss = this.trailingSteps === 0 ? this.trailingStopStartOrder : this.trailingStopStartOrder + this.trailingStopOrderStep * this.trailingSteps;
+
         if (this.position === 'long') {
-            exitParams.stopPrice = this.entryPrice + (this.trailingStopPricePerc * (this.entryPrice / 100));
+            exitParams.stopPrice = this.realEntryPrice - (percentLoss * (this.realEntryPrice / 100));
         } else {
-            exitParams.stopPrice = this.entryPrice - (this.trailingStopPricePerc * (this.entryPrice / 100));
+            exitParams.stopPrice = this.realEntryPrice + (percentLoss * (this.realEntryPrice / 100));
         }
 
         exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
@@ -292,8 +300,7 @@ export class Position {
 
         this.stopLossClientOrderId = stopOrd.clientOrderId;
 
-        this.trailingStopTriggerPerc = this.trailingStopTriggerPerc + this.trailingStepPerc;
-        this.trailingStopPricePerc = this.trailingStopPricePerc + this.trailingStepPerc;
+        this.trailingSteps++;
 
         this.stopLossHasBeenMoved = false;
     }

@@ -28,7 +28,7 @@ async function Bot() {
     (0, binanceApi_1.ordersUpdateStream)();
     (0, binanceApi_1.tickerStream)();
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
-    const _symbols = symbols; // ['ZILUSDT', 'WAVESUSDT', 'GMTUSDT'];
+    const _symbols = ['ZILUSDT', 'WAVESUSDT', 'GMTUSDT'];
     const setPosition = function (s) {
         const pKey = s.symbol;
         if (excludedPositions.includes(pKey)) {
@@ -36,14 +36,16 @@ async function Bot() {
         }
         if (!botPositions[pKey] && positions < 2 && s.resolvePosition && s.percentLoss > fee) {
             positions++;
-            let trailingStopTriggerPerc;
-            let trailingStopPricePerc;
-            let trailingStepPerc;
-            // if (s.signal == 'scalping') {
-            //     trailingStopTriggerPerc = .4;
-            //     trailingStopPricePerc = .2;
-            //     trailingStepPerc = .1;
-            // }
+            let trailingStopStartTriggerPrice;
+            let trailingStopStartOrder;
+            let trailingStopTriggerPriceStep;
+            let trailingStopOrderStep;
+            if (s.strategy == 'aisle') {
+                trailingStopStartTriggerPrice = s.percentLoss;
+                trailingStopStartOrder = s.percentLoss / 2;
+                trailingStopTriggerPriceStep = s.percentLoss;
+                trailingStopOrderStep = s.percentLoss;
+            }
             botPositions[pKey] = new position_1.Position({
                 positionKey: pKey,
                 position: s.position,
@@ -56,26 +58,26 @@ async function Bot() {
                 leverage,
                 symbols: _symbols,
                 symbolInfo: symbolsObj[s.symbol],
-                trailingStopTriggerPerc,
-                trailingStopPricePerc,
-                trailingStepPerc,
+                trailingStopStartTriggerPrice,
+                trailingStopStartOrder,
+                trailingStopTriggerPriceStep,
+                trailingStopOrderStep,
                 signal: s.signal,
                 interval,
                 limit,
                 rsiPeriod: s.rsiPeriod,
                 signalDetails: s.signalDetails
             });
-            if (s.signal == 'scalping') {
-                botPositions[pKey].setScalpingOrders();
-            }
-            else {
-                // botPositions[pKey].setEntryOrder().then((res) => {
-                //     console.log(res);
-                //     if (res.error) {
-                //         positions--;
-                //     }
-                // });
-            }
+            botPositions[pKey].setOrders();
+            // if (s.signal == 'scalping') {
+            // } else {
+            //     // botPositions[pKey].setEntryOrder().then((res) => {
+            //     //     console.log(res);
+            //     //     if (res.error) {
+            //     //         positions--;
+            //     //     }
+            //     // });
+            // }
             botPositions[pKey].deletePosition = function (positionKey, opt) {
                 if (opt && opt.excludeKey) {
                     excludedPositions.push(opt.excludeKey);

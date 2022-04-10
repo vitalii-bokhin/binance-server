@@ -1,16 +1,15 @@
 import { getTickerStreamCache } from '../binanceApi';
-import { ATR, RSI, SMA, TDL } from '../indicators';
+import { ATR, LVL, RSI, SMA, TDL } from '../indicators';
 import analizeCandle from '../indicators/candle';
 import { Candle, CdlDir, SymbolResult, Entry, Result } from './types';
 
-export function Aisle({ symbol, candlesData, tiSettings }: Entry): SymbolResult {
+export function Aisle({ symbol, candlesData, tiSettings, tdlOpt, lvlOpt }: Entry): SymbolResult {
     const _candles = candlesData;
 
-    const tdl = TDL({
-        candles: _candles,
-        topLineOpt: tiSettings.tdlLines[symbol].tdlTopLineOpt,
-        bottomLineOpt: tiSettings.tdlLines[symbol].tdlbottomLineOpt
-    });
+    // const tdl = TDL({ candles: _candles, lineOpt: tdlOpt[0], symbol });
+    const lvl0 = LVL({ candles: _candles, levelOpt: lvlOpt[0], symbol });
+    const lvl1 = LVL({ candles: _candles, levelOpt: lvlOpt[1], symbol });
+    const lvl2 = LVL({ candles: _candles, levelOpt: lvlOpt[2], symbol });
 
     const atr = ATR({ data: _candles, period: tiSettings.atrPeriod });
 
@@ -66,7 +65,7 @@ export function Aisle({ symbol, candlesData, tiSettings }: Entry): SymbolResult 
         position: null,
         entryPrice: lastPrice,
         percentLoss: null,
-        signal: 'scalping',
+        strategy: 'aisle',
         preferIndex: percentAverageCandleMove,
         rsiPeriod: tiSettings.rsiPeriod,
         signalDetails,
@@ -74,7 +73,7 @@ export function Aisle({ symbol, candlesData, tiSettings }: Entry): SymbolResult 
     };
 
     if (
-        (tdl.signal == 'overBottom' || tdl.signal == 'crossAboveBottom' || tdl.signal == 'overTop') &&
+        (lvl0.signal == 'bounceUp' || lvl1.signal == 'bounceUp' || lvl2.signal == 'bounceUp') &&
         lastCandle.close - lastCandle.open >= minCandleMove
     ) {
         let stopLoss = lastPrice - atr;
@@ -92,8 +91,12 @@ export function Aisle({ symbol, candlesData, tiSettings }: Entry): SymbolResult 
         symbolResult.percentLoss = percentLoss;
         symbolResult.resolvePosition = true;
 
+        lvl0.clearChache();
+        lvl1.clearChache();
+        lvl2.clearChache();
+
     } else if (
-        (tdl.signal == 'underTop' || tdl.signal == 'crossBelowTop' || tdl.signal == 'underBottom') &&
+        (lvl0.signal == 'bounceDown' || lvl1.signal == 'bounceDown' || lvl2.signal == 'bounceDown') &&
         lastCandle.open - lastCandle.close >= minCandleMove
     ) {
         let stopLoss = lastPrice + atr;
@@ -110,6 +113,10 @@ export function Aisle({ symbol, candlesData, tiSettings }: Entry): SymbolResult 
         symbolResult.position = 'short';
         symbolResult.percentLoss = percentLoss;
         symbolResult.resolvePosition = true;
+
+        lvl0.clearChache();
+        lvl1.clearChache();
+        lvl2.clearChache();
     }
 
     return symbolResult;
