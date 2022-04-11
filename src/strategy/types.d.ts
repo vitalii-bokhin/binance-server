@@ -24,7 +24,6 @@ export type Candle = {
     close: number;
     low: number;
     openTime: number;
-    closeTime: number;
 };
 
 export type CdlDir = 'up' | 'down';

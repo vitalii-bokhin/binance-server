@@ -1,11 +1,13 @@
 import Binance from 'node-binance-api';
 
-const binance = new Binance();
+const binance: Binance = new Binance().options({
+    useServerTime: true
+});
 
 const symbolsObj: { [key: string]: { quantityPrecision: number; pricePrecision: number; minMarketLotSize: number; } } = {};
 const symbols: string[] = [];
 
-async function getSymbols(): Promise<{ symbols: string[]; symbolsObj: { [key: string]: { quantityPrecision: number; pricePrecision: number; minMarketLotSize: number; } }; }> {
+export default async function getSymbols(): Promise<{ symbols: string[]; symbolsObj: { [key: string]: { quantityPrecision: number; pricePrecision: number; minMarketLotSize: number; } }; }> {
     if (symbols.length) {
         return { symbols, symbolsObj };
     }
@@ -38,5 +40,3 @@ async function getSymbols(): Promise<{ symbols: string[]; symbolsObj: { [key: st
 
     return { symbols, symbolsObj };
 }
-
-export default getSymbols;

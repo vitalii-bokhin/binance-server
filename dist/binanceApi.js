@@ -18,7 +18,7 @@ binance.time().then(res => {
     console.log('Server Time: ' + new Date(res.serverTime));
 });
 const streamsSubscribers = {};
-const candlesTicksStreamSubscribers = {};
+const candlesTicksStreamSubscribers = [];
 let candlesTicksStreamExecuted = false;
 const symbolCandlesTicksStreamSubscribers = {};
 function candlesTicks({ symbols, interval, limit }, callback) {
@@ -31,7 +31,6 @@ function candlesTicks({ symbols, interval, limit }, callback) {
                 let [time, open, high, low, close, volume, closeTime, assetVolume, trades, buyBaseVolume, buyAssetVolume, ignored] = tick;
                 ticksArr[i] = {
                     openTime: time,
-                    closeTime,
                     open: +open,
                     high: +high,
                     low: +low,
@@ -49,13 +48,13 @@ function candlesTicks({ symbols, interval, limit }, callback) {
     });
 }
 exports.candlesTicks = candlesTicks;
-function candlesTicksStream({ symbols, interval, limit }, callback) {
-    const streams = symbols.map(s => s.toLowerCase() + '@kline_' + interval).join('/');
-    if (!candlesTicksStreamSubscribers[streams]) {
-        candlesTicksStreamSubscribers[streams] = [];
+function candlesTicksStream(opt, callback) {
+    if (callback) {
+        candlesTicksStreamSubscribers.push(callback);
     }
-    candlesTicksStreamSubscribers[streams].push(callback);
-    if (!candlesTicksStreamExecuted) {
+    if (!candlesTicksStreamExecuted && opt) {
+        const { symbols, interval, limit } = opt;
+        const streams = symbols.map(s => s.toLowerCase() + '@kline_' + interval).join('/');
         candlesTicksStreamExecuted = true;
         candlesTicks({ symbols, interval, limit }, data => {
             const result = data;
@@ -69,10 +68,9 @@ function candlesTicksStream({ symbols, interval, limit }, callback) {
             }
             ws.on('message', function message(data) {
                 const { e: eventType, E: eventTime, s: symbol, k: ticks } = JSON.parse(data).data;
-                const { t: openTime, T: closeTime, o: open, h: high, l: low, c: close, x: isFinal } = ticks;
+                const { t: openTime, o: open, h: high, l: low, c: close } = ticks;
                 const candle = {
                     openTime: openTime,
-                    closeTime,
                     open: +open,
                     high: +high,
                     low: +low,
@@ -87,7 +85,7 @@ function candlesTicksStream({ symbols, interval, limit }, callback) {
                 else {
                     result[symbol][result[symbol].length - 1] = candle;
                 }
-                candlesTicksStreamSubscribers[streams].forEach(cb => cb(result));
+                candlesTicksStreamSubscribers.forEach(cb => cb(result));
                 if (symbolCandlesTicksStreamSubscribers[symbol]) {
                     symbolCandlesTicksStreamSubscribers[symbol].forEach(cb => cb(result[symbol]));
                 }

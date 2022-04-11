@@ -43,6 +43,9 @@ export class Position {
     percentLoss: number;
     signalDetails?: any;
     deletePosition: (positionKey: string, opt: any) => void;
+    lossAmount: number = .1;
+    setTakeProfit: boolean;
+    useTrailingStop: boolean;
 
     constructor(opt: {
         positionKey: string;
@@ -69,6 +72,8 @@ export class Position {
         rsiPeriod: number;
         percentLoss: number;
         signalDetails?: any;
+        setTakeProfit?: boolean;
+        useTrailingStop?: boolean;
     }) {
         this.positionKey = opt.positionKey;
         this.position = opt.position;
@@ -90,6 +95,8 @@ export class Position {
         this.rsiPeriod = opt.rsiPeriod;
         this.percentLoss = opt.percentLoss;
         this.signalDetails = opt.signalDetails;
+        this.setTakeProfit = opt.setTakeProfit !== undefined ? opt.setTakeProfit : true;
+        this.useTrailingStop = opt.useTrailingStop !== undefined ? opt.useTrailingStop : false;
     }
 
     // async setEntryOrder(): Promise<{
@@ -135,7 +142,7 @@ export class Position {
     // }
 
     // SCALPING Orders
-    async setOrders(setTakeProfit?: boolean): Promise<any> {
+    async setOrders(): Promise<any> {
         this.entryClientOrderId = 'luf21_scalp_' + this.symbol;
 
         ordersUpdateStream(this.symbol, order => {
@@ -144,7 +151,7 @@ export class Position {
                 this.realEntryPrice = entryPrice;
 
                 // take profit
-                if (setTakeProfit) {
+                if (this.setTakeProfit) {
                     const profitSide = this.position === 'long' ? 'SELL' : 'BUY';
                     const profitParams = {
                         type: 'TAKE_PROFIT_MARKET',
@@ -174,9 +181,9 @@ export class Position {
                 };
 
                 if (this.position === 'long') {
-                    exitParams.stopPrice = entryPrice - (this.percentLoss * (entryPrice / 100));
+                    exitParams.stopPrice = entryPrice - ((this.percentLoss - this.fee) * (entryPrice / 100));
                 } else {
-                    exitParams.stopPrice = entryPrice + (this.percentLoss * (entryPrice / 100));
+                    exitParams.stopPrice = entryPrice + ((this.percentLoss - this.fee) * (entryPrice / 100));
                 }
 
                 exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
@@ -196,7 +203,7 @@ export class Position {
         // entry
         const entrySide = this.position === 'long' ? 'BUY' : 'SELL';
 
-        let usdtAmount = 0.25 * ((100 / this.percentLoss) - this.fee);
+        let usdtAmount = this.lossAmount * ((100 / this.percentLoss) - this.fee);
 
         console.log({ usdtAmount });
 
@@ -239,7 +246,7 @@ export class Position {
         symbolCandlesTicksStream(this.symbol, data => {
             const lastPrice = data[data.length - 1].close;
 
-            if (!this.stopLossHasBeenMoved) {
+            if (!this.stopLossHasBeenMoved && this.useTrailingStop) {
                 let changePerc: number;
 
                 const triggerPerc = this.trailingSteps === 0 ? this.trailingStopStartTriggerPrice : this.trailingStopStartTriggerPrice + this.trailingStopTriggerPriceStep * this.trailingSteps;
@@ -289,9 +296,9 @@ export class Position {
         const percentLoss = this.trailingSteps === 0 ? this.trailingStopStartOrder : this.trailingStopStartOrder + this.trailingStopOrderStep * this.trailingSteps;
 
         if (this.position === 'long') {
-            exitParams.stopPrice = this.realEntryPrice - (percentLoss * (this.realEntryPrice / 100));
+            exitParams.stopPrice = this.realEntryPrice + ((percentLoss + this.fee) * (this.realEntryPrice / 100));
         } else {
-            exitParams.stopPrice = this.realEntryPrice + (percentLoss * (this.realEntryPrice / 100));
+            exitParams.stopPrice = this.realEntryPrice - ((percentLoss + this.fee) * (this.realEntryPrice / 100));
         }
 
         exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);

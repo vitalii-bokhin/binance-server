@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 require("./client");
+require("./trade");
 // import getSymbols from './symbols';
 // Bot();
 // const item = ['a','b','c','d','e','f','j'];

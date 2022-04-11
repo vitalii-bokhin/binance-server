@@ -17,6 +17,7 @@ class Position {
         this.stopLossHasBeenMoved = false;
         this.marketCloseOrderHasBeenCalled = false;
         this.trailingSteps = 0;
+        this.lossAmount = .1;
         this.positionKey = opt.positionKey;
         this.position = opt.position;
         this.symbol = opt.symbol;
@@ -37,6 +38,8 @@ class Position {
         this.rsiPeriod = opt.rsiPeriod;
         this.percentLoss = opt.percentLoss;
         this.signalDetails = opt.signalDetails;
+        this.setTakeProfit = opt.setTakeProfit !== undefined ? opt.setTakeProfit : true;
+        this.useTrailingStop = opt.useTrailingStop !== undefined ? opt.useTrailingStop : false;
     }
     // async setEntryOrder(): Promise<{
     //     entryOrder?: any;
@@ -72,14 +75,14 @@ class Position {
     //     return { entryOrder: entryOrd, stopLossOrder: stopOrd };
     // }
     // SCALPING Orders
-    async setOrders(setTakeProfit) {
+    async setOrders() {
         this.entryClientOrderId = 'luf21_scalp_' + this.symbol;
         (0, binanceApi_1.ordersUpdateStream)(this.symbol, order => {
             if (order.clientOrderId == this.entryClientOrderId && order.orderStatus == 'FILLED') {
                 const entryPrice = +order.averagePrice;
                 this.realEntryPrice = entryPrice;
                 // take profit
-                if (setTakeProfit) {
+                if (this.setTakeProfit) {
                     const profitSide = this.position === 'long' ? 'SELL' : 'BUY';
                     const profitParams = {
                         type: 'TAKE_PROFIT_MARKET',
@@ -105,10 +108,10 @@ class Position {
                     stopPrice: null
                 };
                 if (this.position === 'long') {
-                    exitParams.stopPrice = entryPrice - (this.percentLoss * (entryPrice / 100));
+                    exitParams.stopPrice = entryPrice - ((this.percentLoss - this.fee) * (entryPrice / 100));
                 }
                 else {
-                    exitParams.stopPrice = entryPrice + (this.percentLoss * (entryPrice / 100));
+                    exitParams.stopPrice = entryPrice + ((this.percentLoss - this.fee) * (entryPrice / 100));
                 }
                 exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
                 binanceAuth.futuresOrder(exitSide, this.symbol, false, false, exitParams).then(ord => {
@@ -122,7 +125,7 @@ class Position {
         const lvr = await binanceAuth.futuresLeverage(this.symbol, this.leverage);
         // entry
         const entrySide = this.position === 'long' ? 'BUY' : 'SELL';
-        let usdtAmount = 0.25 * ((100 / this.percentLoss) - this.fee);
+        let usdtAmount = this.lossAmount * ((100 / this.percentLoss) - this.fee);
         console.log({ usdtAmount });
         const quantity = +(usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
         console.log({ quantity });
@@ -149,7 +152,7 @@ class Position {
     watchPosition() {
         (0, binanceApi_1.symbolCandlesTicksStream)(this.symbol, data => {
             const lastPrice = data[data.length - 1].close;
-            if (!this.stopLossHasBeenMoved) {
+            if (!this.stopLossHasBeenMoved && this.useTrailingStop) {
                 let changePerc;
                 const triggerPerc = this.trailingSteps === 0 ? this.trailingStopStartTriggerPrice : this.trailingStopStartTriggerPrice + this.trailingStopTriggerPriceStep * this.trailingSteps;
                 if (this.position === 'long') {
@@ -187,10 +190,10 @@ class Position {
         };
         const percentLoss = this.trailingSteps === 0 ? this.trailingStopStartOrder : this.trailingStopStartOrder + this.trailingStopOrderStep * this.trailingSteps;
         if (this.position === 'long') {
-            exitParams.stopPrice = this.realEntryPrice - (percentLoss * (this.realEntryPrice / 100));
+            exitParams.stopPrice = this.realEntryPrice + ((percentLoss + this.fee) * (this.realEntryPrice / 100));
         }
         else {
-            exitParams.stopPrice = this.realEntryPrice + (percentLoss * (this.realEntryPrice / 100));
+            exitParams.stopPrice = this.realEntryPrice - ((percentLoss + this.fee) * (this.realEntryPrice / 100));
         }
         exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
         const stopOrd = await binanceAuth.futuresOrder(exitSide, this.symbol, false, false, exitParams);

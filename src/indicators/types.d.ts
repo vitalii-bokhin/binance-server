@@ -8,12 +8,11 @@ export type Result = {
 };
 
 export type Candle = {
+    openTime: number;
     high: number;
     open: number;
     close: number;
     low: number;
-    openTime: number;
-    closeTime: number;
 };
 
 export type IndicatorEntry = {

@@ -12,7 +12,6 @@ const streamApi = 'wss://fstream.binance.com/stream?streams=';
 
 type Candle = {
     openTime: number;
-    closeTime: number;
     high: number;
     open: number;
     close: number;
@@ -40,9 +39,7 @@ const streamsSubscribers: {
     [key: string]: WebSocket;
 } = {};
 
-const candlesTicksStreamSubscribers: {
-    [key: string]: ((arg0: any) => void)[];
-} = {};
+const candlesTicksStreamSubscribers: ((arg0: any) => void)[] = [];
 
 let candlesTicksStreamExecuted = false;
 
@@ -64,7 +61,6 @@ export function candlesTicks({ symbols, interval, limit }: CandlesTicksEntry, ca
 
                 ticksArr[i] = {
                     openTime: time,
-                    closeTime,
                     open: +open,
                     high: +high,
                     low: +low,
@@ -86,16 +82,15 @@ export function candlesTicks({ symbols, interval, limit }: CandlesTicksEntry, ca
     });
 }
 
-export function candlesTicksStream({ symbols, interval, limit }: CandlesTicksEntry, callback: CandlesTicksCallback): void {
-    const streams = symbols.map(s => s.toLowerCase() + '@kline_' + interval).join('/');
-
-    if (!candlesTicksStreamSubscribers[streams]) {
-        candlesTicksStreamSubscribers[streams] = [];
+export function candlesTicksStream(opt: CandlesTicksEntry, callback: CandlesTicksCallback): void {
+    if (callback) {
+        candlesTicksStreamSubscribers.push(callback);
     }
 
-    candlesTicksStreamSubscribers[streams].push(callback);
+    if (!candlesTicksStreamExecuted && opt) {
+        const { symbols, interval, limit } = opt;
+        const streams = symbols.map(s => s.toLowerCase() + '@kline_' + interval).join('/');
 
-    if (!candlesTicksStreamExecuted) {
         candlesTicksStreamExecuted = true;
 
         candlesTicks({ symbols, interval, limit }, data => {
@@ -111,11 +106,10 @@ export function candlesTicksStream({ symbols, interval, limit }: CandlesTicksEnt
 
             ws.on('message', function message(data: any) {
                 const { e: eventType, E: eventTime, s: symbol, k: ticks } = JSON.parse(data).data;
-                const { t: openTime, T: closeTime, o: open, h: high, l: low, c: close, x: isFinal } = ticks;
+                const { t: openTime, o: open, h: high, l: low, c: close } = ticks;
 
                 const candle: Candle = {
                     openTime: openTime,
-                    closeTime,
                     open: +open,
                     high: +high,
                     low: +low,
@@ -131,7 +125,7 @@ export function candlesTicksStream({ symbols, interval, limit }: CandlesTicksEnt
                     result[symbol][result[symbol].length - 1] = candle;
                 }
 
-                candlesTicksStreamSubscribers[streams].forEach(cb => cb(result));
+                candlesTicksStreamSubscribers.forEach(cb => cb(result));
 
                 if (symbolCandlesTicksStreamSubscribers[symbol]) {
                     symbolCandlesTicksStreamSubscribers[symbol].forEach(cb => cb(result[symbol]));

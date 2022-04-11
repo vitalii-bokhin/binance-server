@@ -2,7 +2,7 @@ import { Result, Entry, Candle, TiSettings } from './types';
 import { Aisle } from './aisle';
 // import { Fling } from './fling';
 import { Scalping } from './scalping';
-import { RSI, SMA } from '../indicators';
+import { ATR, RSI, SMA } from '../indicators';
 import { LevelOpt, LineOpt } from '../indicators/types';
 
 // export { Aisle, Fling };
@@ -10,10 +10,12 @@ import { LevelOpt, LineOpt } from '../indicators/types';
 const analizedSymbols: {
     [symbol: string]: {
         symbol: string;
-        avgRsiAbove: number;
-        avgRsiBelow: number;
-        percentAverageCandleMove: number;
-        smaChange: number;
+        curCdl?: Candle;
+        atr?: number;
+        avgRsiAbove?: number;
+        avgRsiBelow?: number;
+        percentAverageCandleMove?: number;
+        smaChange?: number;
     }
 } = {};
 
@@ -39,61 +41,69 @@ const tiSettings: TiSettings = {
 
 export async function Strategy({ data, symbols }: { data: { [sym: string]: Candle[] }; symbols: string[] }): Promise<Result> {
 
-    // if (analizedSymbolsCount < symbols.length) {
-    //     console.log('-----analize symbols-----');
-    //     console.log(symbols.length);
+    if (analizedSymbolsCount < symbols.length) {
+        console.log('-----analize symbols-----');
+        console.log(symbols.length);
 
-    //     for (const symbol in data) {
-    //         if (Object.prototype.hasOwnProperty.call(data, symbol)) {
-    //             if (!analizedSymbols[symbol]) {
-    //                 const _candles = data[symbol];
-    //                 const rsi = RSI({ data: _candles, period: tiSettings.rsiPeriod, symbol });
-    //                 const avgRsiAbove = rsi.avgRsiAbove;
-    //                 const avgRsiBelow = rsi.avgRsiBelow;
+        for (const symbol in data) {
+            if (Object.prototype.hasOwnProperty.call(data, symbol)) {
+                if (!analizedSymbols[symbol]) {
+                    const _candles = data[symbol];
+                    // const rsi = RSI({ data: _candles, period: tiSettings.rsiPeriod, symbol });
+                    // const avgRsiAbove = rsi.avgRsiAbove;
+                    // const avgRsiBelow = rsi.avgRsiBelow;
 
-    //                 const sma = SMA({ data: _candles, period: tiSettings.smaPeriod });
-    //                 const smaLag = sma.stack[sma.stack.length - tiSettings.smaPeriod / 2];
-    //                 const smaChange = Math.abs((sma.last - smaLag) / (sma.last / 100));
+                    // const sma = SMA({ data: _candles, period: tiSettings.smaPeriod });
+                    // const smaLag = sma.stack[sma.stack.length - tiSettings.smaPeriod / 2];
+                    // const smaChange = Math.abs((sma.last - smaLag) / (sma.last / 100));
 
-    //                 const candles = [..._candles];
 
-    //                 candles.pop();
+                    // const candles = [..._candles];
 
-    //                 let percentAverageCandleMove = 0;
+                    const curCdl = _candles[_candles.length - 1];
 
-    //                 candles.forEach(cdl => {
-    //                     percentAverageCandleMove += (cdl.high - cdl.low) / (cdl.low / 100);
-    //                 });
+                    const atr = ATR({ data: _candles, period: tiSettings.atrPeriod });
 
-    //                 percentAverageCandleMove = percentAverageCandleMove / candles.length;
+                    // let percentAverageCandleMove = 0;
 
-    //                 analizedSymbols[symbol] = {
-    //                     symbol,
-    //                     avgRsiAbove,
-    //                     avgRsiBelow,
-    //                     percentAverageCandleMove,
-    //                     smaChange
-    //                 };
+                    // candles.forEach(cdl => {
+                    //     percentAverageCandleMove += (cdl.high - cdl.low) / (cdl.low / 100);
+                    // });
 
-    //                 analizedSymbolsCount++;
+                    // percentAverageCandleMove = percentAverageCandleMove / candles.length;
 
-    //                 console.log(analizedSymbolsCount);
-    //             }
-    //         }
-    //     }
+                    analizedSymbols[symbol] = {
+                        symbol,
+                        atr,
+                        curCdl,
+                        // avgRsiAbove,
+                        // avgRsiBelow,
+                        // percentAverageCandleMove,
+                        // smaChange
+                    };
 
-    //     return [];
-    // }
+                    analizedSymbolsCount++;
 
-    // if (!purpose.scalping.length) {
-    //     const symbArr = Object.keys(analizedSymbols).map(sym => analizedSymbols[sym]);
+                    console.log(analizedSymbolsCount);
+                }
+            }
+        }
 
-    //     symbArr.sort((a, b) => (b.smaChange / b.percentAverageCandleMove) - (a.smaChange / a.percentAverageCandleMove));
+        return [];
+    }
 
-    //     purpose.scalping = symbArr.slice(0, purpose.scalpingMax).map(it => it.symbol);
+    if (!purpose.scalping.length) {
+        const symbArr = Object.keys(analizedSymbols).map(sym => analizedSymbols[sym]);
 
-    //     return [];
-    // }
+        const prevSort = symbArr.sort((a, b) => (b.atr / (b.curCdl.high - b.curCdl.low)) - (a.atr / (a.curCdl.high - a.curCdl.low)));
+
+        // console.log(prevSort);
+        // symbArr.sort((a, b) => (b.smaChange / b.percentAverageCandleMove) - (a.smaChange / a.percentAverageCandleMove));
+
+        purpose.scalping = prevSort.slice(0, purpose.scalpingMax).map(it => it.symbol); //symbArr.slice(0, purpose.scalpingMax).map(it => it.symbol);
+
+        return [];
+    }
 
     // if (!purpose.aisle.length) {
     //     const symbArr = Object.keys(analizedSymbols).map(sym => analizedSymbols[sym]);
@@ -150,19 +160,19 @@ export async function Strategy({ data, symbols }: { data: { [sym: string]: Candl
         if (Object.prototype.hasOwnProperty.call(data, symbol)) {
             const candlesData = data[symbol];
 
-            // if (purpose.scalping.includes(symbol)) {
-            //     signals.push(Scalping({ symbol, candlesData, tiSettings }));
-            // }
-
-            if (purpose.aisle.includes(symbol)) {
-                signals.push(Aisle({
-                    symbol,
-                    candlesData,
-                    tiSettings,
-                    tdlOpt: aisleTdlOpt[symbol],
-                    lvlOpt: aisleLvlOpt[symbol]
-                }));
+            if (purpose.scalping.includes(symbol)) {
+                signals.push(Scalping({ symbol, candlesData, tiSettings }));
             }
+
+            // if (purpose.aisle.includes(symbol)) {
+            //     signals.push(Aisle({
+            //         symbol,
+            //         candlesData,
+            //         tiSettings,
+            //         tdlOpt: aisleTdlOpt[symbol],
+            //         lvlOpt: aisleLvlOpt[symbol]
+            //     }));
+            // }
 
 
             // try {

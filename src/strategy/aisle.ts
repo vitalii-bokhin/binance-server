@@ -3,13 +3,24 @@ import { ATR, LVL, RSI, SMA, TDL } from '../indicators';
 import analizeCandle from '../indicators/candle';
 import { Candle, CdlDir, SymbolResult, Entry, Result } from './types';
 
+const cache: {
+    [symbol: string]: {
+        execLevels: number[];
+    };
+} = {};
+
 export function Aisle({ symbol, candlesData, tiSettings, tdlOpt, lvlOpt }: Entry): SymbolResult {
+    if (!cache[symbol]) {
+        cache[symbol] = {
+            execLevels: []
+        };
+    }
+
     const _candles = candlesData;
 
     // const tdl = TDL({ candles: _candles, lineOpt: tdlOpt[0], symbol });
-    const lvl0 = LVL({ candles: _candles, levelOpt: lvlOpt[0], symbol });
-    const lvl1 = LVL({ candles: _candles, levelOpt: lvlOpt[1], symbol });
-    const lvl2 = LVL({ candles: _candles, levelOpt: lvlOpt[2], symbol });
+
+    const levels = lvlOpt.map(itOpt => LVL({ candles: _candles, levelOpt: itOpt, symbol }));
 
     const atr = ATR({ data: _candles, period: tiSettings.atrPeriod });
 
@@ -72,52 +83,40 @@ export function Aisle({ symbol, candlesData, tiSettings, tdlOpt, lvlOpt }: Entry
         resolvePosition: false
     };
 
-    if (
-        (lvl0.signal == 'bounceUp' || lvl1.signal == 'bounceUp' || lvl2.signal == 'bounceUp') &&
-        lastCandle.close - lastCandle.open >= minCandleMove
-    ) {
-        let stopLoss = lastPrice - atr;
+    levels.forEach((lvl, i) => {
+        if (cache[symbol].execLevels.includes(i)) {
+            return;
+        }
 
-        // if (stopLoss > tdl.bottomLinePrice) {
-        //     stopLoss = tdl.bottomLinePrice;
-        // }
+        if ( lvl == 'bounceUp' ) {
+            let stopLoss = lastPrice - atr;
 
-        const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
+            const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
 
-        signalDetails.stopLoss = stopLoss;
-        signalDetails.lastCandleMove = lastCandle.close - lastCandle.open;
+            signalDetails.stopLoss = stopLoss;
+            signalDetails.lastCandleMove = lastCandle.close - lastCandle.open;
 
-        symbolResult.position = 'long';
-        symbolResult.percentLoss = percentLoss;
-        symbolResult.resolvePosition = true;
+            symbolResult.position = 'long';
+            symbolResult.percentLoss = percentLoss;
+            symbolResult.resolvePosition = true;
 
-        lvl0.clearChache();
-        lvl1.clearChache();
-        lvl2.clearChache();
+            cache[symbol].execLevels.push(i);
 
-    } else if (
-        (lvl0.signal == 'bounceDown' || lvl1.signal == 'bounceDown' || lvl2.signal == 'bounceDown') &&
-        lastCandle.open - lastCandle.close >= minCandleMove
-    ) {
-        let stopLoss = lastPrice + atr;
+        } else if (lvl == 'bounceDown') {
+            let stopLoss = lastPrice + atr;
 
-        // if (stopLoss < tdl.topLinePrice) {
-        //     stopLoss = tdl.topLinePrice + atr;
-        // }
+            const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);
 
-        const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);
+            signalDetails.stopLoss = stopLoss;
+            signalDetails.lastCandleMove = lastCandle.open - lastCandle.close;
 
-        signalDetails.stopLoss = stopLoss;
-        signalDetails.lastCandleMove = lastCandle.open - lastCandle.close;
+            symbolResult.position = 'short';
+            symbolResult.percentLoss = percentLoss;
+            symbolResult.resolvePosition = true;
 
-        symbolResult.position = 'short';
-        symbolResult.percentLoss = percentLoss;
-        symbolResult.resolvePosition = true;
-
-        lvl0.clearChache();
-        lvl1.clearChache();
-        lvl2.clearChache();
-    }
+            cache[symbol].execLevels.push(i);
+        }
+    });
 
     return symbolResult;
 }

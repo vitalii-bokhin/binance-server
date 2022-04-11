@@ -1,5 +1,7 @@
 import ws from 'express-ws';
 import { Bot, BotControl } from '../bot';
+import { ImmediatelyPosition } from '../manual';
+import getSymbols from '../symbols';
 
 export default function (api: ws.Router) {
     api.get('/bot', function (req, res) {
@@ -49,9 +51,21 @@ export default function (api: ws.Router) {
         });
     });
 
+    api.get('/trade', function (req, res) {
+        getSymbols().then(({ symbols, symbolsObj }) => {
+            res.json({ symbols });
+        });
+
+    });
+
+    api.post('/trade', function (req, res) {
+        ImmediatelyPosition(req.body);
+        res.json(req.body);
+    });
+
     /* api.get('/candlesticks', (req: { query: any; }, res: { json: (arg0: any) => void; }) => {
         // Chart.candlesTicks(req.query, function (data: any) {
-        //     res.json(data);
+            //     res.json(data);
         // });
     }); */
 

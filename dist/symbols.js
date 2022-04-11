@@ -4,7 +4,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const node_binance_api_1 = __importDefault(require("node-binance-api"));
-const binance = new node_binance_api_1.default();
+const binance = new node_binance_api_1.default().options({
+    useServerTime: true
+});
 const symbolsObj = {};
 const symbols = [];
 async function getSymbols() {
