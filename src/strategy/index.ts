@@ -7,11 +7,12 @@ import { LevelOpt, LineOpt } from '../indicators/types';
 
 // export { Aisle, Fling };
 
-const analizedSymbols: {
+let analizedSymbols: {
     [symbol: string]: {
         symbol: string;
         curCdl?: Candle;
         atr?: number;
+        atrSpread?: number;
         avgRsiAbove?: number;
         avgRsiBelow?: number;
         percentAverageCandleMove?: number;
@@ -28,7 +29,7 @@ const purpose: {
     aisleMax: number;
 } = {
     scalping: [],
-    scalpingMax: 5,
+    scalpingMax: 15,
     aisle: [],
     aisleMax: 1
 };
@@ -74,7 +75,8 @@ export async function Strategy({ data, symbols }: { data: { [sym: string]: Candl
 
                     analizedSymbols[symbol] = {
                         symbol,
-                        atr,
+                        atr: atr.last,
+                        atrSpread: atr.spreadPercent,
                         curCdl,
                         // avgRsiAbove,
                         // avgRsiBelow,
@@ -95,7 +97,8 @@ export async function Strategy({ data, symbols }: { data: { [sym: string]: Candl
     if (!purpose.scalping.length) {
         const symbArr = Object.keys(analizedSymbols).map(sym => analizedSymbols[sym]);
 
-        const prevSort = symbArr.sort((a, b) => (b.atr / (b.curCdl.high - b.curCdl.low)) - (a.atr / (a.curCdl.high - a.curCdl.low)));
+        // const prevSort = symbArr.sort((a, b) => ((b.atr / (b.curCdl.high - b.curCdl.low)) + (100 - b.atrSpread)) - ((a.atr / (a.curCdl.high - a.curCdl.low) + (100 - a.atrSpread))));
+        const prevSort = symbArr.sort((a, b) => (100 - b.atrSpread) - (100 - a.atrSpread));
 
         // console.log(prevSort);
         // symbArr.sort((a, b) => (b.smaChange / b.percentAverageCandleMove) - (a.smaChange / a.percentAverageCandleMove));
@@ -104,6 +107,7 @@ export async function Strategy({ data, symbols }: { data: { [sym: string]: Candl
 
         return [];
     }
+
 
     // if (!purpose.aisle.length) {
     //     const symbArr = Object.keys(analizedSymbols).map(sym => analizedSymbols[sym]);
@@ -200,4 +204,11 @@ export async function Strategy({ data, symbols }: { data: { [sym: string]: Candl
     signals.sort((a, b) => b.preferIndex - a.preferIndex);
 
     return signals;
+}
+
+export function ReuseStrategy(): void {
+    analizedSymbolsCount = 0;
+    analizedSymbols = {};
+    purpose.scalping = [];
+    purpose.aisle = [];
 }

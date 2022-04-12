@@ -1,6 +1,6 @@
 import { getTickerStreamCache } from '../binanceApi';
 import { ATR, LVL, RSI, SMA, TDL } from '../indicators';
-import analizeCandle from '../indicators/candle';
+import { CheckCandle } from '../indicators/candle'; '../indicators/candle';
 import { Candle, CdlDir, SymbolResult, Entry, Result } from './types';
 
 const cache: {
@@ -22,7 +22,7 @@ export function Aisle({ symbol, candlesData, tiSettings, tdlOpt, lvlOpt }: Entry
 
     const levels = lvlOpt.map(itOpt => LVL({ candles: _candles, levelOpt: itOpt, symbol }));
 
-    const atr = ATR({ data: _candles, period: tiSettings.atrPeriod });
+    const atr = ATR({ data: _candles, period: tiSettings.atrPeriod }).last;
 
     const lastCandle: Candle = _candles[_candles.length - 1];
     const lastPrice = lastCandle.close;

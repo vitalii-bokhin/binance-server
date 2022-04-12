@@ -11,12 +11,18 @@ function ATR({ data, period }) {
         period
     };
     const atr = new technicalindicators_1.ATR(input);
+    const result = atr.getResult().slice(period * -1);
+    result.sort((a, b) => a - b);
+    const spreadPercent = (result[result.length - 1] - result[0]) / (result[0] / 100);
     const last = atr.nextValue({
         high: lastCandle.high,
         low: lastCandle.low,
         close: lastCandle.close
     });
-    return last;
+    return {
+        last: +last.toFixed(5),
+        spreadPercent
+    };
 }
 exports.ATR = ATR;
 //# sourceMappingURL=atr.js.map

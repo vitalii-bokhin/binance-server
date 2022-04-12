@@ -32,79 +32,84 @@ let _symbols, _symbolsObj;
 export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
     const pKey = s.symbol;
 
-    if (excludedPositions.includes(pKey)) {
+    if (
+        openedPositions[pKey] ||
+        !s.resolvePosition ||
+        excludedPositions.includes(pKey) ||
+        (initiator == 'bot' && botPositions == 2) ||
+        s.percentLoss < fee
+    ) {
         return;
     }
 
-    if (!openedPositions[pKey] && botPositions < 2 && s.resolvePosition && s.percentLoss > fee) {
-        if (initiator == 'bot') {
-            botPositions++;
+    if (initiator == 'bot') {
+        botPositions++;
+    }
+
+    let trailingStopStartTriggerPrice: number;
+    let trailingStopStartOrder: number;
+    let trailingStopTriggerPriceStep: number;
+    let trailingStopOrderStep: number;
+
+    if (s.strategy == 'aisle' || s.strategy == 'manual') {
+        trailingStopStartTriggerPrice = s.percentLoss;
+        trailingStopStartOrder = s.percentLoss / 2;
+        trailingStopTriggerPriceStep = s.percentLoss;
+        trailingStopOrderStep = s.percentLoss;
+    }
+
+    openedPositions[pKey] = new Position({
+        positionKey: pKey,
+        position: s.position,
+        symbol: s.symbol,
+        expectedProfit: s.expectedProfit,
+        entryPrice: s.entryPrice,
+        takeProfit: s.takeProfit,
+        percentLoss: s.percentLoss,
+        fee,
+        leverage,
+        symbols: _symbols,
+        symbolInfo: _symbolsObj[s.symbol],
+        trailingStopStartTriggerPrice,
+        trailingStopStartOrder,
+        trailingStopTriggerPriceStep,
+        trailingStopOrderStep,
+        signal: s.signal,
+        interval,
+        limit,
+        rsiPeriod: s.rsiPeriod,
+        signalDetails: s.signalDetails,
+        initiator
+    });
+
+    openedPositions[pKey].setOrders().then(res => {
+        console.log(res);
+    });
+
+    // if (s.signal == 'scalping') {
+
+    // } else {
+    //     // botPositions[pKey].setEntryOrder().then((res) => {
+    //     //     console.log(res);
+
+    //     //     if (res.error) {
+    //     //         positions--;
+    //     //     }
+    //     // });
+    // }
+
+    openedPositions[pKey].deletePosition = function (positionKey, opt) {
+        if (opt && opt.excludeKey) {
+            excludedPositions.push(opt.excludeKey);
+            console.log('EXCLUDED =' + this.positionKey);
         }
 
-        let trailingStopStartTriggerPrice: number;
-        let trailingStopStartOrder: number;
-        let trailingStopTriggerPriceStep: number;
-        let trailingStopOrderStep: number;
+        delete openedPositions[positionKey];
 
-        if (s.strategy == 'aisle' || s.strategy == 'manual') {
-            trailingStopStartTriggerPrice = s.percentLoss;
-            trailingStopStartOrder = s.percentLoss / 2;
-            trailingStopTriggerPriceStep = s.percentLoss;
-            trailingStopOrderStep = s.percentLoss;
+        if (this.initiator == 'bot') {
+            botPositions--;
         }
 
-        openedPositions[pKey] = new Position({
-            positionKey: pKey,
-            position: s.position,
-            symbol: s.symbol,
-            expectedProfit: s.expectedProfit,
-            entryPrice: s.entryPrice,
-            takeProfit: s.takeProfit,
-            percentLoss: s.percentLoss,
-            fee,
-            leverage,
-            symbols: _symbols,
-            symbolInfo: _symbolsObj[s.symbol],
-            trailingStopStartTriggerPrice,
-            trailingStopStartOrder,
-            trailingStopTriggerPriceStep,
-            trailingStopOrderStep,
-            signal: s.signal,
-            interval,
-            limit,
-            rsiPeriod: s.rsiPeriod,
-            signalDetails: s.signalDetails
-        });
-
-        openedPositions[pKey].setOrders().then(res => {
-            console.log(res);
-        });
-
-        // if (s.signal == 'scalping') {
-
-        // } else {
-        //     // botPositions[pKey].setEntryOrder().then((res) => {
-        //     //     console.log(res);
-
-        //     //     if (res.error) {
-        //     //         positions--;
-        //     //     }
-        //     // });
-        // }
-
-        openedPositions[pKey].deletePosition = function (positionKey, opt) {
-            if (opt && opt.excludeKey) {
-                excludedPositions.push(opt.excludeKey);
-                console.log('EXCLUDED =' + positionKey);
-            }
-
-            delete openedPositions[positionKey];
-
-            if (initiator == 'bot') {
-                botPositions--;
-            }
-
-            console.log('DELETE =' + positionKey + '= POSITION OBJECT');
-        }
+        console.log('DELETE =' + positionKey + '= POSITION OBJECT');
     }
 }

@@ -1,6 +1,6 @@
 import { getTickerStreamCache } from '../binanceApi';
 import { ATR, RSI, SMA } from '../indicators';
-import analizeCandle from '../indicators/candle';
+import {CheckCandle} from '../indicators/candle';
 import { Candle, CdlDir, SymbolResult, Entry, Result } from './types';
 
 // const changeDelta: {
@@ -233,8 +233,8 @@ export function Scalping({ symbol, candlesData, tiSettings }: Entry): SymbolResu
     //             prevCandle.close > prevCandle.open &&
     //             prevCandle.high - prevCandle.low < atr * 1.5 &&
     //             // prevCandle.open > prevSma && prevCandle.close > prevSma &&
-    //             analizeCandle(prevCandle, 'long') !== 'stopLong' &&
-    //             analizeCandle(thirdCandle, 'long') !== 'stopLong'
+    //             CheckCandle(prevCandle, 'long') !== 'stopLong' &&
+    //             CheckCandle(thirdCandle, 'long') !== 'stopLong'
     //         ) || (
     //             prevCandle.open > prevCandle.close &&
     //             prevCandle.open - prevCandle.close > atr * 1.5
@@ -259,8 +259,8 @@ export function Scalping({ symbol, candlesData, tiSettings }: Entry): SymbolResu
     //             prevCandle.close < prevCandle.open &&
     //             prevCandle.high - prevCandle.low < atr * 1.5 &&
     //             // prevCandle.open < prevSma && prevCandle.close < prevSma &&
-    //             analizeCandle(prevCandle, 'short') !== 'stopShort' &&
-    //             analizeCandle(thirdCandle, 'short') !== 'stopShort'
+    //             CheckCandle(prevCandle, 'short') !== 'stopShort' &&
+    //             CheckCandle(thirdCandle, 'short') !== 'stopShort'
     //         ) || (
     //             prevCandle.close > prevCandle.open &&
     //             prevCandle.close - prevCandle.open > atr * 1.5
@@ -319,7 +319,7 @@ export function Scalping({ symbol, candlesData, tiSettings }: Entry): SymbolResu
         lastCandle.close > lastCandle.open &&
         lastCandle.close - lastCandle.open >= minCandleMove &&
         rsi.last < avgRsiAbove &&
-        analizeCandle(prevCandle, 'long') !== 'stopLong'
+        CheckCandle(prevCandle, 'long') !== 'stopLong'
     ) {
 
         let stopLoss = lastPrice - avgCandleMove;
@@ -340,7 +340,7 @@ export function Scalping({ symbol, candlesData, tiSettings }: Entry): SymbolResu
         lastCandle.close < lastCandle.open &&
         lastCandle.open - lastCandle.close >= minCandleMove &&
         rsi.last > avgRsiBelow &&
-        analizeCandle(prevCandle, 'short') !== 'stopShort'
+        CheckCandle(prevCandle, 'short') !== 'stopShort'
     ) {
 
         let stopLoss = lastPrice + avgCandleMove;

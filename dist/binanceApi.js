@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getTickerStreamCache = exports.tickerStream = exports.priceStream = exports.positionUpdateStream = exports.ordersUpdateStream = exports.symbolCandlesTicksStream = exports.candlesTicksStream = exports.candlesTicks = void 0;
+exports.DepthStream = exports.getTickerStreamCache = exports.tickerStream = exports.priceStream = exports.positionUpdateStream = exports.ordersUpdateStream = exports.symbolCandlesTicksStream = exports.candlesTicksStream = exports.CandlesTicks = void 0;
 const ws_1 = __importDefault(require("ws"));
 const node_binance_api_1 = __importDefault(require("node-binance-api"));
 const config_1 = require("./config");
@@ -21,7 +21,7 @@ const streamsSubscribers = {};
 const candlesTicksStreamSubscribers = [];
 let candlesTicksStreamExecuted = false;
 const symbolCandlesTicksStreamSubscribers = {};
-function candlesTicks({ symbols, interval, limit }, callback) {
+function CandlesTicks({ symbols, interval, limit }, callback) {
     const result = {};
     let i = 0;
     symbols.forEach(sym => {
@@ -47,7 +47,7 @@ function candlesTicks({ symbols, interval, limit }, callback) {
         });
     });
 }
-exports.candlesTicks = candlesTicks;
+exports.CandlesTicks = CandlesTicks;
 function candlesTicksStream(opt, callback) {
     if (callback) {
         candlesTicksStreamSubscribers.push(callback);
@@ -56,7 +56,7 @@ function candlesTicksStream(opt, callback) {
         const { symbols, interval, limit } = opt;
         const streams = symbols.map(s => s.toLowerCase() + '@kline_' + interval).join('/');
         candlesTicksStreamExecuted = true;
-        candlesTicks({ symbols, interval, limit }, data => {
+        CandlesTicks({ symbols, interval, limit }, data => {
             const result = data;
             let ws;
             if (streamsSubscribers[streams] !== undefined) {
@@ -74,9 +74,7 @@ function candlesTicksStream(opt, callback) {
                     open: +open,
                     high: +high,
                     low: +low,
-                    close: +close,
-                    interval,
-                    limit
+                    close: +close
                 };
                 if (result[symbol][result[symbol].length - 1].openTime !== openTime) {
                     result[symbol].push(candle);
@@ -211,4 +209,32 @@ function getTickerStreamCache(symbol) {
     return tickerStreamCache[symbol];
 }
 exports.getTickerStreamCache = getTickerStreamCache;
+// Orders Book
+let depthStreamExecuted = false;
+const depthStreamSubscribers = [];
+function DepthStream(opt, callback) {
+    if (callback) {
+        depthStreamSubscribers.push(callback);
+    }
+    if (!depthStreamExecuted && opt) {
+        const { symbol } = opt;
+        const streams = symbol.toLowerCase() + '@depth';
+        depthStreamExecuted = true;
+        binance.futuresDepth(symbol).then(res => {
+            let ws;
+            if (streamsSubscribers[streams] !== undefined) {
+                ws = streamsSubscribers[streams];
+            }
+            else {
+                ws = new ws_1.default(streamApi + streams);
+                streamsSubscribers[streams] = ws;
+            }
+            ws.on('message', function message(data) {
+                const res = JSON.parse(data).data;
+                depthStreamSubscribers.forEach(cb => cb(res));
+            });
+        });
+    }
+}
+exports.DepthStream = DepthStream;
 //# sourceMappingURL=binanceApi.js.map

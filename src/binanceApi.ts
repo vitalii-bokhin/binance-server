@@ -16,8 +16,6 @@ type Candle = {
     open: number;
     close: number;
     low: number;
-    interval: string;
-    limit: number;
 };
 
 type CandlesTicksEntry = {
@@ -25,10 +23,15 @@ type CandlesTicksEntry = {
     interval: string;
     limit: number;
 };
+type DepthTicksEntry = {
+    symbol: string;
+};
 
 type CandlesTicksCallback = (arg0: { [key: string]: Candle[] }) => void;
 
 type SymbolCandlesTicksCallback = (arg0: Candle[]) => void;
+
+type DepthCallback = (arg0: any) => void;
 
 // check server time
 binance.time().then(res => {
@@ -47,7 +50,7 @@ const symbolCandlesTicksStreamSubscribers: {
     [key: string]: ((arg0: any) => void)[];
 } = {};
 
-export function candlesTicks({ symbols, interval, limit }: CandlesTicksEntry, callback: CandlesTicksCallback): void {
+export function CandlesTicks({ symbols, interval, limit }: CandlesTicksEntry, callback: CandlesTicksCallback): void {
     const result = {};
 
     let i = 0;
@@ -93,7 +96,7 @@ export function candlesTicksStream(opt: CandlesTicksEntry, callback: CandlesTick
 
         candlesTicksStreamExecuted = true;
 
-        candlesTicks({ symbols, interval, limit }, data => {
+        CandlesTicks({ symbols, interval, limit }, data => {
             const result = data;
             let ws: WebSocket;
 
@@ -113,9 +116,7 @@ export function candlesTicksStream(opt: CandlesTicksEntry, callback: CandlesTick
                     open: +open,
                     high: +high,
                     low: +low,
-                    close: +close,
-                    interval,
-                    limit
+                    close: +close
                 };
 
                 if (result[symbol][result[symbol].length - 1].openTime !== openTime) {
@@ -349,4 +350,40 @@ export function getTickerStreamCache(symbol: string): {
     numTrades: number;
 } {
     return tickerStreamCache[symbol];
+}
+
+// Orders Book
+let depthStreamExecuted = false;
+const depthStreamSubscribers = [];
+
+export function DepthStream(opt: DepthTicksEntry, callback: DepthCallback): void {
+    if (callback) {
+        depthStreamSubscribers.push(callback);
+    }
+
+    if (!depthStreamExecuted && opt) {
+        const { symbol } = opt;
+        const streams = symbol.toLowerCase() + '@depth';
+
+        depthStreamExecuted = true;
+
+        binance.futuresDepth(symbol).then(res => {
+
+            let ws: WebSocket;
+
+            if (streamsSubscribers[streams] !== undefined) {
+                ws = streamsSubscribers[streams];
+            } else {
+                ws = new WebSocket(streamApi + streams);
+                streamsSubscribers[streams] = ws;
+            }
+
+            ws.on('message', function message(data: any) {
+                const res = JSON.parse(data).data;
+
+                depthStreamSubscribers.forEach(cb => cb(res));
+
+            });
+        });
+    }
 }

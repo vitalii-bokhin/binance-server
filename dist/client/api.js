@@ -3,8 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const binanceApi_1 = require("../binanceApi");
 const bot_1 = require("../bot");
 const manual_1 = require("../manual");
+const strategy_1 = require("../strategy");
 const symbols_1 = __importDefault(require("../symbols"));
 function default_1(api) {
     api.get('/bot', function (req, res) {
@@ -15,8 +17,14 @@ function default_1(api) {
         });
     });
     api.post('/bot', function (req, res) {
-        const controls = (0, bot_1.BotControl)(req.body);
-        res.json({ controls });
+        if (req.body.reuseStrategy) {
+            (0, strategy_1.ReuseStrategy)();
+            res.json({ status: 'OK' });
+        }
+        else {
+            const controls = (0, bot_1.BotControl)(req.body);
+            res.json({ controls });
+        }
     });
     api.ws('/bot', (ws, req) => {
         const botEvHandler = function (msg) {
@@ -53,11 +61,15 @@ function default_1(api) {
         (0, manual_1.ImmediatelyPosition)(req.body);
         res.json(req.body);
     });
-    /* api.get('/candlesticks', (req: { query: any; }, res: { json: (arg0: any) => void; }) => {
+    api.get('/candlesticks', (req, res) => {
+        const { symbol, limit, interval } = req.query;
+        (0, binanceApi_1.CandlesTicks)({ symbols: [symbol], limit, interval }, data => {
+            res.json(data[symbol]);
+        });
         // Chart.candlesTicks(req.query, function (data: any) {
-            //     res.json(data);
+        //         res.json(data);
         // });
-    }); */
+    });
     return api;
 }
 exports.default = default_1;

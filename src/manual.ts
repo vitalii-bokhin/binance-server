@@ -7,6 +7,7 @@ const binance: Binance = new Binance().options({
 
 
 export async function ImmediatelyPosition({symbol, position, stopLoss, onePercLoss}: {symbol:string; position: 'long' | 'short'; stopLoss: number; onePercLoss: boolean;}): Promise<void> {
+    
     const price = await binance.futuresMarkPrice(symbol);
     const lastPrice = +price.indexPrice;
 

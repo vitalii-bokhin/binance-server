@@ -2,17 +2,19 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Scalping = void 0;
 const indicators_1 = require("../indicators");
+const candle_1 = require("../indicators/candle");
 function Scalping({ symbol, candlesData, tiSettings }) {
     const _candles = candlesData;
-    const atr = (0, indicators_1.ATR)({ data: _candles, period: tiSettings.atrPeriod });
+    const atr = (0, indicators_1.ATR)({ data: _candles, period: tiSettings.atrPeriod }).last;
     const prevCandle = _candles[_candles.length - 2];
     const lastCandle = _candles[_candles.length - 1];
     const lastPrice = lastCandle.close;
-    const cdlMove = lastCandle.high - lastCandle.low;
+    const cdlHiLo = lastCandle.high - lastCandle.low;
+    const moved = cdlHiLo / atr;
     const signalDetails = {
         lastPrice: lastPrice,
         atr,
-        moved: cdlMove / atr
+        moved
     };
     const symbolResult = {
         symbol,
@@ -21,15 +23,17 @@ function Scalping({ symbol, candlesData, tiSettings }) {
         percentLoss: null,
         signal: 'scalping',
         strategy: 'scalping',
-        preferIndex: atr / cdlMove,
+        preferIndex: atr / cdlHiLo,
         rsiPeriod: tiSettings.rsiPeriod,
         signalDetails,
         resolvePosition: false
     };
     const stoplossRate = atr * .15;
-    if (cdlMove / atr > .1 && cdlMove / atr < .3) {
-        if (lastCandle.close > lastCandle.open && prevCandle.close > prevCandle.open) {
-            if ((lastCandle.high - lastCandle.close) / (lastCandle.open - lastCandle.low) < .2) {
+    if (moved > .2 && moved < .5) {
+        if (lastCandle.close > lastCandle.open /* && prevCandle.close > prevCandle.open */) {
+            const checkPrev = (0, candle_1.CheckCandle)(prevCandle, 'long');
+            if ((lastCandle.high - lastCandle.close) / (lastCandle.open - lastCandle.low) < .2 &&
+                checkPrev != 'stopLong') {
                 // Long
                 const stopLoss = lastPrice - stoplossRate;
                 const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
@@ -51,8 +55,10 @@ function Scalping({ symbol, candlesData, tiSettings }) {
                 symbolResult.resolvePosition = true;
             } */
         }
-        else if (lastCandle.close < lastCandle.open && prevCandle.close < prevCandle.open) {
-            if ((lastCandle.close - lastCandle.low) / (lastCandle.high - lastCandle.open) < .2) {
+        else if (lastCandle.close < lastCandle.open /* && prevCandle.close < prevCandle.open */) {
+            const checkPrev = (0, candle_1.CheckCandle)(prevCandle, 'short');
+            if ((lastCandle.close - lastCandle.low) / (lastCandle.high - lastCandle.open) < .2 &&
+                checkPrev != 'stopShort') {
                 // Short
                 const stopLoss = lastPrice + stoplossRate;
                 const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);

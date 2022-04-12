@@ -1,7 +1,7 @@
 import { IndicatorEntry } from './types';
 import { ATR as tiAtr } from 'technicalindicators';
 
-export function ATR({ data, period }: IndicatorEntry): number {
+export function ATR({ data, period }: IndicatorEntry): {last: number; spreadPercent: number;} {
     const candles = [...data],
         lastCandle = candles.pop();
 
@@ -14,11 +14,20 @@ export function ATR({ data, period }: IndicatorEntry): number {
 
     const atr = new tiAtr(input);
 
+    const result = atr.getResult().slice(period * -1);
+
+    result.sort((a: number, b: number) => a - b);
+
+    const spreadPercent = (result[result.length - 1] - result[0]) / (result[0] / 100);
+
     const last = atr.nextValue({
         high: lastCandle.high,
         low: lastCandle.low,
         close: lastCandle.close
     });
 
-    return last;
+    return {
+        last: +last.toFixed(5),
+        spreadPercent
+    };
 }

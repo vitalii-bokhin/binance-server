@@ -1,6 +1,8 @@
 import ws from 'express-ws';
+import { CandlesTicks } from '../binanceApi';
 import { Bot, BotControl } from '../bot';
 import { ImmediatelyPosition } from '../manual';
+import { ReuseStrategy } from '../strategy';
 import getSymbols from '../symbols';
 
 export default function (api: ws.Router) {
@@ -14,9 +16,16 @@ export default function (api: ws.Router) {
     });
 
     api.post('/bot', function (req, res) {
-        const controls = BotControl(req.body);
+        if (req.body.reuseStrategy) {
+            ReuseStrategy();
 
-        res.json({ controls });
+            res.json({ status: 'OK' });
+
+        } else {
+            const controls = BotControl(req.body);
+
+            res.json({ controls });
+        }
     });
 
     api.ws('/bot', (ws, req) => {
@@ -63,11 +72,16 @@ export default function (api: ws.Router) {
         res.json(req.body);
     });
 
-    /* api.get('/candlesticks', (req: { query: any; }, res: { json: (arg0: any) => void; }) => {
+    api.get('/candlesticks', (req: { query: { symbol: string; limit: number; interval: string; } }, res) => {
+        const { symbol, limit, interval } = req.query;
+
+        CandlesTicks({ symbols: [symbol], limit, interval }, data => {
+            res.json(data[symbol]);
+        });
         // Chart.candlesTicks(req.query, function (data: any) {
-            //     res.json(data);
+        //         res.json(data);
         // });
-    }); */
+    });
 
     return api;
 }

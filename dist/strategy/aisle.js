@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Aisle = void 0;
 const indicators_1 = require("../indicators");
+'../indicators/candle';
 const cache = {};
 function Aisle({ symbol, candlesData, tiSettings, tdlOpt, lvlOpt }) {
     if (!cache[symbol]) {
@@ -12,7 +13,7 @@ function Aisle({ symbol, candlesData, tiSettings, tdlOpt, lvlOpt }) {
     const _candles = candlesData;
     // const tdl = TDL({ candles: _candles, lineOpt: tdlOpt[0], symbol });
     const levels = lvlOpt.map(itOpt => (0, indicators_1.LVL)({ candles: _candles, levelOpt: itOpt, symbol }));
-    const atr = (0, indicators_1.ATR)({ data: _candles, period: tiSettings.atrPeriod });
+    const atr = (0, indicators_1.ATR)({ data: _candles, period: tiSettings.atrPeriod }).last;
     const lastCandle = _candles[_candles.length - 1];
     const lastPrice = lastCandle.close;
     const prevCandle = _candles[_candles.length - 2];

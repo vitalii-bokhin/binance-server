@@ -40,6 +40,7 @@ class Position {
         this.signalDetails = opt.signalDetails;
         this.setTakeProfit = opt.setTakeProfit !== undefined ? opt.setTakeProfit : true;
         this.useTrailingStop = opt.useTrailingStop !== undefined ? opt.useTrailingStop : false;
+        this.initiator = opt.initiator;
     }
     // async setEntryOrder(): Promise<{
     //     entryOrder?: any;
@@ -125,7 +126,7 @@ class Position {
         const lvr = await binanceAuth.futuresLeverage(this.symbol, this.leverage);
         // entry
         const entrySide = this.position === 'long' ? 'BUY' : 'SELL';
-        let usdtAmount = this.lossAmount * ((100 / this.percentLoss) - this.fee);
+        let usdtAmount = this.lossAmount * (100 / this.percentLoss);
         console.log({ usdtAmount });
         const quantity = +(usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
         console.log({ quantity });

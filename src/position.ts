@@ -43,9 +43,10 @@ export class Position {
     percentLoss: number;
     signalDetails?: any;
     deletePosition: (positionKey: string, opt: any) => void;
-    lossAmount: number = .1;
     setTakeProfit: boolean;
     useTrailingStop: boolean;
+    initiator: 'bot' | 'user';
+    lossAmount: number = .1;
 
     constructor(opt: {
         positionKey: string;
@@ -74,6 +75,7 @@ export class Position {
         signalDetails?: any;
         setTakeProfit?: boolean;
         useTrailingStop?: boolean;
+        initiator: 'bot' | 'user';
     }) {
         this.positionKey = opt.positionKey;
         this.position = opt.position;
@@ -97,6 +99,7 @@ export class Position {
         this.signalDetails = opt.signalDetails;
         this.setTakeProfit = opt.setTakeProfit !== undefined ? opt.setTakeProfit : true;
         this.useTrailingStop = opt.useTrailingStop !== undefined ? opt.useTrailingStop : false;
+        this.initiator = opt.initiator;
     }
 
     // async setEntryOrder(): Promise<{
@@ -203,7 +206,7 @@ export class Position {
         // entry
         const entrySide = this.position === 'long' ? 'BUY' : 'SELL';
 
-        let usdtAmount = this.lossAmount * ((100 / this.percentLoss) - this.fee);
+        let usdtAmount = this.lossAmount * (100 / this.percentLoss);
 
         console.log({ usdtAmount });
 

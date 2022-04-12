@@ -1,11 +1,8 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Scalping = void 0;
 const indicators_1 = require("../indicators");
-const candle_1 = __importDefault(require("../indicators/candle"));
+const candle_1 = require("../indicators/candle");
 // const changeDelta: {
 //     [symbol: string]: {
 //         lastPrice: number;
@@ -201,8 +198,8 @@ function Scalping({ symbol, candlesData, tiSettings }) {
     //             prevCandle.close > prevCandle.open &&
     //             prevCandle.high - prevCandle.low < atr * 1.5 &&
     //             // prevCandle.open > prevSma && prevCandle.close > prevSma &&
-    //             analizeCandle(prevCandle, 'long') !== 'stopLong' &&
-    //             analizeCandle(thirdCandle, 'long') !== 'stopLong'
+    //             CheckCandle(prevCandle, 'long') !== 'stopLong' &&
+    //             CheckCandle(thirdCandle, 'long') !== 'stopLong'
     //         ) || (
     //             prevCandle.open > prevCandle.close &&
     //             prevCandle.open - prevCandle.close > atr * 1.5
@@ -223,8 +220,8 @@ function Scalping({ symbol, candlesData, tiSettings }) {
     //             prevCandle.close < prevCandle.open &&
     //             prevCandle.high - prevCandle.low < atr * 1.5 &&
     //             // prevCandle.open < prevSma && prevCandle.close < prevSma &&
-    //             analizeCandle(prevCandle, 'short') !== 'stopShort' &&
-    //             analizeCandle(thirdCandle, 'short') !== 'stopShort'
+    //             CheckCandle(prevCandle, 'short') !== 'stopShort' &&
+    //             CheckCandle(thirdCandle, 'short') !== 'stopShort'
     //         ) || (
     //             prevCandle.close > prevCandle.open &&
     //             prevCandle.close - prevCandle.open > atr * 1.5
@@ -278,7 +275,7 @@ function Scalping({ symbol, candlesData, tiSettings }) {
         lastCandle.close > lastCandle.open &&
         lastCandle.close - lastCandle.open >= minCandleMove &&
         rsi.last < avgRsiAbove &&
-        (0, candle_1.default)(prevCandle, 'long') !== 'stopLong') {
+        (0, candle_1.CheckCandle)(prevCandle, 'long') !== 'stopLong') {
         let stopLoss = lastPrice - avgCandleMove;
         const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
         signalDetails.stopLoss = stopLoss;
@@ -293,7 +290,7 @@ function Scalping({ symbol, candlesData, tiSettings }) {
         lastCandle.close < lastCandle.open &&
         lastCandle.open - lastCandle.close >= minCandleMove &&
         rsi.last > avgRsiBelow &&
-        (0, candle_1.default)(prevCandle, 'short') !== 'stopShort') {
+        (0, candle_1.CheckCandle)(prevCandle, 'short') !== 'stopShort') {
         let stopLoss = lastPrice + avgCandleMove;
         const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);
         signalDetails.stopLoss = stopLoss;

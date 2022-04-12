@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-function default_1(cdl, pos) {
+exports.CheckCandle = void 0;
+function CheckCandle(cdl, pos) {
     if (cdl.close > cdl.open) {
         // UP CANDLE
         const highTail = cdl.high - cdl.close;
@@ -30,5 +31,5 @@ function default_1(cdl, pos) {
         }
     }
 }
-exports.default = default_1;
+exports.CheckCandle = CheckCandle;
 //# sourceMappingURL=candle.js.map

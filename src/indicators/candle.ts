@@ -1,6 +1,6 @@
 import { Candle } from './types';
 
-export default function (cdl: Candle, pos: 'long' | 'short'): 'stopLong' | 'stopShort' | 'stopBoth' {
+export function CheckCandle(cdl: Candle, pos: 'long' | 'short'): 'stopLong' | 'stopShort' /* | 'stopBoth' */ {
     if (cdl.close > cdl.open) {
         // UP CANDLE
         const highTail = cdl.high - cdl.close;
