@@ -10,6 +10,7 @@ const body_parser_1 = __importDefault(require("body-parser"));
 const multer_1 = __importDefault(require("multer"));
 // import websocket from 'ws';
 const api_1 = __importDefault(require("./api"));
+const bot_1 = require("../bot");
 const db = require('../database'), user = require('../user'), watch = require('../watch'), order = require('../order');
 const upload = (0, multer_1.default)();
 const { app } = (0, express_ws_1.default)((0, express_1.default)());
@@ -57,16 +58,8 @@ app.get('/', function (req, res) {
     res.json({ key: "Halllow worrldd" });
 });
 app.get('/bot', function (req, res) {
-    // Volatility().then((data) => {
-    //     const opt = {
-    //         title: 'Volatility signals',
-    //         data: JSON.stringify(data)
-    //     };
-    //     res.render('index', opt);
-    // });
-    // Bot();
-    // Chart.wsCandlesTicks('BTC');
-    res.render('index', { title: 'Bot', data: '' });
+    (0, bot_1.Bot)();
+    res.json({ key: "Bot" });
 });
 app.get('/test', function (req, res) {
     res.json({ key: "Halllow worrldd" });

@@ -1,4 +1,4 @@
-import { getTickerStreamCache } from '../binanceApi';
+// import { getTickerStreamCache } from '../binanceApi';
 import { ATR, RSI, SMA } from '../indicators';
 import {CheckCandle} from '../indicators/candle';
 import { Candle, CdlDir, SymbolResult, Entry, Result } from './types';

@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Position = void 0;
 const node_binance_api_1 = __importDefault(require("node-binance-api"));
 const config_1 = require("./config");
-const binanceApi_1 = require("./binanceApi");
+const binanceApi_1 = require("./binance_api/binanceApi");
 const binanceAuth = new node_binance_api_1.default().options({
     APIKEY: config_1.BINANCE_KEY,
     APISECRET: config_1.BINANCE_SECRET,

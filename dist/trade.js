@@ -4,10 +4,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OpenPosition = void 0;
-const binanceApi_1 = require("./binanceApi");
+const binanceApi_1 = require("./binance_api/binanceApi");
 const position_1 = require("./position");
 const symbols_1 = __importDefault(require("./symbols"));
-const fee = .08, interval = '1h', limit = 72, leverage = 5;
+const fee = .08, interval = '5m', limit = 72, leverage = 5;
 const openedPositions = {};
 const excludedPositions = [];
 let botPositions = 0;

@@ -57,21 +57,22 @@ async function Strategy({ data, symbols }) {
         }
         return [];
     }
-    if (!purpose.scalping.length) {
-        const symbArr = Object.keys(analizedSymbols).map(sym => analizedSymbols[sym]);
-        // const prevSort = symbArr.sort((a, b) => ((b.atr / (b.curCdl.high - b.curCdl.low)) + (100 - b.atrSpread)) - ((a.atr / (a.curCdl.high - a.curCdl.low) + (100 - a.atrSpread))));
-        const prevSort = symbArr.sort((a, b) => (100 - b.atrSpread) - (100 - a.atrSpread));
-        // console.log(prevSort);
-        // symbArr.sort((a, b) => (b.smaChange / b.percentAverageCandleMove) - (a.smaChange / a.percentAverageCandleMove));
-        purpose.scalping = prevSort.slice(0, purpose.scalpingMax).map(it => it.symbol); //symbArr.slice(0, purpose.scalpingMax).map(it => it.symbol);
-        return [];
-    }
+    // if (!purpose.scalping.length) {
+    //     const symbArr = Object.keys(analizedSymbols).map(sym => analizedSymbols[sym]);
+    //     // const prevSort = symbArr.sort((a, b) => ((b.atr / (b.curCdl.high - b.curCdl.low)) + (100 - b.atrSpread)) - ((a.atr / (a.curCdl.high - a.curCdl.low) + (100 - a.atrSpread))));
+    //     const prevSort = symbArr.sort((a, b) => (100 - b.atrSpread) - (100 - a.atrSpread));
+    //     // console.log(prevSort);
+    //     // symbArr.sort((a, b) => (b.smaChange / b.percentAverageCandleMove) - (a.smaChange / a.percentAverageCandleMove));
+    //     purpose.scalping = prevSort.slice(0, purpose.scalpingMax).map(it => it.symbol); //symbArr.slice(0, purpose.scalpingMax).map(it => it.symbol);
+    //     return [];
+    // }
     // if (!purpose.aisle.length) {
     //     const symbArr = Object.keys(analizedSymbols).map(sym => analizedSymbols[sym]);
     //     symbArr.sort((a, b) => (b.smaChange / b.percentAverageCandleMove) - (a.smaChange / a.percentAverageCandleMove));
     //     purpose.aisle = symbArr.slice(0, purpose.aisleMax).map(it => it.symbol);
     //     return [];
     // }
+    purpose.scalping = ['WAVESUSDT'];
     purpose.aisle = ['WAVESUSDT'];
     const aisleTdlOpt = {
         ['WAVESUSDT']: [

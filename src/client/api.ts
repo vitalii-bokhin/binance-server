@@ -1,5 +1,5 @@
 import ws from 'express-ws';
-import { CandlesTicks } from '../binanceApi';
+import { CandlesTicks } from "../binance_api/CandlesTicks";
 import { Bot, BotControl } from '../bot';
 import { ImmediatelyPosition } from '../manual';
 import { ReuseStrategy } from '../strategy';

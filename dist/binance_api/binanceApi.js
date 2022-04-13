@@ -3,51 +3,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DepthStream = exports.Depth = exports.getTickerStreamCache = exports.tickerStream = exports.priceStream = exports.positionUpdateStream = exports.ordersUpdateStream = exports.symbolCandlesTicksStream = exports.candlesTicksStream = exports.CandlesTicks = void 0;
+exports.DepthStream = exports.Depth = exports.getTickerStreamCache = exports.tickerStream = exports.priceStream = exports.positionUpdateStream = exports.ordersUpdateStream = exports.symbolCandlesTicksStream = exports.candlesTicksStream = void 0;
 const ws_1 = __importDefault(require("ws"));
-const node_binance_api_1 = __importDefault(require("node-binance-api"));
-const config_1 = require("./config");
-const binance = new node_binance_api_1.default().options({
-    APIKEY: config_1.BINANCE_KEY,
-    APISECRET: config_1.BINANCE_SECRET,
-    useServerTime: true
-});
-const streamApi = 'wss://fstream.binance.com/stream?streams=';
+const _1 = require(".");
+const CandlesTicks_1 = require("./CandlesTicks");
 // check server time
-binance.time().then(res => {
+_1.binance.time().then(res => {
     console.log('Server Time: ' + new Date(res.serverTime));
 });
 const wsStreams = {};
 const candlesTicksStreamSubscribers = [];
 let candlesTicksStreamExecuted = false;
 const symbolCandlesTicksStreamSubscribers = {};
-function CandlesTicks({ symbols, interval, limit }, callback) {
-    const result = {};
-    let i = 0;
-    symbols.forEach(sym => {
-        const ticksArr = [];
-        binance.futuresCandles(sym, interval, { limit }).then((ticks) => {
-            ticks.forEach((tick, i) => {
-                let [time, open, high, low, close, volume, closeTime, assetVolume, trades, buyBaseVolume, buyAssetVolume, ignored] = tick;
-                ticksArr[i] = {
-                    openTime: time,
-                    open: +open,
-                    high: +high,
-                    low: +low,
-                    close: +close
-                };
-            });
-            result[sym] = ticksArr;
-            i++;
-            if (i === symbols.length) {
-                callback(result);
-            }
-        }).catch((error) => {
-            console.log(new Error(error));
-        });
-    });
-}
-exports.CandlesTicks = CandlesTicks;
 function candlesTicksStream(opt, callback) {
     if (callback) {
         candlesTicksStreamSubscribers.push(callback);
@@ -56,14 +23,14 @@ function candlesTicksStream(opt, callback) {
         const { symbols, interval, limit } = opt;
         const streams = symbols.map(s => s.toLowerCase() + '@kline_' + interval).join('/');
         candlesTicksStreamExecuted = true;
-        CandlesTicks({ symbols, interval, limit }, data => {
+        (0, CandlesTicks_1.CandlesTicks)({ symbols, interval, limit }, data => {
             const result = data;
             let ws;
             if (wsStreams[streams] !== undefined) {
                 ws = wsStreams[streams];
             }
             else {
-                ws = new ws_1.default(streamApi + streams);
+                ws = new ws_1.default(_1.streamApi + streams);
                 wsStreams[streams] = ws;
             }
             ws.on('message', function message(data) {
@@ -113,7 +80,7 @@ const userFutureDataSubscribe = function (key, callback) {
     userFutureDataSubscribers[key] = callback;
     if (!userFutureDataExecuted) {
         userFutureDataExecuted = true;
-        binance.websockets.userFutureData(null, (res) => {
+        _1.binance.websockets.userFutureData(null, (res) => {
             if (userFutureDataSubscribers['positions_update']) {
                 userFutureDataSubscribers['positions_update'](res.updateData.positions);
             }
@@ -174,7 +141,7 @@ function priceStream(symbol, callback, clearSymbolCallback) {
     }
     if (!priceStreamWsHasBeenRun) {
         priceStreamWsHasBeenRun = true;
-        binance.futuresMarkPriceStream((res) => {
+        _1.binance.futuresMarkPriceStream((res) => {
             res.forEach((item) => {
                 if (priceSubscribers[item.symbol]) {
                     priceSubscribers[item.symbol].forEach(cb => cb(item));
@@ -197,7 +164,7 @@ function tickerStream(callback) {
     }
     if (!tickerStreamHasBeenRun) {
         tickerStreamHasBeenRun = true;
-        binance.futuresTickerStream(res => {
+        _1.binance.futuresTickerStream(res => {
             tickerStreamSubscribers.forEach(cb => cb(res));
             res.forEach(obj => tickerStreamCache[obj.symbol] = obj);
         });
@@ -215,7 +182,7 @@ function Depth(symbols, callback) {
     const result = {};
     let i = 0;
     symbols.forEach(sym => {
-        binance.futuresDepth(sym, { limit: 100 }).then(data => {
+        _1.binance.futuresDepth(sym, { limit: 100 }).then(data => {
             result[sym] = data;
             console.log(data.bids.length);
             i++;
@@ -245,7 +212,7 @@ function DepthStream(symbols, callback) {
                 ws = wsStreams[streams];
             }
             else {
-                ws = new ws_1.default(streamApi + streams);
+                ws = new ws_1.default(_1.streamApi + streams);
                 wsStreams[streams] = ws;
             }
             ws.on('message', function message(data) {

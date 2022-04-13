@@ -1,10 +1,11 @@
-import { candlesTicksStream, ordersUpdateStream } from './binanceApi';
+import { candlesTicksStream, ordersUpdateStream } from './binance_api/binanceApi';
+import { Bot } from './bot';
 import { Position } from './position';
 import { SymbolResult } from './strategy/types';
 import getSymbols from './symbols';
 
 const fee: number = .08,
-    interval: string = '1h',
+    interval: string = '5m',
     limit: number = 72,
     leverage: number = 5;
 

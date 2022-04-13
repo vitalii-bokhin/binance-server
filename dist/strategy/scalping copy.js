@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Scalping = void 0;
+// import { getTickerStreamCache } from '../binanceApi';
 const indicators_1 = require("../indicators");
 const candle_1 = require("../indicators/candle");
 // const changeDelta: {

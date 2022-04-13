@@ -10,6 +10,7 @@ import apiRouter from './api';
 // import { Chart } from './chart';
 // import { Bot } from './bot';
 import path from 'path';
+import { Bot } from '../bot';
 
 const db = require('../database'),
     user = require('../user'),
@@ -84,18 +85,10 @@ app.get('/', function (req, res) {
 });
 
 app.get('/bot', function (req, res) {
-    // Volatility().then((data) => {
-    //     const opt = {
-    //         title: 'Volatility signals',
-    //         data: JSON.stringify(data)
-    //     };
-
-    //     res.render('index', opt);
-    // });
-    // Bot();
-    // Chart.wsCandlesTicks('BTC');
-    res.render('index', {title: 'Bot', data: ''});
+    Bot();
+    res.json({key: "Bot"});
 });
+
 app.get('/test', function (req, res) {
     res.json({key: "Halllow worrldd"});
 });

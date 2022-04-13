@@ -1,7 +1,7 @@
 import './client';
 import './trade';
 import { Bot } from './bot';
-import { ordersUpdateStream, positionUpdateStream, priceStream } from './binanceApi';
+// import { ordersUpdateStream, positionUpdateStream, priceStream } from './binanceApi';
 import getSymbols from './symbols';
 // import getSymbols from './symbols';
 

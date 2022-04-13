@@ -1,6 +1,9 @@
+import { getDepthCache } from '../bot';
 import { ATR } from '../indicators';
 import { CheckCandle } from '../indicators/candle';
 import { Candle, SymbolResult, Entry } from './types';
+
+let dd = false;
 
 export function Scalping({ symbol, candlesData, tiSettings }: Entry): SymbolResult {
     const _candles = candlesData;
@@ -13,6 +16,21 @@ export function Scalping({ symbol, candlesData, tiSettings }: Entry): SymbolResu
 
     const cdlHiLo = lastCandle.high - lastCandle.low;
     const moved = cdlHiLo / atr;
+
+    const depth = getDepthCache(symbol);
+
+    if (depth) {
+        if (depth.maxAsk.volume > depth.maxBid.volume && lastPrice >= depth.maxAsk.price) {
+            dd = true;
+        } else if (depth.maxAsk.volume < depth.maxBid.volume && lastPrice <= depth.maxBid.price) {
+            dd = true;
+        }
+    }
+
+    console.log(dd);
+
+    console.log(depth);
+    console.log(lastPrice);
 
     const signalDetails: any = {
         lastPrice: lastPrice,

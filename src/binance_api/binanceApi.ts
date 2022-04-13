@@ -1,14 +1,6 @@
 import WebSocket from 'ws';
-import Binance from 'node-binance-api';
-import { BINANCE_KEY, BINANCE_SECRET } from './config';
-
-const binance: Binance = new Binance().options({
-    APIKEY: BINANCE_KEY,
-    APISECRET: BINANCE_SECRET,
-    useServerTime: true
-});
-
-const streamApi = 'wss://fstream.binance.com/stream?streams=';
+import { binance, streamApi } from '.';
+import { CandlesTicks } from './CandlesTicks';
 
 type Candle = {
     openTime: number;
@@ -18,27 +10,30 @@ type Candle = {
     low: number;
 };
 
-type CandlesTicksEntry = {
+export type CandlesTicksEntry = {
     symbols: string[];
     interval: string;
     limit: number;
 };
-type DepthTicksEntry = {
-    symbol: string;
-};
 
-type CandlesTicksCallback = (arg0: { [key: string]: Candle[] }) => void;
+export type CandlesTicksCallback = (arg0: { [key: string]: Candle[] }) => void;
 
 type SymbolCandlesTicksCallback = (arg0: Candle[]) => void;
 
-type DepthCallback = (arg0: any) => void;
+type DepthCallback = (arg0: {
+    [symbol: string]: {
+        bids: string[][];
+        asks: string[][];
+        lastUpdateId: number;
+    }
+}) => void;
 
 // check server time
 binance.time().then(res => {
     console.log('Server Time: ' + new Date(res.serverTime));
 });
 
-const streamsSubscribers: {
+const wsStreams: {
     [key: string]: WebSocket;
 } = {};
 
@@ -49,41 +44,6 @@ let candlesTicksStreamExecuted = false;
 const symbolCandlesTicksStreamSubscribers: {
     [key: string]: ((arg0: any) => void)[];
 } = {};
-
-export function CandlesTicks({ symbols, interval, limit }: CandlesTicksEntry, callback: CandlesTicksCallback): void {
-    const result = {};
-
-    let i = 0;
-
-    symbols.forEach(sym => {
-        const ticksArr = [];
-
-        binance.futuresCandles(sym, interval, { limit }).then((ticks: any[]) => {
-            ticks.forEach((tick: [any, any, any, any, any, any, any, any, any, any, any, any], i: string | number) => {
-                let [time, open, high, low, close, volume, closeTime, assetVolume, trades, buyBaseVolume, buyAssetVolume, ignored] = tick;
-
-                ticksArr[i] = {
-                    openTime: time,
-                    open: +open,
-                    high: +high,
-                    low: +low,
-                    close: +close
-                };
-            });
-
-            result[sym] = ticksArr;
-
-            i++;
-
-            if (i === symbols.length) {
-                callback(result);
-            }
-
-        }).catch((error: string) => {
-            console.log(new Error(error));
-        });
-    });
-}
 
 export function candlesTicksStream(opt: CandlesTicksEntry, callback: CandlesTicksCallback): void {
     if (callback) {
@@ -100,11 +60,11 @@ export function candlesTicksStream(opt: CandlesTicksEntry, callback: CandlesTick
             const result = data;
             let ws: WebSocket;
 
-            if (streamsSubscribers[streams] !== undefined) {
-                ws = streamsSubscribers[streams];
+            if (wsStreams[streams] !== undefined) {
+                ws = wsStreams[streams];
             } else {
                 ws = new WebSocket(streamApi + streams);
-                streamsSubscribers[streams] = ws;
+                wsStreams[streams] = ws;
             }
 
             ws.on('message', function message(data: any) {
@@ -148,8 +108,6 @@ export function symbolCandlesTicksStream(symbol: string, callback: SymbolCandles
     if (clearSymbolCallback && symbolCandlesTicksStreamSubscribers[symbol]) {
         delete symbolCandlesTicksStreamSubscribers[symbol];
     }
-
-    console.log(symbolCandlesTicksStreamSubscribers);
 }
 
 // account data stream (position, order update)
@@ -356,33 +314,192 @@ export function getTickerStreamCache(symbol: string): {
 let depthStreamExecuted = false;
 const depthStreamSubscribers = [];
 
-export function DepthStream(opt: DepthTicksEntry, callback: DepthCallback): void {
+export function Depth(symbols: string[], callback: DepthCallback): void {
+    const result = {};
+
+    let i = 0;
+
+    symbols.forEach(sym => {
+        binance.futuresDepth(sym, { limit: 100 }).then(data => {
+            result[sym] = data;
+            console.log(data.bids.length);
+
+            i++;
+
+            if (i === symbols.length) {
+                callback(result);
+            }
+        }).catch((error: string) => {
+            console.log(new Error(error));
+        });
+    });
+}
+
+export function DepthStream(symbols: string[], callback: DepthCallback): void {
     if (callback) {
         depthStreamSubscribers.push(callback);
     }
 
-    if (!depthStreamExecuted && opt) {
-        const { symbol } = opt;
-        const streams = symbol.toLowerCase() + '@depth';
+    if (!depthStreamExecuted) {
+        const streams = symbols.map(s => s.toLowerCase() + '@depth@500ms').join('/');
 
         depthStreamExecuted = true;
 
-        binance.futuresDepth(symbol).then(res => {
+        let c = 0;
 
+        Depth(symbols, data => {
             let ws: WebSocket;
+            let lastFinalUpdId: number;
+            const result: typeof data = Object.assign({}, data);
 
-            if (streamsSubscribers[streams] !== undefined) {
-                ws = streamsSubscribers[streams];
+            // console.log(result['WAVESUSDT'].bids);
+
+            if (wsStreams[streams] !== undefined) {
+                ws = wsStreams[streams];
             } else {
                 ws = new WebSocket(streamApi + streams);
-                streamsSubscribers[streams] = ws;
+                wsStreams[streams] = ws;
             }
 
             ws.on('message', function message(data: any) {
-                const res = JSON.parse(data).data;
+                console.log(c);
+                c++;
 
-                depthStreamSubscribers.forEach(cb => cb(res));
+                const res: {
+                    s: string;
+                    u: number;
+                    pu: number;
+                    b: string[][];
+                    a: string[][];
+                } = JSON.parse(data).data;
 
+                const { s: symbol, b: bids, a: asks, u: finalUpdId, pu: finalUpdIdInLast } = res;
+
+                if (finalUpdId < result[symbol].lastUpdateId) {
+                    console.log('ret--------1----------');
+                    return;
+                }
+
+                if (lastFinalUpdId && finalUpdIdInLast !== lastFinalUpdId) {
+                    console.log('ret--------2----------');
+                    return;
+                } else {
+                    lastFinalUpdId = finalUpdId;
+                }
+
+                // Bids
+                bids.reverse();
+
+                const prelBids: string[][] = [];
+
+                for (const curB of result[symbol].bids) {
+                    let isset = false;
+
+                    for (const newB of bids) {
+                        if (newB[0] == curB[0]) {
+                            if (+newB[1] !== 0) {
+                                prelBids.push(newB);
+                            }
+
+                            isset = true;
+                        }
+                    }
+
+                    if (!isset) {
+                        prelBids.push(curB);
+                    }
+                }
+
+                const resultBids: string[][] = [];
+
+                for (let i = 0; i < prelBids.length; i++) {
+                    const cBid = prelBids[i];
+
+                    for (const newB of bids) {
+                        if (newB[0] !== cBid[0] && +newB[1] !== 0) {
+                            if (!i && +newB[0] > +cBid[0]) {
+                                resultBids.push(newB);
+                            } else if (i && +prelBids[i - 1][0] > +newB[0] && +newB[0] > +cBid[0]) {
+                                resultBids.push(newB);
+                            }
+                        }
+                    }
+
+                    resultBids.push(cBid);
+
+                    if (i == prelBids.length - 1) {
+                        for (const newB of bids) {
+                            if (newB[0] !== cBid[0] && +newB[1] !== 0 && +cBid[0] > +newB[0]) {
+                                resultBids.push(newB);
+                            }
+                        }
+                    }
+                }
+
+                // Asks
+                const prelAsks: string[][] = [];
+
+                for (const curA of result[symbol].asks) {
+                    let isset = false;
+
+                    for (const newA of asks) {
+                        if (newA[0] == curA[0]) {
+                            if (+newA[1] !== 0) {
+                                prelAsks.push(newA);
+                            }
+
+                            isset = true;
+                        }
+                    }
+
+                    if (!isset) {
+                        prelAsks.push(curA);
+                    }
+                }
+
+                const resultAsks: string[][] = [];
+
+                for (let i = 0; i < prelAsks.length; i++) {
+                    const cAsk = prelAsks[i];
+
+                    for (const newA of asks) {
+                        if (newA[0] !== cAsk[0] && +newA[1] !== 0) {
+                            if (!i && +newA[0] < +cAsk[0]) {
+                                resultAsks.push(newA);
+                            } else if (i && +prelAsks[i - 1][0] < +newA[0] && +newA[0] < +cAsk[0]) {
+                                resultAsks.push(newA);
+                            }
+
+                            if (i == prelAsks.length - 1 && +cAsk[0] < +newA[0]) {
+                                resultAsks.push(newA);
+                            }
+                        }
+                    }
+
+                    resultAsks.push(cAsk);
+
+                    if (i == prelAsks.length - 1) {
+                        for (const newA of asks) {
+                            if (newA[0] !== cAsk[0] && +newA[1] !== 0 && +cAsk[0] < +newA[0]) {
+                                resultAsks.push(newA);
+                            }
+                        }
+                    }
+
+                }
+
+                result[symbol].bids = resultBids;
+                result[symbol].asks = resultAsks;
+
+                // console.log('asks lng');
+                // console.log(result[symbol].asks.length);
+                // console.log(result[symbol].asks[0], result[symbol].asks[result[symbol].asks.length - 1]);
+
+                // console.log('bids lng');
+                // console.log(result[symbol].bids.length);
+                // console.log(result[symbol].bids[0], result[symbol].bids[result[symbol].bids.length - 1]);
+
+                depthStreamSubscribers.forEach(cb => cb(result));
             });
         });
     }

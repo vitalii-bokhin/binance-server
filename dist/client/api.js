@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const binanceApi_1 = require("../binanceApi");
+const CandlesTicks_1 = require("../binance_api/CandlesTicks");
 const bot_1 = require("../bot");
 const manual_1 = require("../manual");
 const strategy_1 = require("../strategy");
@@ -63,7 +63,7 @@ function default_1(api) {
     });
     api.get('/candlesticks', (req, res) => {
         const { symbol, limit, interval } = req.query;
-        (0, binanceApi_1.CandlesTicks)({ symbols: [symbol], limit, interval }, data => {
+        (0, CandlesTicks_1.CandlesTicks)({ symbols: [symbol], limit, interval }, data => {
             res.json(data[symbol]);
         });
         // Chart.candlesTicks(req.query, function (data: any) {
