@@ -11,10 +11,10 @@ export function CandlesTicks({ symbols, interval, limit }: CandlesTicksEntry, ca
 
         binance.futuresCandles(sym, interval, { limit }).then((ticks: any[]) => {
             ticks.forEach((tick: [any, any, any, any, any, any, any, any, any, any, any, any], i: string | number) => {
-                let [time, open, high, low, close, volume, closeTime, assetVolume, trades, buyBaseVolume, buyAssetVolume, ignored] = tick;
+                const [openTime, open, high, low, close, volume, closeTime, assetVolume, trades, buyBaseVolume, buyAssetVolume, ignored] = tick;
 
                 ticksArr[i] = {
-                    openTime: time,
+                    openTime,
                     open: +open,
                     high: +high,
                     low: +low,

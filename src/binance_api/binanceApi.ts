@@ -67,8 +67,8 @@ export function candlesTicksStream(opt: CandlesTicksEntry, callback: CandlesTick
                 wsStreams[streams] = ws;
             }
 
-            ws.on('message', function message(data: any) {
-                const { e: eventType, E: eventTime, s: symbol, k: ticks } = JSON.parse(data).data;
+            ws.on('message', function message(wsMsg: any) {
+                const { e: eventType, E: eventTime, s: symbol, k: ticks } = JSON.parse(wsMsg).data;
                 const { t: openTime, o: open, h: high, l: low, c: close } = ticks;
 
                 const candle: Candle = {

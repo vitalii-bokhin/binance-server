@@ -6,7 +6,7 @@ import getSymbols from './symbols';
 
 const fee: number = .08,
     interval: string = '5m',
-    limit: number = 72,
+    limit: number = 100,
     leverage: number = 5;
 
 const openedPositions: {

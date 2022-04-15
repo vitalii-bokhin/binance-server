@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const CandlesTicks_1 = require("../binance_api/CandlesTicks");
+const binanceApi_1 = require("../binance_api/binanceApi");
 const bot_1 = require("../bot");
 const manual_1 = require("../manual");
 const strategy_1 = require("../strategy");
@@ -62,13 +62,16 @@ function default_1(api) {
         res.json(req.body);
     });
     api.get('/candlesticks', (req, res) => {
-        const { symbol, limit, interval } = req.query;
-        (0, CandlesTicks_1.CandlesTicks)({ symbols: [symbol], limit, interval }, data => {
-            res.json(data[symbol]);
-        });
+        res.json([]);
         // Chart.candlesTicks(req.query, function (data: any) {
         //         res.json(data);
         // });
+    });
+    api.ws('/candlesticks', (ws, req) => {
+        const symbol = req.query.symbol;
+        (0, binanceApi_1.symbolCandlesTicksStream)(symbol, data => {
+            ws.send(JSON.stringify(data));
+        });
     });
     return api;
 }

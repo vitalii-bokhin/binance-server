@@ -9,9 +9,9 @@ function CandlesTicks({ symbols, interval, limit }, callback) {
         const ticksArr = [];
         _1.binance.futuresCandles(sym, interval, { limit }).then((ticks) => {
             ticks.forEach((tick, i) => {
-                let [time, open, high, low, close, volume, closeTime, assetVolume, trades, buyBaseVolume, buyAssetVolume, ignored] = tick;
+                const [openTime, open, high, low, close, volume, closeTime, assetVolume, trades, buyBaseVolume, buyAssetVolume, ignored] = tick;
                 ticksArr[i] = {
-                    openTime: time,
+                    openTime,
                     open: +open,
                     high: +high,
                     low: +low,

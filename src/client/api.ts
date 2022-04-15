@@ -1,4 +1,5 @@
 import ws from 'express-ws';
+import { symbolCandlesTicksStream } from '../binance_api/binanceApi';
 import { CandlesTicks } from "../binance_api/CandlesTicks";
 import { Bot, BotControl } from '../bot';
 import { ImmediatelyPosition } from '../manual';
@@ -72,15 +73,19 @@ export default function (api: ws.Router) {
         res.json(req.body);
     });
 
-    api.get('/candlesticks', (req: { query: { symbol: string; limit: number; interval: string; } }, res) => {
-        const { symbol, limit, interval } = req.query;
-
-        CandlesTicks({ symbols: [symbol], limit, interval }, data => {
-            res.json(data[symbol]);
-        });
+    api.get('/candlesticks', (req, res) => {
+        res.json([]);
         // Chart.candlesTicks(req.query, function (data: any) {
         //         res.json(data);
         // });
+    });
+
+    api.ws('/candlesticks', (ws, req: any) => {
+        const symbol = req.query.symbol;
+
+        symbolCandlesTicksStream(symbol, data => {
+            ws.send(JSON.stringify(data));
+        });
     });
 
     return api;
