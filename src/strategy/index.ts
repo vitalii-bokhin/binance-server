@@ -122,42 +122,42 @@ export async function Strategy({ data, symbols }: { data: { [sym: string]: Candl
     purpose.scalping = ['WAVESUSDT'];
     purpose.aisle = ['WAVESUSDT'];
 
-    const aisleTdlOpt: {
-        [s: string]: LineOpt[];
-    } = {
-        ['WAVESUSDT']: [
-            {
-                start: {
-                    price: 26.9065,
-                    time: { d: 8, h: 19, m: 20 }
-                },
-                end: {
-                    price: 26.8579,
-                    time: { d: 9, h: 3, m: 50 }
-                },
-                spread: .05
-            }
-        ]
-    };
+    // const aisleTdlOpt: {
+    //     [s: string]: LineOpt[];
+    // } = {
+    //     ['WAVESUSDT']: [
+    //         {
+    //             start: {
+    //                 price: 26.9065,
+    //                 time: { d: 8, h: 19, m: 20 }
+    //             },
+    //             end: {
+    //                 price: 26.8579,
+    //                 time: { d: 9, h: 3, m: 50 }
+    //             },
+    //             spread: .05
+    //         }
+    //     ]
+    // };
 
-    const aisleLvlOpt: {
-        [s: string]: LevelOpt[];
-    } = {
-        ['WAVESUSDT']: [
-            {
-                price: 25.9026,
-                spread: .12
-            },
-            {
-                price: 26.2940,
-                spread: .12
-            },
-            {
-                price: 25.0702,
-                spread: .12
-            },
-        ]
-    };
+    // const aisleLvlOpt: {
+    //     [s: string]: LevelOpt[];
+    // } = {
+    //     ['WAVESUSDT']: [
+    //         {
+    //             price: 25.9026,
+    //             spread: .12
+    //         },
+    //         {
+    //             price: 26.2940,
+    //             spread: .12
+    //         },
+    //         {
+    //             price: 25.0702,
+    //             spread: .12
+    //         },
+    //     ]
+    // };
 
     const signals: Result = [];
 

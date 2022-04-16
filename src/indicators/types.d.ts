@@ -23,15 +23,17 @@ export type IndicatorEntry = {
 export type InputTime = { d: number; h: number; m: number; };
 
 export type LineOpt = {
-    start: {
-        price: number;
-        time: InputTime;
-    };
-    end: {
-        price: number;
-        time: InputTime;
-    };
-    spread: number;  
+    id: string;
+    lines: {
+        start: {
+            price: number;
+            time: number;
+        };
+        end: {
+            price: number;
+            time: number;
+        };
+    }[];
 };
 
 export type TrendlineInput = {
@@ -41,8 +43,8 @@ export type TrendlineInput = {
 };
 
 export type LevelOpt = {
-    price: number;
-    spread: number;  
+    id: string;
+    price: number[];
 };
 
 export type LevelInput = {

@@ -1,7 +1,7 @@
 import ws from 'express-ws';
 import { symbolCandlesTicksStream } from '../binance_api/binanceApi';
 import { CandlesTicks } from "../binance_api/CandlesTicks";
-import { Bot, BotControl } from '../bot';
+import { Bot, BotControl, ManageTradeLines, tradeLinesCache } from '../bot';
 import { ImmediatelyPosition } from '../manual';
 import { ReuseStrategy } from '../strategy';
 import getSymbols from '../symbols';
@@ -68,7 +68,7 @@ export default function (api: ws.Router) {
 
     });
 
-    api.post('/trade', function (req, res) {
+    api.post('/trade', (req, res) => {
         ImmediatelyPosition(req.body);
         res.json(req.body);
     });
@@ -86,6 +86,16 @@ export default function (api: ws.Router) {
         symbolCandlesTicksStream(symbol, data => {
             ws.send(JSON.stringify(data));
         });
+    });
+
+    api.get('/tradelines', (req: any, res) => {
+        res.json(tradeLinesCache[req.query.symbol]);
+    });
+
+    api.post('/tradelines', async (req, res) => {
+        await ManageTradeLines(req.body);
+
+        res.json(tradeLinesCache);
     });
 
     return api;

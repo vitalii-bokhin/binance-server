@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OpenPosition = void 0;
 const binanceApi_1 = require("./binance_api/binanceApi");
+const bot_1 = require("./bot");
 const position_1 = require("./position");
 const symbols_1 = __importDefault(require("./symbols"));
 const fee = .08, interval = '5m', limit = 100, leverage = 5;
@@ -18,6 +19,7 @@ let _symbols, _symbolsObj;
     _symbolsObj = symbolsObj;
     (0, binanceApi_1.candlesTicksStream)({ symbols: _symbols, interval, limit }, null);
     (0, binanceApi_1.ordersUpdateStream)();
+    await (0, bot_1.ManageTradeLines)();
     console.log(`Trade has been run. Candles (${limit}) with interval: ${interval}. Leverage: ${leverage}.`);
 })();
 function OpenPosition(s, initiator) {

@@ -4,7 +4,7 @@ const getTime = function ({ d, h, m }: InputTime): number {
     return new Date(2022, 3, d, h, m).getTime();
 }
 
-const getPriceOnLine = function (line: LineOpt, time: number): number {
+const getPriceOnLine = function (line, time: number): number {
     return ((time - getTime(line.start.time)) / (getTime(line.start.time) - getTime(line.end.time))) * (line.start.price - line.end.price) + line.start.price;
 }
 
@@ -20,8 +20,8 @@ const cache: {
 } = {};
 
 const getPrelSignal = function (cdl: Candle, lineOpt: LineOpt, prelSignal: PrelSignal): PrelSignal {
-    const priceOnLine = getPriceOnLine(lineOpt, cdl.openTime);
-    const spread = lineOpt.spread;
+    const priceOnLine = getPriceOnLine(lineOpt.lines[0], cdl.openTime);
+    const spread = 10;
 
     let signal: PrelSignal;
 
@@ -95,7 +95,7 @@ const getPrelSignal = function (cdl: Candle, lineOpt: LineOpt, prelSignal: PrelS
 
 const getSignal = function (cdl: Candle, lineOpt: LineOpt, prelSignal: PrelSignal): Signal {
     const priceOnLine = getPriceOnLine(lineOpt, cdl.openTime);
-    const spread = lineOpt.spread;
+    const spread = 10;
 
     let signal: Signal;
 

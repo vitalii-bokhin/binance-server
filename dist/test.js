@@ -1,6 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const binance_api_1 = require("./binance_api");
+// import { TradesList, TradesListStream } from './binance_api';
+// import { candlesTicksStream, DepthStream } from './binance_api/binanceApi';
 // import { LVL, TDL } from './indicators';
 // const lineOpt = {
 //     start: {
@@ -45,26 +44,26 @@ const binance_api_1 = require("./binance_api");
 //     console.log('max Bid');
 //     console.log(price, high);
 // });
-const lvl = {};
-(0, binance_api_1.TradesList)(['WAVESUSDT'], data => {
-    data['WAVESUSDT'].forEach(it => {
-        if (lvl[it.price] === undefined) {
-            lvl[it.price] = +it.qty;
-        }
-        else {
-            lvl[it.price] += +it.qty;
-        }
-    });
-    (0, binance_api_1.TradesListStream)(['WAVESUSDT'], res => {
-        if (lvl[res.price] === undefined) {
-            lvl[res.price] = +res.qty;
-        }
-        else {
-            lvl[res.price] += +res.qty;
-        }
-        const arr = Object.entries(lvl);
-        arr.sort((a, b) => b[1] - a[1]);
-        console.log(arr.slice(0, 10));
-    });
-});
+// const lvl = {};
+// TradesList(['WAVESUSDT'], data => {
+//     data['WAVESUSDT'].forEach(it => {
+//         if (lvl[it.price] === undefined) {
+//             lvl[it.price] = +it.qty;
+//         } else {
+//             lvl[it.price] += +it.qty;
+//         }
+//     });
+//     TradesListStream(['WAVESUSDT'], res => {
+//         if (lvl[res.price] === undefined) {
+//             lvl[res.price] = +res.qty;
+//         } else {
+//             lvl[res.price] += +res.qty;
+//         }
+//         const arr = Object.entries(lvl);
+//         arr.sort((a: any, b: any) => b[1] - a[1]);
+//         console.log(arr.slice(0,10));
+//     });
+// });
+// let symb = 'dsas';
+// console.log(!symb);
 //# sourceMappingURL=test.js.map

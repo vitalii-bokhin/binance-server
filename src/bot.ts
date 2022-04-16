@@ -5,6 +5,8 @@ import { Strategy } from './strategy';
 import events from 'events';
 import { SymbolResult } from './strategy/types';
 import { OpenPosition } from './trade';
+import { LevelOpt, LineOpt } from './indicators/types';
+import { GetData, SaveData } from './db/db';
 
 const ev = new events.EventEmitter();
 
@@ -26,6 +28,13 @@ const depthCache: {
             price: number;
             volume: number;
         };
+    }
+} = {};
+
+export let tradeLinesCache: {
+    [symbol: string]: {
+        levels?: LevelOpt[];
+        trends?: LineOpt[];
     }
 } = {};
 
@@ -77,12 +86,12 @@ export async function Bot(): Promise<events> {
 
             depthCache['WAVESUSDT'] = {
                 maxAsk: {
-                    price:+priceA,
-                    volume:highA
+                    price: +priceA,
+                    volume: highA
                 },
                 maxBid: {
-                    price:+price,
-                    volume:high
+                    price: +price,
+                    volume: high
                 }
             };
         });
@@ -114,4 +123,64 @@ export function BotControl(req?: { [x: string]: any; }): typeof controls {
     }
 
     return controls;
+}
+
+export async function ManageTradeLines(saveReq?: {
+    type: 'trends' | 'levels';
+    symbol: string;
+    opt?: any;
+    removeId: string;
+}): Promise<void> {
+
+    if (saveReq) {
+        const { type, symbol, opt, removeId } = saveReq;
+
+        let tradeLines = await GetData<typeof tradeLinesCache>('tradelines');
+
+        if (opt) {
+            if (!tradeLines) {
+                tradeLines = {};
+            }
+
+            if (!tradeLines[symbol]) {
+                tradeLines[symbol] = {
+                    [type]: [opt]
+                };
+
+            } else if (!tradeLines[symbol][type]) {
+                tradeLines[symbol][type] = [opt];
+
+            } else {
+                const ids = tradeLines[symbol][type].map(l => l.id);
+
+                if (ids.includes(opt.id)) {
+                    tradeLines[symbol][type][ids.indexOf(opt.id)] = opt;
+                } else {
+                    tradeLines[symbol][type].push(opt);
+                }
+            }
+
+        } else if (removeId) {
+            let removeIndex: number = 0;
+
+            tradeLines[symbol][type].forEach((line, i) => {
+                if (removeId == line.id) {
+                    removeIndex = i;
+                }
+            });
+
+            tradeLines[symbol][type].splice(removeIndex, 1);
+        }
+
+        await SaveData('tradelines', tradeLines);
+
+        tradeLinesCache = tradeLines;
+
+    } else {
+        const tradeLinesData = await GetData<typeof tradeLinesCache>('tradelines');
+        
+        if (tradeLinesData) {
+            tradeLinesCache = tradeLinesData;
+        }
+    }
 }

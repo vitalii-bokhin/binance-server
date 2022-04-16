@@ -57,7 +57,7 @@ function default_1(api) {
             res.json({ symbols });
         });
     });
-    api.post('/trade', function (req, res) {
+    api.post('/trade', (req, res) => {
         (0, manual_1.ImmediatelyPosition)(req.body);
         res.json(req.body);
     });
@@ -72,6 +72,13 @@ function default_1(api) {
         (0, binanceApi_1.symbolCandlesTicksStream)(symbol, data => {
             ws.send(JSON.stringify(data));
         });
+    });
+    api.get('/tradelines', (req, res) => {
+        res.json(bot_1.tradeLinesCache[req.query.symbol]);
+    });
+    api.post('/tradelines', async (req, res) => {
+        await (0, bot_1.ManageTradeLines)(req.body);
+        res.json(bot_1.tradeLinesCache);
     });
     return api;
 }

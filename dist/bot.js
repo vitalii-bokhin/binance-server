@@ -3,18 +3,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BotControl = exports.getDepthCache = exports.Bot = void 0;
+exports.ManageTradeLines = exports.BotControl = exports.getDepthCache = exports.Bot = exports.tradeLinesCache = void 0;
 const binanceApi_1 = require("./binance_api/binanceApi");
 const symbols_1 = __importDefault(require("./symbols"));
 const strategy_1 = require("./strategy");
 const events_1 = __importDefault(require("events"));
 const trade_1 = require("./trade");
+const db_1 = require("./db/db");
 const ev = new events_1.default.EventEmitter();
 let botIsRun = false;
 const controls = {
     resolvePositionMaking: false
 };
 const depthCache = {};
+exports.tradeLinesCache = {};
 async function Bot() {
     if (botIsRun) {
         console.log('Bot was run!');
@@ -82,4 +84,50 @@ function BotControl(req) {
     return controls;
 }
 exports.BotControl = BotControl;
+async function ManageTradeLines(saveReq) {
+    if (saveReq) {
+        const { type, symbol, opt, removeId } = saveReq;
+        let tradeLines = await (0, db_1.GetData)('tradelines');
+        if (opt) {
+            if (!tradeLines) {
+                tradeLines = {};
+            }
+            if (!tradeLines[symbol]) {
+                tradeLines[symbol] = {
+                    [type]: [opt]
+                };
+            }
+            else if (!tradeLines[symbol][type]) {
+                tradeLines[symbol][type] = [opt];
+            }
+            else {
+                const ids = tradeLines[symbol][type].map(l => l.id);
+                if (ids.includes(opt.id)) {
+                    tradeLines[symbol][type][ids.indexOf(opt.id)] = opt;
+                }
+                else {
+                    tradeLines[symbol][type].push(opt);
+                }
+            }
+        }
+        else if (removeId) {
+            let removeIndex = 0;
+            tradeLines[symbol][type].forEach((line, i) => {
+                if (removeId == line.id) {
+                    removeIndex = i;
+                }
+            });
+            tradeLines[symbol][type].splice(removeIndex, 1);
+        }
+        await (0, db_1.SaveData)('tradelines', tradeLines);
+        exports.tradeLinesCache = tradeLines;
+    }
+    else {
+        const tradeLinesData = await (0, db_1.GetData)('tradelines');
+        if (tradeLinesData) {
+            exports.tradeLinesCache = tradeLinesData;
+        }
+    }
+}
+exports.ManageTradeLines = ManageTradeLines;
 //# sourceMappingURL=bot.js.map

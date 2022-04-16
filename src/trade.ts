@@ -1,5 +1,5 @@
 import { candlesTicksStream, ordersUpdateStream } from './binance_api/binanceApi';
-import { Bot } from './bot';
+import { Bot, ManageTradeLines } from './bot';
 import { Position } from './position';
 import { SymbolResult } from './strategy/types';
 import getSymbols from './symbols';
@@ -26,6 +26,7 @@ let _symbols, _symbolsObj;
 
     candlesTicksStream({ symbols: _symbols, interval, limit }, null);
     ordersUpdateStream();
+    await ManageTradeLines();
 
     console.log(`Trade has been run. Candles (${limit}) with interval: ${interval}. Leverage: ${leverage}.`);
 })();

@@ -9,8 +9,8 @@ const getPriceOnLine = function (line, time) {
 };
 const cache = {};
 const getPrelSignal = function (cdl, lineOpt, prelSignal) {
-    const priceOnLine = getPriceOnLine(lineOpt, cdl.openTime);
-    const spread = lineOpt.spread;
+    const priceOnLine = getPriceOnLine(lineOpt.lines[0], cdl.openTime);
+    const spread = 10;
     let signal;
     if (cdl.close > priceOnLine + spread) {
         signal = 'overLine';
@@ -86,7 +86,7 @@ const getPrelSignal = function (cdl, lineOpt, prelSignal) {
 };
 const getSignal = function (cdl, lineOpt, prelSignal) {
     const priceOnLine = getPriceOnLine(lineOpt, cdl.openTime);
-    const spread = lineOpt.spread;
+    const spread = 10;
     let signal;
     if (prelSignal == 'bounceUp' && cdl.close > cdl.open) {
         signal = 'bounceUp';
