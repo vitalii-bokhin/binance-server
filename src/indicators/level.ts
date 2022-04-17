@@ -1,66 +1,70 @@
 import { Candle, InputTime, LevelInput, LevelOpt, LineOpt, TrendlineInput } from './types';
 
-type PrelSignal = 'nextToTop' | 'nextToBottom' | 'crossBelow' | 'crossAbove';
+type Result = {
+    topLvlPrice: number;
+    bottomLvlPrice: number;
+    signal: 'bounceUp' | 'bounceDown' | 'crossAbove' | 'crossBelow';
+};
 
-type Signal = 'bounceUp' | 'bounceDown' | 'crossAbove' | 'crossBelow';
+export function LVL({ symbol, candles, levelOpt }: LevelInput): Result {
+    let signal;
+    let prevSignal: 'nextToTop' | 'nextToBottom' | 'bounceUp' | 'bounceDown' | 'crossAbove' | 'crossBelow';
 
-const getSignal = function (cdl: Candle, prevCdl: Candle, levelOpt: LevelOpt): PrelSignal {
-    const priceOnLine = levelOpt.price[0];
-    const spread = levelOpt.price[0] - levelOpt.price[1];
+    const lvlPrice = [...levelOpt.price];
 
-    let signal: PrelSignal;
-
-    if (cdl.high > priceOnLine - spread && prevCdl.low < priceOnLine - spread) {
-        signal = 'nextToBottom';
-    } else if (cdl.low < priceOnLine + spread && prevCdl.high > priceOnLine + spread) {
-        signal = 'nextToTop';
-    }
-
-    if (cdl.high > priceOnLine + spread && prevCdl.low < priceOnLine - spread) {
-        signal = 'crossAbove';
-    } else if (cdl.low < priceOnLine - spread && prevCdl.high > priceOnLine + spread) {
-        signal = 'crossBelow';
-    }
-
-    return signal;
-}
-
-export function LVL({ symbol, candles, levelOpt }: LevelInput): Signal {
-    let signal: Signal;
+    lvlPrice.sort((a, b) => b - a);
 
     const thirdCdl = candles[candles.length - 3];
     const secondCdl = candles[candles.length - 2];
     const curCdl = candles[candles.length - 1];
 
-    const lastSignal = getSignal(secondCdl, thirdCdl, levelOpt);
-
-    const spread = levelOpt.price[0] - levelOpt.price[1];
+    const topLvlPrice = lvlPrice[0];
+    const bottomLvlPrice = lvlPrice[1];
 
     if (
-        lastSignal == 'nextToBottom' &&
-        curCdl.close < curCdl.open &&
-        curCdl.close < levelOpt.price[0] - spread
+        thirdCdl.low < bottomLvlPrice
+        && secondCdl.high > bottomLvlPrice
     ) {
-        signal = 'bounceDown';
+        prevSignal = 'nextToBottom';
     } else if (
-        lastSignal == 'nextToTop' &&
-        curCdl.close > curCdl.open &&
-        curCdl.close > levelOpt.price[0] + spread
+        thirdCdl.high > topLvlPrice
+        && secondCdl.low < topLvlPrice
     ) {
-        signal = 'bounceUp';
-    } else if (
-        lastSignal == 'crossBelow' &&
-        curCdl.close < curCdl.open &&
-        curCdl.close < levelOpt.price[0] - spread
-    ) {
-        signal = 'crossBelow';
-    } else if (
-        lastSignal == 'crossAbove' &&
-        curCdl.close > curCdl.open &&
-        curCdl.close > levelOpt.price[0] + spread
-    ) {
-        signal = 'crossAbove';
+        prevSignal = 'nextToTop';
     }
 
-    return signal;
+    if (prevSignal == 'nextToBottom') {
+        if (secondCdl.close < topLvlPrice) {
+            prevSignal = 'bounceDown';
+        } else {
+            prevSignal = 'crossAbove';
+        }
+
+    } else if (prevSignal == 'nextToTop') {
+        if (secondCdl.close > bottomLvlPrice) {
+            prevSignal = 'bounceUp';
+        } else {
+            prevSignal = 'crossBelow';
+        }
+    }
+
+    if (
+        (prevSignal == 'bounceDown' || prevSignal == 'crossBelow')
+        && curCdl.close < bottomLvlPrice
+        && curCdl.close < curCdl.open
+    ) {
+        signal = prevSignal;
+
+    } else if (
+        (signal == 'bounceUp' || signal == 'crossAbove')
+        && curCdl.close > topLvlPrice
+        && curCdl.close > curCdl.open
+    ) {
+        signal = prevSignal;
+
+    } else {
+        signal = null;
+    }
+
+    return { topLvlPrice, bottomLvlPrice, signal };
 }

@@ -9,7 +9,7 @@ const cache: {
     };
 } = {};
 
-export function Aisle({ symbol, candlesData, tiSettings, tdlOpt, lvlOpt }: Entry): SymbolResult {
+export function Aisle({ symbol, candlesData, tiSettings, tdlOpt, levelsOpt }: Entry): SymbolResult {
     if (!cache[symbol]) {
         cache[symbol] = {
             execLevels: []
@@ -20,7 +20,7 @@ export function Aisle({ symbol, candlesData, tiSettings, tdlOpt, lvlOpt }: Entry
 
     // const tdl = TDL({ candles: _candles, lineOpt: tdlOpt[0], symbol });
 
-    const levels = lvlOpt.map(itOpt => LVL({ candles: _candles, levelOpt: itOpt, symbol }));
+    const levels = levelsOpt.map(itOpt => LVL({ candles: _candles, levelOpt: itOpt, symbol }));
 
     const atr = ATR({ data: _candles, period: tiSettings.atrPeriod }).last;
 
@@ -88,7 +88,7 @@ export function Aisle({ symbol, candlesData, tiSettings, tdlOpt, lvlOpt }: Entry
             return;
         }
 
-        if ( lvl == 'bounceUp' ) {
+        if ( lvl.signal == 'bounceUp' ) {
             let stopLoss = lastPrice - atr;
 
             const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
@@ -102,7 +102,7 @@ export function Aisle({ symbol, candlesData, tiSettings, tdlOpt, lvlOpt }: Entry
 
             cache[symbol].execLevels.push(i);
 
-        } else if (lvl == 'bounceDown') {
+        } else if (lvl.signal == 'bounceDown') {
             let stopLoss = lastPrice + atr;
 
             const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);

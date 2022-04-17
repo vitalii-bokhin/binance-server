@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Aisle = void 0;
+exports.Levels = void 0;
 const indicators_1 = require("../indicators");
 '../indicators/candle';
 const cache = {};
-function Aisle({ symbol, candlesData, tiSettings, tdlOpt, levelsOpt }) {
+function Levels({ symbol, candlesData, tiSettings, tdlOpt, lvlOpt }) {
     if (!cache[symbol]) {
         cache[symbol] = {
             execLevels: []
@@ -12,7 +12,7 @@ function Aisle({ symbol, candlesData, tiSettings, tdlOpt, levelsOpt }) {
     }
     const _candles = candlesData;
     // const tdl = TDL({ candles: _candles, lineOpt: tdlOpt[0], symbol });
-    const levels = levelsOpt.map(itOpt => (0, indicators_1.LVL)({ candles: _candles, levelOpt: itOpt, symbol }));
+    const levels = lvlOpt.map(itOpt => (0, indicators_1.LVL)({ candles: _candles, levelOpt: itOpt, symbol }));
     const atr = (0, indicators_1.ATR)({ data: _candles, period: tiSettings.atrPeriod }).last;
     const lastCandle = _candles[_candles.length - 1];
     const lastPrice = lastCandle.close;
@@ -61,7 +61,7 @@ function Aisle({ symbol, candlesData, tiSettings, tdlOpt, levelsOpt }) {
         if (cache[symbol].execLevels.includes(i)) {
             return;
         }
-        if (lvl.signal == 'bounceUp') {
+        if (lvl == 'bounceUp') {
             let stopLoss = lastPrice - atr;
             const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
             signalDetails.stopLoss = stopLoss;
@@ -71,7 +71,7 @@ function Aisle({ symbol, candlesData, tiSettings, tdlOpt, levelsOpt }) {
             symbolResult.resolvePosition = true;
             cache[symbol].execLevels.push(i);
         }
-        else if (lvl.signal == 'bounceDown') {
+        else if (lvl == 'bounceDown') {
             let stopLoss = lastPrice + atr;
             const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);
             signalDetails.stopLoss = stopLoss;
@@ -84,5 +84,5 @@ function Aisle({ symbol, candlesData, tiSettings, tdlOpt, levelsOpt }) {
     });
     return symbolResult;
 }
-exports.Aisle = Aisle;
-//# sourceMappingURL=aisle.js.map
+exports.Levels = Levels;
+//# sourceMappingURL=tradelines.js.map

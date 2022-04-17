@@ -74,7 +74,7 @@ function default_1(api) {
         });
     });
     api.get('/tradelines', (req, res) => {
-        res.json(bot_1.tradeLinesCache[req.query.symbol]);
+        res.json(bot_1.tradeLinesCache);
     });
     api.post('/tradelines', async (req, res) => {
         await (0, bot_1.ManageTradeLines)(req.body);

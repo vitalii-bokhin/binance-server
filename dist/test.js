@@ -1,6 +1,8 @@
+"use strict";
 // import { TradesList, TradesListStream } from './binance_api';
 // import { candlesTicksStream, DepthStream } from './binance_api/binanceApi';
 // import { LVL, TDL } from './indicators';
+Object.defineProperty(exports, "__esModule", { value: true });
 // const lineOpt = {
 //     start: {
 //         price: 23.7273,
@@ -66,4 +68,7 @@
 // });
 // let symb = 'dsas';
 // console.log(!symb);
+// setInterval(function() {
+//     console.log(test2Var);
+// }, 5000);
 //# sourceMappingURL=test.js.map

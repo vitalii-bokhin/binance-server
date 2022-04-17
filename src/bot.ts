@@ -12,10 +12,12 @@ const ev = new events.EventEmitter();
 
 let botIsRun = false;
 
-const controls: {
+export const controls: {
     resolvePositionMaking: boolean;
+    tradingSymbols: string[];
 } = {
-    resolvePositionMaking: false
+    resolvePositionMaking: false,
+    tradingSymbols: []
 }
 
 const depthCache: {
@@ -52,7 +54,12 @@ export async function Bot(): Promise<events> {
         const _symbols = symbols; //['ZILUSDT', 'WAVESUSDT', 'GMTUSDT'];
 
         candlesTicksStream(null, data => {
-            Strategy({ data, symbols: _symbols }).then(res => {
+            Strategy({
+                data,
+                symbols: _symbols,
+                tradingSymbols: controls.tradingSymbols,
+                tradeLines: tradeLinesCache
+            }).then(res => {
                 if (controls.resolvePositionMaking) {
                     res.forEach(sym => OpenPosition(sym, 'bot'));
                 }
@@ -135,6 +142,10 @@ export async function ManageTradeLines(saveReq?: {
     if (saveReq) {
         const { type, symbol, opt, removeId } = saveReq;
 
+        if (!symbol) {
+            return;
+        }
+
         let tradeLines = await GetData<typeof tradeLinesCache>('tradelines');
 
         if (opt) {
@@ -178,9 +189,10 @@ export async function ManageTradeLines(saveReq?: {
 
     } else {
         const tradeLinesData = await GetData<typeof tradeLinesCache>('tradelines');
-        
+
         if (tradeLinesData) {
             tradeLinesCache = tradeLinesData;
         }
     }
+
 }

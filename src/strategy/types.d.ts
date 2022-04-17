@@ -41,5 +41,5 @@ export type Entry = {
     limit?: number;
     tiSettings?: TiSettings;
     tdlOpt?: LineOpt[];
-    lvlOpt?: LevelOpt[];
+    levelsOpt?: LevelOpt[];
 };

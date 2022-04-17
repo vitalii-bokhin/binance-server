@@ -89,7 +89,7 @@ export default function (api: ws.Router) {
     });
 
     api.get('/tradelines', (req: any, res) => {
-        res.json(tradeLinesCache[req.query.symbol]);
+        res.json(tradeLinesCache);
     });
 
     api.post('/tradelines', async (req, res) => {

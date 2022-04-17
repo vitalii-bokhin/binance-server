@@ -4,6 +4,8 @@ import { Aisle } from './aisle';
 import { Scalping } from './scalping';
 import { ATR, RSI, SMA } from '../indicators';
 import { LevelOpt, LineOpt } from '../indicators/types';
+import { Levels } from './levels';
+import { tradeLinesCache } from '../bot';
 
 // export { Aisle, Fling };
 
@@ -23,15 +25,19 @@ let analizedSymbols: {
 let analizedSymbolsCount = 0;
 
 const purpose: {
-    scalping: string[];
-    scalpingMax: number;
-    aisle: string[];
-    aisleMax: number;
+    // scalping: string[];
+    // scalpingMax: number;
+    // aisle: string[];
+    // aisleMax: number;
+    levels: string[];
+    levelsMax: number;
 } = {
-    scalping: [],
-    scalpingMax: 15,
-    aisle: [],
-    aisleMax: 1
+    // scalping: [],
+    // scalpingMax: 15,
+    // aisle: [],
+    // aisleMax: 1,
+    levels: [],
+    levelsMax: 2
 };
 
 const tiSettings: TiSettings = {
@@ -40,59 +46,59 @@ const tiSettings: TiSettings = {
     atrPeriod: 14,
 };
 
-export async function Strategy({ data, symbols }: { data: { [sym: string]: Candle[] }; symbols: string[] }): Promise<Result> {
+export async function Strategy({ data, symbols, tradingSymbols, tradeLines }: { data: { [sym: string]: Candle[] }; symbols: string[]; tradingSymbols: string[]; tradeLines: typeof tradeLinesCache }): Promise<Result> {
 
-    if (analizedSymbolsCount < symbols.length) {
-        console.log('-----analize symbols-----');
-        console.log(symbols.length);
+    // if (analizedSymbolsCount < symbols.length) {
+    //     console.log('-----analize symbols-----');
+    //     console.log(symbols.length);
 
-        for (const symbol in data) {
-            if (Object.prototype.hasOwnProperty.call(data, symbol)) {
-                if (!analizedSymbols[symbol]) {
-                    const _candles = data[symbol];
-                    // const rsi = RSI({ data: _candles, period: tiSettings.rsiPeriod, symbol });
-                    // const avgRsiAbove = rsi.avgRsiAbove;
-                    // const avgRsiBelow = rsi.avgRsiBelow;
+    //     for (const symbol in data) {
+    //         if (Object.prototype.hasOwnProperty.call(data, symbol)) {
+    //             if (!analizedSymbols[symbol]) {
+    //                 const _candles = data[symbol];
+    //                 // const rsi = RSI({ data: _candles, period: tiSettings.rsiPeriod, symbol });
+    //                 // const avgRsiAbove = rsi.avgRsiAbove;
+    //                 // const avgRsiBelow = rsi.avgRsiBelow;
 
-                    // const sma = SMA({ data: _candles, period: tiSettings.smaPeriod });
-                    // const smaLag = sma.stack[sma.stack.length - tiSettings.smaPeriod / 2];
-                    // const smaChange = Math.abs((sma.last - smaLag) / (sma.last / 100));
+    //                 // const sma = SMA({ data: _candles, period: tiSettings.smaPeriod });
+    //                 // const smaLag = sma.stack[sma.stack.length - tiSettings.smaPeriod / 2];
+    //                 // const smaChange = Math.abs((sma.last - smaLag) / (sma.last / 100));
 
 
-                    // const candles = [..._candles];
+    //                 // const candles = [..._candles];
 
-                    const curCdl = _candles[_candles.length - 1];
+    //                 const curCdl = _candles[_candles.length - 1];
 
-                    const atr = ATR({ data: _candles, period: tiSettings.atrPeriod });
+    //                 const atr = ATR({ data: _candles, period: tiSettings.atrPeriod });
 
-                    // let percentAverageCandleMove = 0;
+    //                 // let percentAverageCandleMove = 0;
 
-                    // candles.forEach(cdl => {
-                    //     percentAverageCandleMove += (cdl.high - cdl.low) / (cdl.low / 100);
-                    // });
+    //                 // candles.forEach(cdl => {
+    //                 //     percentAverageCandleMove += (cdl.high - cdl.low) / (cdl.low / 100);
+    //                 // });
 
-                    // percentAverageCandleMove = percentAverageCandleMove / candles.length;
+    //                 // percentAverageCandleMove = percentAverageCandleMove / candles.length;
 
-                    analizedSymbols[symbol] = {
-                        symbol,
-                        atr: atr.last,
-                        atrSpread: atr.spreadPercent,
-                        curCdl,
-                        // avgRsiAbove,
-                        // avgRsiBelow,
-                        // percentAverageCandleMove,
-                        // smaChange
-                    };
+    //                 analizedSymbols[symbol] = {
+    //                     symbol,
+    //                     atr: atr.last,
+    //                     atrSpread: atr.spreadPercent,
+    //                     curCdl,
+    //                     // avgRsiAbove,
+    //                     // avgRsiBelow,
+    //                     // percentAverageCandleMove,
+    //                     // smaChange
+    //                 };
 
-                    analizedSymbolsCount++;
+    //                 analizedSymbolsCount++;
 
-                    console.log(analizedSymbolsCount);
-                }
-            }
-        }
+    //                 console.log(analizedSymbolsCount);
+    //             }
+    //         }
+    //     }
 
-        return [];
-    }
+    //     return [];
+    // }
 
     // if (!purpose.scalping.length) {
     //     const symbArr = Object.keys(analizedSymbols).map(sym => analizedSymbols[sym]);
@@ -119,8 +125,9 @@ export async function Strategy({ data, symbols }: { data: { [sym: string]: Candl
     //     return [];
     // }
 
-    purpose.scalping = ['WAVESUSDT'];
-    purpose.aisle = ['WAVESUSDT'];
+    // purpose.scalping = ['WAVESUSDT'];
+    // purpose.aisle = ['WAVESUSDT'];
+    purpose.levels = tradingSymbols;
 
     // const aisleTdlOpt: {
     //     [s: string]: LineOpt[];
@@ -165,9 +172,18 @@ export async function Strategy({ data, symbols }: { data: { [sym: string]: Candl
         if (Object.prototype.hasOwnProperty.call(data, symbol)) {
             const candlesData = data[symbol];
 
-            if (purpose.scalping.includes(symbol)) {
-                signals.push(Scalping({ symbol, candlesData, tiSettings }));
+            if (purpose.levels.includes(symbol)) {
+                signals.push(Levels({
+                    symbol,
+                    candlesData,
+                    tiSettings,
+                    levelsOpt: tradeLines[symbol].levels
+                }));
             }
+
+            // if (purpose.scalping.includes(symbol)) {
+            //     signals.push(Scalping({ symbol, candlesData, tiSettings }));
+            // }
 
             // if (purpose.aisle.includes(symbol)) {
             //     signals.push(Aisle({
@@ -210,6 +226,6 @@ export async function Strategy({ data, symbols }: { data: { [sym: string]: Candl
 export function ReuseStrategy(): void {
     analizedSymbolsCount = 0;
     analizedSymbols = {};
-    purpose.scalping = [];
-    purpose.aisle = [];
+    // purpose.scalping = [];
+    // purpose.aisle = [];
 }

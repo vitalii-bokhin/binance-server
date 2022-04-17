@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ManageTradeLines = exports.BotControl = exports.getDepthCache = exports.Bot = exports.tradeLinesCache = void 0;
+exports.ManageTradeLines = exports.BotControl = exports.getDepthCache = exports.Bot = exports.tradeLinesCache = exports.controls = void 0;
 const binanceApi_1 = require("./binance_api/binanceApi");
 const symbols_1 = __importDefault(require("./symbols"));
 const strategy_1 = require("./strategy");
@@ -12,8 +12,9 @@ const trade_1 = require("./trade");
 const db_1 = require("./db/db");
 const ev = new events_1.default.EventEmitter();
 let botIsRun = false;
-const controls = {
-    resolvePositionMaking: false
+exports.controls = {
+    resolvePositionMaking: false,
+    tradingSymbols: []
 };
 const depthCache = {};
 exports.tradeLinesCache = {};
@@ -27,8 +28,13 @@ async function Bot() {
         const { symbols, symbolsObj } = await (0, symbols_1.default)();
         const _symbols = symbols; //['ZILUSDT', 'WAVESUSDT', 'GMTUSDT'];
         (0, binanceApi_1.candlesTicksStream)(null, data => {
-            (0, strategy_1.Strategy)({ data, symbols: _symbols }).then(res => {
-                if (controls.resolvePositionMaking) {
+            (0, strategy_1.Strategy)({
+                data,
+                symbols: _symbols,
+                tradingSymbols: exports.controls.tradingSymbols,
+                tradeLines: exports.tradeLinesCache
+            }).then(res => {
+                if (exports.controls.resolvePositionMaking) {
                     res.forEach(sym => (0, trade_1.OpenPosition)(sym, 'bot'));
                 }
                 ev.emit('bot', { strategy: res });
@@ -77,16 +83,19 @@ function BotControl(req) {
     if (req) {
         for (const key in req) {
             if (Object.prototype.hasOwnProperty.call(req, key)) {
-                controls[key] = req[key];
+                exports.controls[key] = req[key];
             }
         }
     }
-    return controls;
+    return exports.controls;
 }
 exports.BotControl = BotControl;
 async function ManageTradeLines(saveReq) {
     if (saveReq) {
         const { type, symbol, opt, removeId } = saveReq;
+        if (!symbol) {
+            return;
+        }
         let tradeLines = await (0, db_1.GetData)('tradelines');
         if (opt) {
             if (!tradeLines) {
