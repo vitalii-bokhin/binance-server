@@ -1,4 +1,5 @@
-import { candlesTicksStream, ordersUpdateStream } from './binance_api/binanceApi';
+import { ordersUpdateStream } from './binance_api/binanceApi';
+import { CandlesTicksStream } from "./binance_api/CandlesTicksStream";
 import { Bot, ManageTradeLines } from './bot';
 import { Position } from './position';
 import { SymbolResult } from './strategy/types';
@@ -16,17 +17,19 @@ const openedPositions: {
 const excludedPositions: string[] = [];
 let botPositions = 0;
 
-let _symbols, _symbolsObj;
+export let _symbols: string[] = ['ZILUSDT', 'WAVESUSDT'];
+
+let _symbolsObj: { [key: string]: any };
 
 (async function () {
     const { symbols, symbolsObj } = await getSymbols();
 
-    _symbols = symbols; //['ZILUSDT', 'WAVESUSDT', 'GMTUSDT'];
+    // _symbols = symbols;
     _symbolsObj = symbolsObj;
 
-    candlesTicksStream({ symbols: _symbols, interval, limit }, null);
+    CandlesTicksStream({ symbols: _symbols, interval, limit }, null);
+
     ordersUpdateStream();
-    await ManageTradeLines();
 
     console.log(`Trade has been run. Candles (${limit}) with interval: ${interval}. Leverage: ${leverage}.`);
 })();
@@ -35,11 +38,11 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
     const pKey = s.symbol;
 
     if (
-        openedPositions[pKey] ||
-        !s.resolvePosition ||
-        excludedPositions.includes(pKey) ||
-        (initiator == 'bot' && botPositions == 2) ||
-        s.percentLoss < fee
+        openedPositions[pKey]
+        || !s.resolvePosition
+        || excludedPositions.includes(pKey)
+        || (initiator == 'bot' && botPositions == 2)
+        || s.percentLoss < fee
     ) {
         return;
     }
@@ -53,7 +56,7 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
     let trailingStopTriggerPriceStep: number;
     let trailingStopOrderStep: number;
 
-    if (s.strategy == 'aisle' || s.strategy == 'manual') {
+    if (s.strategy == 'levels' || s.strategy == 'manual') {
         trailingStopStartTriggerPrice = s.percentLoss;
         trailingStopStartOrder = s.percentLoss / 2;
         trailingStopTriggerPriceStep = s.percentLoss;

@@ -7,6 +7,7 @@ exports.Position = void 0;
 const node_binance_api_1 = __importDefault(require("node-binance-api"));
 const config_1 = require("./config");
 const binanceApi_1 = require("./binance_api/binanceApi");
+const CandlesTicksStream_1 = require("./binance_api/CandlesTicksStream");
 const binanceAuth = new node_binance_api_1.default().options({
     APIKEY: config_1.BINANCE_KEY,
     APISECRET: config_1.BINANCE_SECRET,
@@ -151,7 +152,7 @@ class Position {
     }
     // WATCH POSITION
     watchPosition() {
-        (0, binanceApi_1.symbolCandlesTicksStream)(this.symbol, data => {
+        (0, CandlesTicksStream_1.symbolCandlesTicksStream)(this.symbol, data => {
             const lastPrice = data[data.length - 1].close;
             if (!this.stopLossHasBeenMoved && this.useTrailingStop) {
                 let changePerc;
@@ -231,7 +232,7 @@ class Position {
     deletePositionInner(opt) {
         (0, binanceApi_1.ordersUpdateStream)(this.symbol, null, true);
         (0, binanceApi_1.positionUpdateStream)(this.symbol, null, true);
-        (0, binanceApi_1.symbolCandlesTicksStream)(this.symbol, null, true);
+        (0, CandlesTicksStream_1.symbolCandlesTicksStream)(this.symbol, null, true);
         binanceAuth.futuresCancelAll(this.symbol).then(() => {
             if (this.deletePosition !== undefined) {
                 this.deletePosition(this.positionKey, opt);

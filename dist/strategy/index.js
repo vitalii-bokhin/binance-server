@@ -115,12 +115,8 @@ async function Strategy({ data, symbols, tradingSymbols, tradeLines }) {
         if (Object.prototype.hasOwnProperty.call(data, symbol)) {
             const candlesData = data[symbol];
             if (purpose.levels.includes(symbol)) {
-                signals.push((0, levels_1.Levels)({
-                    symbol,
-                    candlesData,
-                    tiSettings,
-                    levelsOpt: tradeLines[symbol].levels
-                }));
+                const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
+                signals.push((0, levels_1.Levels)({ symbol, candlesData, tiSettings, levelsOpt }));
             }
             // if (purpose.scalping.includes(symbol)) {
             //     signals.push(Scalping({ symbol, candlesData, tiSettings }));

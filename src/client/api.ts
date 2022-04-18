@@ -1,31 +1,36 @@
 import ws from 'express-ws';
-import { symbolCandlesTicksStream } from '../binance_api/binanceApi';
 import { CandlesTicks } from "../binance_api/CandlesTicks";
+import { symbolCandlesTicksStream } from '../binance_api/CandlesTicksStream';
 import { Bot, BotControl, ManageTradeLines, tradeLinesCache } from '../bot';
 import { ImmediatelyPosition } from '../manual';
 import { ReuseStrategy } from '../strategy';
 import getSymbols from '../symbols';
+import { _symbols } from '../trade';
 
 export default function (api: ws.Router) {
-    api.get('/bot', function (req, res) {
-        const controls = BotControl();
+    api.get('/bot', async (req, res) => {
+        Bot();
+
+        const { resolvePositionMaking, tradingSymbols } = await BotControl();
 
         res.json({
             status: 'Start connect',
-            controls
+            availableSymbols: _symbols,
+            resolvePositionMaking,
+            tradingSymbols,
         });
     });
 
-    api.post('/bot', function (req, res) {
+    api.post('/bot', async (req, res) => {
         if (req.body.reuseStrategy) {
             ReuseStrategy();
 
             res.json({ status: 'OK' });
 
         } else {
-            const controls = BotControl(req.body);
+            await BotControl(req.body);
 
-            res.json({ controls });
+            res.json({ status: 'Controls' });
         }
     });
 
@@ -61,7 +66,7 @@ export default function (api: ws.Router) {
         });
     });
 
-    api.get('/trade', function (req, res) {
+    api.get('/trade', (req, res) => {
         getSymbols().then(({ symbols, symbolsObj }) => {
             res.json({ symbols });
         });
@@ -88,13 +93,13 @@ export default function (api: ws.Router) {
         });
     });
 
-    api.get('/tradelines', (req: any, res) => {
+    api.get('/tradelines', async (req, res) => {
+        await ManageTradeLines();
         res.json(tradeLinesCache);
     });
 
     api.post('/tradelines', async (req, res) => {
         await ManageTradeLines(req.body);
-
         res.json(tradeLinesCache);
     });
 

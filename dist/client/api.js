@@ -3,27 +3,31 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const binanceApi_1 = require("../binance_api/binanceApi");
+const CandlesTicksStream_1 = require("../binance_api/CandlesTicksStream");
 const bot_1 = require("../bot");
 const manual_1 = require("../manual");
 const strategy_1 = require("../strategy");
 const symbols_1 = __importDefault(require("../symbols"));
+const trade_1 = require("../trade");
 function default_1(api) {
-    api.get('/bot', function (req, res) {
-        const controls = (0, bot_1.BotControl)();
+    api.get('/bot', async (req, res) => {
+        (0, bot_1.Bot)();
+        const { resolvePositionMaking, tradingSymbols } = await (0, bot_1.BotControl)();
         res.json({
             status: 'Start connect',
-            controls
+            availableSymbols: trade_1._symbols,
+            resolvePositionMaking,
+            tradingSymbols,
         });
     });
-    api.post('/bot', function (req, res) {
+    api.post('/bot', async (req, res) => {
         if (req.body.reuseStrategy) {
             (0, strategy_1.ReuseStrategy)();
             res.json({ status: 'OK' });
         }
         else {
-            const controls = (0, bot_1.BotControl)(req.body);
-            res.json({ controls });
+            await (0, bot_1.BotControl)(req.body);
+            res.json({ status: 'Controls' });
         }
     });
     api.ws('/bot', (ws, req) => {
@@ -52,7 +56,7 @@ function default_1(api) {
             });
         });
     });
-    api.get('/trade', function (req, res) {
+    api.get('/trade', (req, res) => {
         (0, symbols_1.default)().then(({ symbols, symbolsObj }) => {
             res.json({ symbols });
         });
@@ -69,11 +73,12 @@ function default_1(api) {
     });
     api.ws('/candlesticks', (ws, req) => {
         const symbol = req.query.symbol;
-        (0, binanceApi_1.symbolCandlesTicksStream)(symbol, data => {
+        (0, CandlesTicksStream_1.symbolCandlesTicksStream)(symbol, data => {
             ws.send(JSON.stringify(data));
         });
     });
-    api.get('/tradelines', (req, res) => {
+    api.get('/tradelines', async (req, res) => {
+        await (0, bot_1.ManageTradeLines)();
         res.json(bot_1.tradeLinesCache);
     });
     api.post('/tradelines', async (req, res) => {

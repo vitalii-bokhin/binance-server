@@ -22,6 +22,17 @@ export type IndicatorEntry = {
 
 export type InputTime = { d: number; h: number; m: number; };
 
+export type TrendlineInput = {
+    candles: Candle[];
+    lineOpt: LineOpt;
+    symbol: string;
+};
+
+export type LevelOpt = {
+    id: string;
+    price: number[];
+};
+
 export type LineOpt = {
     id: string;
     lines: {
@@ -36,19 +47,7 @@ export type LineOpt = {
     }[];
 };
 
-export type TrendlineInput = {
-    candles: Candle[];
-    lineOpt: LineOpt;
-    symbol: string;
-};
-
-export type LevelOpt = {
-    id: string;
-    price: number[];
-};
-
 export type LevelInput = {
     candles: Candle[];
-    levelOpt: LevelOpt;
-    symbol: string;
+    levelsOpt: LevelOpt[];
 };

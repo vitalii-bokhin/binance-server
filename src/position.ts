@@ -1,6 +1,7 @@
 import Binance from 'node-binance-api';
 import { BINANCE_KEY, BINANCE_SECRET } from './config';
-import { candlesTicksStream, ordersUpdateStream, positionUpdateStream, priceStream, symbolCandlesTicksStream } from './binance_api/binanceApi';
+import { ordersUpdateStream, positionUpdateStream, priceStream } from './binance_api/binanceApi';
+import { CandlesTicksStream, symbolCandlesTicksStream } from "./binance_api/CandlesTicksStream";
 import { RSI } from './indicators';
 
 const binanceAuth = new Binance().options({

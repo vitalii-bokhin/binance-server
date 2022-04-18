@@ -1,114 +1,15 @@
 import WebSocket from 'ws';
 import { binance, streamApi } from '.';
-import { CandlesTicks } from './CandlesTicks';
-
-type Candle = {
-    openTime: number;
-    high: number;
-    open: number;
-    close: number;
-    low: number;
-};
-
-export type CandlesTicksEntry = {
-    symbols: string[];
-    interval: string;
-    limit: number;
-};
-
-export type CandlesTicksCallback = (arg0: { [key: string]: Candle[] }) => void;
-
-type SymbolCandlesTicksCallback = (arg0: Candle[]) => void;
-
-type DepthCallback = (arg0: {
-    [symbol: string]: {
-        bids: string[][];
-        asks: string[][];
-        lastUpdateId: number;
-    }
-}) => void;
+import { DepthCallback } from './types';
 
 // check server time
 binance.time().then(res => {
     console.log('Server Time: ' + new Date(res.serverTime));
 });
 
-const wsStreams: {
+export const wsStreams: {
     [key: string]: WebSocket;
 } = {};
-
-const candlesTicksStreamSubscribers: ((arg0: any) => void)[] = [];
-
-let candlesTicksStreamExecuted = false;
-
-const symbolCandlesTicksStreamSubscribers: {
-    [key: string]: ((arg0: any) => void)[];
-} = {};
-
-export function candlesTicksStream(opt: CandlesTicksEntry, callback: CandlesTicksCallback): void {
-    if (callback) {
-        candlesTicksStreamSubscribers.push(callback);
-    }
-
-    if (!candlesTicksStreamExecuted && opt) {
-        const { symbols, interval, limit } = opt;
-        const streams = symbols.map(s => s.toLowerCase() + '@kline_' + interval).join('/');
-
-        candlesTicksStreamExecuted = true;
-
-        CandlesTicks({ symbols, interval, limit }, data => {
-            const result = data;
-            let ws: WebSocket;
-
-            if (wsStreams[streams] !== undefined) {
-                ws = wsStreams[streams];
-            } else {
-                ws = new WebSocket(streamApi + streams);
-                wsStreams[streams] = ws;
-            }
-
-            ws.on('message', function message(wsMsg: any) {
-                const { e: eventType, E: eventTime, s: symbol, k: ticks } = JSON.parse(wsMsg).data;
-                const { t: openTime, o: open, h: high, l: low, c: close } = ticks;
-
-                const candle: Candle = {
-                    openTime: openTime,
-                    open: +open,
-                    high: +high,
-                    low: +low,
-                    close: +close
-                };
-
-                if (result[symbol][result[symbol].length - 1].openTime !== openTime) {
-                    result[symbol].push(candle);
-                    result[symbol].shift();
-                } else {
-                    result[symbol][result[symbol].length - 1] = candle;
-                }
-
-                candlesTicksStreamSubscribers.forEach(cb => cb(result));
-
-                if (symbolCandlesTicksStreamSubscribers[symbol]) {
-                    symbolCandlesTicksStreamSubscribers[symbol].forEach(cb => cb(result[symbol]));
-                }
-            });
-        });
-    }
-}
-
-export function symbolCandlesTicksStream(symbol: string, callback: SymbolCandlesTicksCallback, clearSymbolCallback?: boolean) {
-    if (symbol && callback) {
-        if (!symbolCandlesTicksStreamSubscribers[symbol]) {
-            symbolCandlesTicksStreamSubscribers[symbol] = [];
-        }
-
-        symbolCandlesTicksStreamSubscribers[symbol].push(callback);
-    }
-
-    if (clearSymbolCallback && symbolCandlesTicksStreamSubscribers[symbol]) {
-        delete symbolCandlesTicksStreamSubscribers[symbol];
-    }
-}
 
 // account data stream (position, order update)
 const orderUpdateSubscribers: {

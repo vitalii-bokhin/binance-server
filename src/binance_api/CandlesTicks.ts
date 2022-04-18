@@ -1,5 +1,5 @@
 import { binance } from '.';
-import { CandlesTicksCallback, CandlesTicksEntry } from './binanceApi';
+import { CandlesTicksCallback, CandlesTicksEntry } from './types';
 
 export function CandlesTicks({ symbols, interval, limit }: CandlesTicksEntry, callback: CandlesTicksCallback): void {
     const result = {};

@@ -20,7 +20,7 @@ export function Aisle({ symbol, candlesData, tiSettings, tdlOpt, levelsOpt }: En
 
     // const tdl = TDL({ candles: _candles, lineOpt: tdlOpt[0], symbol });
 
-    const levels = levelsOpt.map(itOpt => LVL({ candles: _candles, levelOpt: itOpt, symbol }));
+    // const levels = levelsOpt.map(itOpt => LVL({ candles: _candles, levelOpt: itOpt, symbol }));
 
     const atr = ATR({ data: _candles, period: tiSettings.atrPeriod }).last;
 
@@ -83,40 +83,40 @@ export function Aisle({ symbol, candlesData, tiSettings, tdlOpt, levelsOpt }: En
         resolvePosition: false
     };
 
-    levels.forEach((lvl, i) => {
-        if (cache[symbol].execLevels.includes(i)) {
-            return;
-        }
+    // levels.forEach((lvl, i) => {
+    //     if (cache[symbol].execLevels.includes(i)) {
+    //         return;
+    //     }
 
-        if ( lvl.signal == 'bounceUp' ) {
-            let stopLoss = lastPrice - atr;
+    //     if ( lvl.signal == 'nextToTop' ) {
+    //         let stopLoss = lastPrice - atr;
 
-            const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
+    //         const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
 
-            signalDetails.stopLoss = stopLoss;
-            signalDetails.lastCandleMove = lastCandle.close - lastCandle.open;
+    //         signalDetails.stopLoss = stopLoss;
+    //         signalDetails.lastCandleMove = lastCandle.close - lastCandle.open;
 
-            symbolResult.position = 'long';
-            symbolResult.percentLoss = percentLoss;
-            symbolResult.resolvePosition = true;
+    //         symbolResult.position = 'long';
+    //         symbolResult.percentLoss = percentLoss;
+    //         symbolResult.resolvePosition = true;
 
-            cache[symbol].execLevels.push(i);
+    //         cache[symbol].execLevels.push(i);
 
-        } else if (lvl.signal == 'bounceDown') {
-            let stopLoss = lastPrice + atr;
+    //     } else if (lvl.signal == 'nextToBottom') {
+    //         let stopLoss = lastPrice + atr;
 
-            const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);
+    //         const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);
 
-            signalDetails.stopLoss = stopLoss;
-            signalDetails.lastCandleMove = lastCandle.open - lastCandle.close;
+    //         signalDetails.stopLoss = stopLoss;
+    //         signalDetails.lastCandleMove = lastCandle.open - lastCandle.close;
 
-            symbolResult.position = 'short';
-            symbolResult.percentLoss = percentLoss;
-            symbolResult.resolvePosition = true;
+    //         symbolResult.position = 'short';
+    //         symbolResult.percentLoss = percentLoss;
+    //         symbolResult.resolvePosition = true;
 
-            cache[symbol].execLevels.push(i);
-        }
-    });
+    //         cache[symbol].execLevels.push(i);
+    //     }
+    // });
 
     return symbolResult;
 }

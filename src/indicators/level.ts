@@ -3,68 +3,73 @@ import { Candle, InputTime, LevelInput, LevelOpt, LineOpt, TrendlineInput } from
 type Result = {
     topLvlPrice: number;
     bottomLvlPrice: number;
-    signal: 'bounceUp' | 'bounceDown' | 'crossAbove' | 'crossBelow';
+    signal: 'nextToTop' | 'nextToBottom';
 };
 
-export function LVL({ symbol, candles, levelOpt }: LevelInput): Result {
-    let signal;
-    let prevSignal: 'nextToTop' | 'nextToBottom' | 'bounceUp' | 'bounceDown' | 'crossAbove' | 'crossBelow';
+export function LVL({ candles, levelsOpt }: LevelInput): Result {
+    let signal = null;
 
-    const lvlPrice = [...levelOpt.price];
+    const lastCandles = candles.slice(-3);
 
-    lvlPrice.sort((a, b) => b - a);
+    const prePrevCdl = lastCandles[0];
+    const prevCdl = lastCandles[1];
 
-    const thirdCdl = candles[candles.length - 3];
-    const secondCdl = candles[candles.length - 2];
-    const curCdl = candles[candles.length - 1];
+    let topLvlPrice: number,
+        bottomLvlPrice: number;
 
-    const topLvlPrice = lvlPrice[0];
-    const bottomLvlPrice = lvlPrice[1];
+    for (const level of levelsOpt) {
+        const lvlPrice = [...level.price];
 
-    if (
-        thirdCdl.low < bottomLvlPrice
-        && secondCdl.high > bottomLvlPrice
-    ) {
-        prevSignal = 'nextToBottom';
-    } else if (
-        thirdCdl.high > topLvlPrice
-        && secondCdl.low < topLvlPrice
-    ) {
-        prevSignal = 'nextToTop';
-    }
+        lvlPrice.sort((a, b) => b - a);
 
-    if (prevSignal == 'nextToBottom') {
-        if (secondCdl.close < topLvlPrice) {
-            prevSignal = 'bounceDown';
-        } else {
-            prevSignal = 'crossAbove';
-        }
+        topLvlPrice = lvlPrice[0];
+        bottomLvlPrice = lvlPrice[1];
 
-    } else if (prevSignal == 'nextToTop') {
-        if (secondCdl.close > bottomLvlPrice) {
-            prevSignal = 'bounceUp';
-        } else {
-            prevSignal = 'crossBelow';
+        if (
+            prePrevCdl.low < bottomLvlPrice
+            && prevCdl.high > bottomLvlPrice
+        ) {
+            signal = 'nextToBottom';
+        } else if (
+            prePrevCdl.high > topLvlPrice
+            && prevCdl.low < topLvlPrice
+        ) {
+            signal = 'nextToTop';
         }
     }
 
-    if (
-        (prevSignal == 'bounceDown' || prevSignal == 'crossBelow')
-        && curCdl.close < bottomLvlPrice
-        && curCdl.close < curCdl.open
-    ) {
-        signal = prevSignal;
+    // if (prevSignal == 'nextToBottom') {
+    //     if (prevCdl.close < topLvlPrice) {
+    //         prevSignal = 'bounceDown';
+    //     } else {
+    //         prevSignal = 'crossAbove';
+    //     }
 
-    } else if (
-        (signal == 'bounceUp' || signal == 'crossAbove')
-        && curCdl.close > topLvlPrice
-        && curCdl.close > curCdl.open
-    ) {
-        signal = prevSignal;
+    // } else if (prevSignal == 'nextToTop') {
+    //     if (prevCdl.close > bottomLvlPrice) {
+    //         prevSignal = 'bounceUp';
+    //     } else {
+    //         prevSignal = 'crossBelow';
+    //     }
+    // }
 
-    } else {
-        signal = null;
-    }
+    // if (
+    //     (prevSignal == 'bounceDown' || prevSignal == 'crossBelow')
+    //     && curCdl.close < bottomLvlPrice
+    //     && curCdl.close < curCdl.open
+    // ) {
+    //     signal = prevSignal;
 
-    return { topLvlPrice, bottomLvlPrice, signal };
+    // } else if (
+    //     (signal == 'bounceUp' || signal == 'crossAbove')
+    //     && curCdl.close > topLvlPrice
+    //     && curCdl.close > curCdl.open
+    // ) {
+    //     signal = prevSignal;
+
+    // } else {
+    //     signal = null;
+    // }
+
+    return { signal, topLvlPrice, bottomLvlPrice };
 }

@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ManageTradeLines = exports.BotControl = exports.getDepthCache = exports.Bot = exports.tradeLinesCache = exports.controls = void 0;
-const binanceApi_1 = require("./binance_api/binanceApi");
+const CandlesTicksStream_1 = require("./binance_api/CandlesTicksStream");
 const symbols_1 = __importDefault(require("./symbols"));
 const strategy_1 = require("./strategy");
 const events_1 = __importDefault(require("events"));
@@ -23,11 +23,14 @@ async function Bot() {
         console.log('Bot was run!');
     }
     else {
+        console.log('Bot has been run!');
         botIsRun = true;
         // tickerStream();
         const { symbols, symbolsObj } = await (0, symbols_1.default)();
+        await BotControl();
+        await ManageTradeLines();
         const _symbols = symbols; //['ZILUSDT', 'WAVESUSDT', 'GMTUSDT'];
-        (0, binanceApi_1.candlesTicksStream)(null, data => {
+        (0, CandlesTicksStream_1.CandlesTicksStream)(null, data => {
             (0, strategy_1.Strategy)({
                 data,
                 symbols: _symbols,
@@ -40,37 +43,37 @@ async function Bot() {
                 ev.emit('bot', { strategy: res });
             });
         });
-        (0, binanceApi_1.DepthStream)(['WAVESUSDT'], data => {
-            console.log('RES');
-            console.log('ask', data['WAVESUSDT'].asks /* .sort((a, b) => +a[0] - +b[0]) */.slice(0, 5));
-            console.log('bid', data['WAVESUSDT'].bids /* .sort((a, b) => +b[0] - +a[0]) */.slice(0, 5));
-            let highA = 0;
-            let priceA;
-            let high = 0;
-            let price;
-            data['WAVESUSDT'].asks.forEach(it => {
-                if (+it[1] > highA) {
-                    highA = +it[1];
-                    priceA = it[0];
-                }
-            });
-            data['WAVESUSDT'].bids.forEach(it => {
-                if (+it[1] > high) {
-                    high = +it[1];
-                    price = it[0];
-                }
-            });
-            depthCache['WAVESUSDT'] = {
-                maxAsk: {
-                    price: +priceA,
-                    volume: highA
-                },
-                maxBid: {
-                    price: +price,
-                    volume: high
-                }
-            };
-        });
+        // DepthStream(['WAVESUSDT'], data => {
+        //     console.log('RES');
+        //     console.log('ask', data['WAVESUSDT'].asks/* .sort((a, b) => +a[0] - +b[0]) */.slice(0, 5));
+        //     console.log('bid', data['WAVESUSDT'].bids/* .sort((a, b) => +b[0] - +a[0]) */.slice(0, 5));
+        //     let highA: number = 0;
+        //     let priceA: string;
+        //     let high: number = 0;
+        //     let price: string;
+        //     data['WAVESUSDT'].asks.forEach(it => {
+        //         if (+it[1] > highA) {
+        //             highA = +it[1];
+        //             priceA = it[0];
+        //         }
+        //     });
+        //     data['WAVESUSDT'].bids.forEach(it => {
+        //         if (+it[1] > high) {
+        //             high = +it[1];
+        //             price = it[0];
+        //         }
+        //     });
+        //     depthCache['WAVESUSDT'] = {
+        //         maxAsk: {
+        //             price: +priceA,
+        //             volume: highA
+        //         },
+        //         maxBid: {
+        //             price: +price,
+        //             volume: high
+        //         }
+        //     };
+        // });
     }
     return ev;
 }
@@ -79,62 +82,116 @@ function getDepthCache(symbol) {
     return depthCache[symbol];
 }
 exports.getDepthCache = getDepthCache;
-function BotControl(req) {
+async function BotControl(req) {
+    let botControls = await (0, db_1.GetData)('botcontrols');
+    if (!botControls) {
+        botControls = exports.controls;
+    }
     if (req) {
         for (const key in req) {
             if (Object.prototype.hasOwnProperty.call(req, key)) {
-                exports.controls[key] = req[key];
+                botControls[key] = req[key];
             }
         }
+        await (0, db_1.SaveData)('botcontrols', botControls);
     }
-    return exports.controls;
+    exports.controls = botControls;
+    return botControls;
 }
 exports.BotControl = BotControl;
 async function ManageTradeLines(saveReq) {
+    let tradeLines = await (0, db_1.GetData)('tradelines');
     if (saveReq) {
-        const { type, symbol, opt, removeId } = saveReq;
-        if (!symbol) {
-            return;
-        }
-        let tradeLines = await (0, db_1.GetData)('tradelines');
-        if (opt) {
-            if (!tradeLines) {
-                tradeLines = {};
+        const { obj, removeId } = saveReq;
+        if (obj) {
+            if (!obj.symbol) {
+                return;
             }
-            if (!tradeLines[symbol]) {
-                tradeLines[symbol] = {
-                    [type]: [opt]
-                };
-            }
-            else if (!tradeLines[symbol][type]) {
-                tradeLines[symbol][type] = [opt];
+            if (tradeLines && tradeLines.length) {
+                let isNew = true;
+                for (const tLine of tradeLines) {
+                    if (obj.id == tLine.id) {
+                        isNew = false;
+                        if (obj.type == 'levels') {
+                            tLine.price = obj.price;
+                        }
+                        else if (obj.type == 'trends') {
+                            tLine.lines = obj.lines;
+                        }
+                    }
+                }
+                if (isNew) {
+                    if (obj.type == 'levels') {
+                        tradeLines.push({
+                            id: obj.id,
+                            symbol: obj.symbol,
+                            type: obj.type,
+                            price: obj.price
+                        });
+                    }
+                    else if (obj.type == 'trends') {
+                        tradeLines.push({
+                            id: obj.id,
+                            symbol: obj.symbol,
+                            type: obj.type,
+                            lines: obj.lines
+                        });
+                    }
+                }
             }
             else {
-                const ids = tradeLines[symbol][type].map(l => l.id);
-                if (ids.includes(opt.id)) {
-                    tradeLines[symbol][type][ids.indexOf(opt.id)] = opt;
+                tradeLines = [];
+                if (obj.type == 'levels') {
+                    tradeLines.push({
+                        id: obj.id,
+                        symbol: obj.symbol,
+                        type: obj.type,
+                        price: obj.price
+                    });
                 }
-                else {
-                    tradeLines[symbol][type].push(opt);
+                else if (obj.type == 'trends') {
+                    tradeLines.push({
+                        id: obj.id,
+                        symbol: obj.symbol,
+                        type: obj.type,
+                        lines: obj.lines
+                    });
                 }
             }
         }
         else if (removeId) {
-            let removeIndex = 0;
-            tradeLines[symbol][type].forEach((line, i) => {
-                if (removeId == line.id) {
-                    removeIndex = i;
+            const survivors = [];
+            for (const tLine of tradeLines) {
+                if (removeId !== tLine.id) {
+                    survivors.push(tLine);
                 }
-            });
-            tradeLines[symbol][type].splice(removeIndex, 1);
+            }
+            tradeLines = survivors;
         }
         await (0, db_1.SaveData)('tradelines', tradeLines);
-        exports.tradeLinesCache = tradeLines;
     }
-    else {
-        const tradeLinesData = await (0, db_1.GetData)('tradelines');
-        if (tradeLinesData) {
-            exports.tradeLinesCache = tradeLinesData;
+    // get to cache
+    exports.tradeLinesCache = {};
+    if (tradeLines && tradeLines.length) {
+        for (const tLine of tradeLines) {
+            if (!exports.tradeLinesCache[tLine.symbol]) {
+                exports.tradeLinesCache[tLine.symbol] = {
+                    levels: [],
+                    trends: []
+                };
+            }
+            if (tLine.type == 'levels') {
+                exports.tradeLinesCache[tLine.symbol].levels.push({
+                    price: tLine.price,
+                    id: tLine.id
+                });
+            }
+            else if (tLine.type == 'trends') {
+                exports.tradeLinesCache[tLine.symbol].trends.push({
+                    lines: tLine.lines,
+                    id: tLine.id
+                });
+            }
         }
     }
 }

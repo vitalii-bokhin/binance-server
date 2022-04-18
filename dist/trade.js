@@ -3,32 +3,32 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OpenPosition = void 0;
+exports.OpenPosition = exports._symbols = void 0;
 const binanceApi_1 = require("./binance_api/binanceApi");
-const bot_1 = require("./bot");
+const CandlesTicksStream_1 = require("./binance_api/CandlesTicksStream");
 const position_1 = require("./position");
 const symbols_1 = __importDefault(require("./symbols"));
 const fee = .08, interval = '5m', limit = 100, leverage = 5;
 const openedPositions = {};
 const excludedPositions = [];
 let botPositions = 0;
-let _symbols, _symbolsObj;
+exports._symbols = ['ZILUSDT', 'WAVESUSDT'];
+let _symbolsObj;
 (async function () {
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
-    _symbols = symbols; //['ZILUSDT', 'WAVESUSDT', 'GMTUSDT'];
+    // _symbols = symbols;
     _symbolsObj = symbolsObj;
-    (0, binanceApi_1.candlesTicksStream)({ symbols: _symbols, interval, limit }, null);
+    (0, CandlesTicksStream_1.CandlesTicksStream)({ symbols: exports._symbols, interval, limit }, null);
     (0, binanceApi_1.ordersUpdateStream)();
-    await (0, bot_1.ManageTradeLines)();
     console.log(`Trade has been run. Candles (${limit}) with interval: ${interval}. Leverage: ${leverage}.`);
 })();
 function OpenPosition(s, initiator) {
     const pKey = s.symbol;
-    if (openedPositions[pKey] ||
-        !s.resolvePosition ||
-        excludedPositions.includes(pKey) ||
-        (initiator == 'bot' && botPositions == 2) ||
-        s.percentLoss < fee) {
+    if (openedPositions[pKey]
+        || !s.resolvePosition
+        || excludedPositions.includes(pKey)
+        || (initiator == 'bot' && botPositions == 2)
+        || s.percentLoss < fee) {
         return;
     }
     if (initiator == 'bot') {
@@ -38,7 +38,7 @@ function OpenPosition(s, initiator) {
     let trailingStopStartOrder;
     let trailingStopTriggerPriceStep;
     let trailingStopOrderStep;
-    if (s.strategy == 'aisle' || s.strategy == 'manual') {
+    if (s.strategy == 'levels' || s.strategy == 'manual') {
         trailingStopStartTriggerPrice = s.percentLoss;
         trailingStopStartOrder = s.percentLoss / 2;
         trailingStopTriggerPriceStep = s.percentLoss;
@@ -54,7 +54,7 @@ function OpenPosition(s, initiator) {
         percentLoss: s.percentLoss,
         fee,
         leverage,
-        symbols: _symbols,
+        symbols: exports._symbols,
         symbolInfo: _symbolsObj[s.symbol],
         trailingStopStartTriggerPrice,
         trailingStopStartOrder,

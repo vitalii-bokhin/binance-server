@@ -3,74 +3,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DepthStream = exports.Depth = exports.getTickerStreamCache = exports.tickerStream = exports.priceStream = exports.positionUpdateStream = exports.ordersUpdateStream = exports.symbolCandlesTicksStream = exports.candlesTicksStream = void 0;
+exports.DepthStream = exports.Depth = exports.getTickerStreamCache = exports.tickerStream = exports.priceStream = exports.positionUpdateStream = exports.ordersUpdateStream = exports.wsStreams = void 0;
 const ws_1 = __importDefault(require("ws"));
 const _1 = require(".");
-const CandlesTicks_1 = require("./CandlesTicks");
 // check server time
 _1.binance.time().then(res => {
     console.log('Server Time: ' + new Date(res.serverTime));
 });
-const wsStreams = {};
-const candlesTicksStreamSubscribers = [];
-let candlesTicksStreamExecuted = false;
-const symbolCandlesTicksStreamSubscribers = {};
-function candlesTicksStream(opt, callback) {
-    if (callback) {
-        candlesTicksStreamSubscribers.push(callback);
-    }
-    if (!candlesTicksStreamExecuted && opt) {
-        const { symbols, interval, limit } = opt;
-        const streams = symbols.map(s => s.toLowerCase() + '@kline_' + interval).join('/');
-        candlesTicksStreamExecuted = true;
-        (0, CandlesTicks_1.CandlesTicks)({ symbols, interval, limit }, data => {
-            const result = data;
-            let ws;
-            if (wsStreams[streams] !== undefined) {
-                ws = wsStreams[streams];
-            }
-            else {
-                ws = new ws_1.default(_1.streamApi + streams);
-                wsStreams[streams] = ws;
-            }
-            ws.on('message', function message(wsMsg) {
-                const { e: eventType, E: eventTime, s: symbol, k: ticks } = JSON.parse(wsMsg).data;
-                const { t: openTime, o: open, h: high, l: low, c: close } = ticks;
-                const candle = {
-                    openTime: openTime,
-                    open: +open,
-                    high: +high,
-                    low: +low,
-                    close: +close
-                };
-                if (result[symbol][result[symbol].length - 1].openTime !== openTime) {
-                    result[symbol].push(candle);
-                    result[symbol].shift();
-                }
-                else {
-                    result[symbol][result[symbol].length - 1] = candle;
-                }
-                candlesTicksStreamSubscribers.forEach(cb => cb(result));
-                if (symbolCandlesTicksStreamSubscribers[symbol]) {
-                    symbolCandlesTicksStreamSubscribers[symbol].forEach(cb => cb(result[symbol]));
-                }
-            });
-        });
-    }
-}
-exports.candlesTicksStream = candlesTicksStream;
-function symbolCandlesTicksStream(symbol, callback, clearSymbolCallback) {
-    if (symbol && callback) {
-        if (!symbolCandlesTicksStreamSubscribers[symbol]) {
-            symbolCandlesTicksStreamSubscribers[symbol] = [];
-        }
-        symbolCandlesTicksStreamSubscribers[symbol].push(callback);
-    }
-    if (clearSymbolCallback && symbolCandlesTicksStreamSubscribers[symbol]) {
-        delete symbolCandlesTicksStreamSubscribers[symbol];
-    }
-}
-exports.symbolCandlesTicksStream = symbolCandlesTicksStream;
+exports.wsStreams = {};
 // account data stream (position, order update)
 const orderUpdateSubscribers = {};
 const positionUpdateSubscribers = {};
@@ -208,12 +148,12 @@ function DepthStream(symbols, callback) {
             let lastFinalUpdId;
             const result = Object.assign({}, data);
             // console.log(result['WAVESUSDT'].bids);
-            if (wsStreams[streams] !== undefined) {
-                ws = wsStreams[streams];
+            if (exports.wsStreams[streams] !== undefined) {
+                ws = exports.wsStreams[streams];
             }
             else {
                 ws = new ws_1.default(_1.streamApi + streams);
-                wsStreams[streams] = ws;
+                exports.wsStreams[streams] = ws;
             }
             ws.on('message', function message(data) {
                 console.log(c);

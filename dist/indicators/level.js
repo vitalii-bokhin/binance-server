@@ -1,54 +1,55 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LVL = void 0;
-function LVL({ symbol, candles, levelOpt }) {
-    let signal;
-    let prevSignal;
-    const lvlPrice = [...levelOpt.price];
-    lvlPrice.sort((a, b) => b - a);
-    const thirdCdl = candles[candles.length - 3];
-    const secondCdl = candles[candles.length - 2];
-    const curCdl = candles[candles.length - 1];
-    const topLvlPrice = lvlPrice[0];
-    const bottomLvlPrice = lvlPrice[1];
-    if (thirdCdl.low < bottomLvlPrice
-        && secondCdl.high > bottomLvlPrice) {
-        prevSignal = 'nextToBottom';
-    }
-    else if (thirdCdl.high > topLvlPrice
-        && secondCdl.low < topLvlPrice) {
-        prevSignal = 'nextToTop';
-    }
-    if (prevSignal == 'nextToBottom') {
-        if (secondCdl.close < topLvlPrice) {
-            prevSignal = 'bounceDown';
+function LVL({ candles, levelsOpt }) {
+    let signal = null;
+    const lastCandles = candles.slice(-3);
+    const prePrevCdl = lastCandles[0];
+    const prevCdl = lastCandles[1];
+    let topLvlPrice, bottomLvlPrice;
+    for (const level of levelsOpt) {
+        const lvlPrice = [...level.price];
+        lvlPrice.sort((a, b) => b - a);
+        topLvlPrice = lvlPrice[0];
+        bottomLvlPrice = lvlPrice[1];
+        if (prePrevCdl.low < bottomLvlPrice
+            && prevCdl.high > bottomLvlPrice) {
+            signal = 'nextToBottom';
         }
-        else {
-            prevSignal = 'crossAbove';
+        else if (prePrevCdl.high > topLvlPrice
+            && prevCdl.low < topLvlPrice) {
+            signal = 'nextToTop';
         }
     }
-    else if (prevSignal == 'nextToTop') {
-        if (secondCdl.close > bottomLvlPrice) {
-            prevSignal = 'bounceUp';
-        }
-        else {
-            prevSignal = 'crossBelow';
-        }
-    }
-    if ((prevSignal == 'bounceDown' || prevSignal == 'crossBelow')
-        && curCdl.close < bottomLvlPrice
-        && curCdl.close < curCdl.open) {
-        signal = prevSignal;
-    }
-    else if ((signal == 'bounceUp' || signal == 'crossAbove')
-        && curCdl.close > topLvlPrice
-        && curCdl.close > curCdl.open) {
-        signal = prevSignal;
-    }
-    else {
-        signal = null;
-    }
-    return { topLvlPrice, bottomLvlPrice, signal };
+    // if (prevSignal == 'nextToBottom') {
+    //     if (prevCdl.close < topLvlPrice) {
+    //         prevSignal = 'bounceDown';
+    //     } else {
+    //         prevSignal = 'crossAbove';
+    //     }
+    // } else if (prevSignal == 'nextToTop') {
+    //     if (prevCdl.close > bottomLvlPrice) {
+    //         prevSignal = 'bounceUp';
+    //     } else {
+    //         prevSignal = 'crossBelow';
+    //     }
+    // }
+    // if (
+    //     (prevSignal == 'bounceDown' || prevSignal == 'crossBelow')
+    //     && curCdl.close < bottomLvlPrice
+    //     && curCdl.close < curCdl.open
+    // ) {
+    //     signal = prevSignal;
+    // } else if (
+    //     (signal == 'bounceUp' || signal == 'crossAbove')
+    //     && curCdl.close > topLvlPrice
+    //     && curCdl.close > curCdl.open
+    // ) {
+    //     signal = prevSignal;
+    // } else {
+    //     signal = null;
+    // }
+    return { signal, topLvlPrice, bottomLvlPrice };
 }
 exports.LVL = LVL;
 //# sourceMappingURL=level.js.map
