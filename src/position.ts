@@ -221,17 +221,17 @@ export class Position {
         };
 
         if (quantity < this.symbolInfo.minMarketLotSize) {
-            console.log(` error: 'SMALL_LOT_SIZE', errorMsg: 'Min: ' + ${this.symbolInfo.minMarketLotSize} + '; Current: ' + ${quantity}, positionKey: ${this.positionKey}`);
+            console.log(`error: 'SMALL_LOT_SIZE', errorMsg: 'Min: ' + ${this.symbolInfo.minMarketLotSize} + '; Current: ' + ${quantity}, positionKey: ${this.positionKey}`);
 
-            this.deletePositionInner({ excludeKey: this.positionKey });
+            this.deletePositionInner(/* { excludeKey: this.positionKey } */);
 
             return;
         }
 
         if (usdtAmount < 5) {
-            console.log(` error: 'SMALL_AMOUNT', errorMsg: 'Small Amount: ' + ${usdtAmount}, positionKey: ${this.positionKey}`);
+            console.log(`error: 'SMALL_AMOUNT', errorMsg: 'Small Amount: ' + ${usdtAmount}, positionKey: ${this.positionKey}`);
 
-            this.deletePositionInner({ excludeKey: this.positionKey });
+            this.deletePositionInner(/* { excludeKey: this.positionKey } */);
 
             return;
         }

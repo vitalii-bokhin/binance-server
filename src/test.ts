@@ -90,3 +90,5 @@ import { test2Var } from './test2';
 // setInterval(function() {
 //     console.log(test2Var);
 // }, 5000);
+
+console.log(['a','b','c','d','e','f'].slice(-5,-2));

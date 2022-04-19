@@ -2,20 +2,20 @@ import { getTickerStreamCache } from '../binance_api/binanceApi';
 import { ATR, LVL, RSI, SMA, TDL } from '../indicators';
 import { CheckCandle } from '../indicators/candle'; '../indicators/candle';
 import { Candle, CdlDir, SymbolResult, Entry, Result } from './types';
-
+let i = 0;
 export function Levels({ symbol, candlesData, tiSettings, levelsOpt }: Entry): SymbolResult {
     const _candles = candlesData;
 
     // const tdl = TDL({ candles: _candles, lineOpt: tdlOpt[0], symbol });
 
     const lvl = LVL({ candles: _candles, levelsOpt });
-
     const atr = ATR({ data: _candles, period: tiSettings.atrPeriod }).last;
 
-    const lastCandle: Candle = _candles[_candles.length - 1];
-    const lastPrice = lastCandle.close;
+    const lstCdls = _candles.slice(-2);
+    const prevCandle: Candle = lstCdls[0];
+    const lastCandle: Candle = lstCdls[1];
 
-    const prevCandle: Candle = _candles[_candles.length - 2];
+    const lastPrice = lastCandle.close;
 
     const candles = _candles.slice(tiSettings.smaPeriod * -1);
 
@@ -68,44 +68,88 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt }: Entry): S
         resolvePosition: false
     };
 
+    const long = function (stopLoss) {
+        const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
+
+        signalDetails.stopLoss = stopLoss;
+        signalDetails.lastCandleMove = lastCandle.close - lastCandle.open;
+
+        symbolResult.position = 'long';
+        symbolResult.percentLoss = percentLoss;
+        symbolResult.resolvePosition = true;
+    }
+
+    const short = function (stopLoss){
+        const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);
+
+        signalDetails.stopLoss = stopLoss;
+        signalDetails.lastCandleMove = lastCandle.open - lastCandle.close;
+
+        symbolResult.position = 'short';
+        symbolResult.percentLoss = percentLoss;
+        symbolResult.resolvePosition = true;
+    }
+
     if (lvl.signal) {
+        console.log(lvl);
+        console.log(i++);
         if (lvl.signal == 'nextToTop') {
             if (
-                prevCandle.close > lvl.bottomLvlPrice
-                && lastCandle.close > lvl.topLvlPrice
+                lastPrice > lvl.topPrice
+                && lastCandle.close > lastCandle.open
             ) {
-                // let stopLoss = lastPrice - atr;
-                let stopLoss = lvl.bottomLvlPrice;
-
-                const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
-
-                signalDetails.stopLoss = stopLoss;
-                signalDetails.lastCandleMove = lastCandle.close - lastCandle.open;
-
-                symbolResult.position = 'long';
-                symbolResult.percentLoss = percentLoss;
-                symbolResult.resolvePosition = true;
+                long(lvl.bottomPrice);
             }
 
         } else if (lvl.signal == 'nextToBottom') {
             if (
-                prevCandle.close < lvl.topLvlPrice
-                && lastCandle.close < lvl.bottomLvlPrice
+                lastPrice < lvl.bottomPrice
+                && lastCandle.close < lastCandle.open
             ) {
-                // let stopLoss = lastPrice + atr;
-                let stopLoss = lvl.topLvlPrice;
+                short(lvl.topPrice);
 
-                const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);
+            } else if (
+                lastPrice > lvl.topPrice
+                && lastCandle.close > lastCandle.open
+            ) {
+                long(lvl.bottomPrice);
+            }
 
-                signalDetails.stopLoss = stopLoss;
-                signalDetails.lastCandleMove = lastCandle.open - lastCandle.close;
+        } else if (lvl.signal == 'cuddleBottom') {
+            if (
+                lastPrice > lvl.topPrice
+                && lastCandle.close > lastCandle.open
+            ) {
+                long(lvl.bottomPrice);
+            }
 
-                symbolResult.position = 'short';
-                symbolResult.percentLoss = percentLoss;
-                symbolResult.resolvePosition = true;
+        } else if (lvl.signal == 'retestBottom') {
+            if (
+                lastPrice < lvl.bottomPrice
+                && lastCandle.close < lastCandle.open
+            ) {
+                short(lvl.topPrice);
+            }
+
+        } else if (lvl.signal == 'retestTop') {
+            if (
+                lastPrice > lvl.topPrice
+                && lastCandle.close > lastCandle.open
+            ) {
+                long(lvl.bottomPrice);
+            }
+
+        } else if (lvl.signal == 'cuddleTop') {
+            if (
+                lastPrice < lvl.bottomPrice
+                && lastCandle.close < lastCandle.open
+            ) {
+                short(lvl.topPrice);
             }
         }
     }
+
+    console.log(symbolResult.position);
 
     return symbolResult;
 }

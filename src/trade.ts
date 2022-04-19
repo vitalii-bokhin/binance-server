@@ -17,14 +17,14 @@ const openedPositions: {
 const excludedPositions: string[] = [];
 let botPositions = 0;
 
-export let _symbols: string[] = ['ZILUSDT', 'WAVESUSDT'];
+export let _symbols: string[]; //= ['ZILUSDT', 'WAVESUSDT'];
 
 let _symbolsObj: { [key: string]: any };
 
 (async function () {
     const { symbols, symbolsObj } = await getSymbols();
 
-    // _symbols = symbols;
+    _symbols = ['GMTUSDT']; //symbols;
     _symbolsObj = symbolsObj;
 
     CandlesTicksStream({ symbols: _symbols, interval, limit }, null);

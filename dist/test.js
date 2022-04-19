@@ -71,4 +71,5 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // setInterval(function() {
 //     console.log(test2Var);
 // }, 5000);
+console.log(['a', 'b', 'c', 'd', 'e', 'f'].slice(-5, -2));
 //# sourceMappingURL=test.js.map

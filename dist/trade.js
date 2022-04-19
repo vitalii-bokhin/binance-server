@@ -12,11 +12,10 @@ const fee = .08, interval = '5m', limit = 100, leverage = 5;
 const openedPositions = {};
 const excludedPositions = [];
 let botPositions = 0;
-exports._symbols = ['ZILUSDT', 'WAVESUSDT'];
 let _symbolsObj;
 (async function () {
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
-    // _symbols = symbols;
+    exports._symbols = ['GMTUSDT']; //symbols;
     _symbolsObj = symbolsObj;
     (0, CandlesTicksStream_1.CandlesTicksStream)({ symbols: exports._symbols, interval, limit }, null);
     (0, binanceApi_1.ordersUpdateStream)();
