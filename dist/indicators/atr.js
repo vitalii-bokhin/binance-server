@@ -13,7 +13,7 @@ function ATR({ data, period }) {
     const atr = new technicalindicators_1.ATR(input);
     const result = atr.getResult().slice(period * -1);
     result.sort((a, b) => a - b);
-    const spreadPercent = (result[result.length - 1] - result[0]) / (result[0] / 100);
+    const spreadPercent = (result.slice(-1)[0] - result[0]) / (result[0] / 100);
     const last = atr.nextValue({
         high: lastCandle.high,
         low: lastCandle.low,

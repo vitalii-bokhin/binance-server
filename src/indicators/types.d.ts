@@ -24,8 +24,14 @@ export type InputTime = { d: number; h: number; m: number; };
 
 export type TrendlineInput = {
     candles: Candle[];
-    lineOpt: LineOpt;
-    symbol: string;
+    trendsOpt: TrendOpt[];
+};
+
+export type TrendlineResult = {
+    topPrice: number;
+    bottomPrice: number;
+    signal: 'onTrend' | null;
+    direction: 'up' | 'down';
 };
 
 export type LevelOpt = {
@@ -33,7 +39,7 @@ export type LevelOpt = {
     price: number[];
 };
 
-export type LineOpt = {
+export type TrendOpt = {
     id: string;
     lines: {
         start: {

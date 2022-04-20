@@ -92,10 +92,10 @@ class Position {
                         stopPrice: null
                     };
                     if (this.position === 'long') {
-                        profitParams.stopPrice = entryPrice + ((this.percentLoss + this.fee) * (entryPrice / 100));
+                        profitParams.stopPrice = entryPrice + ((this.percentLoss / 3 + this.fee) * (entryPrice / 100));
                     }
                     else {
-                        profitParams.stopPrice = entryPrice - ((this.percentLoss + this.fee) * (entryPrice / 100));
+                        profitParams.stopPrice = entryPrice - ((this.percentLoss / 3 + this.fee) * (entryPrice / 100));
                     }
                     profitParams.stopPrice = +profitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
                     binanceAuth.futuresOrder(profitSide, this.symbol, false, false, profitParams).then(ord => {

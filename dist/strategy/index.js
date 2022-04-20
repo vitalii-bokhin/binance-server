@@ -116,7 +116,8 @@ async function Strategy({ data, symbols, tradingSymbols, tradeLines }) {
             const candlesData = data[symbol];
             if (purpose.levels.includes(symbol)) {
                 const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
-                signals.push((0, levels_1.Levels)({ symbol, candlesData, tiSettings, levelsOpt }));
+                const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
+                signals.push((0, levels_1.Levels)({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }));
             }
             // if (purpose.scalping.includes(symbol)) {
             //     signals.push(Scalping({ symbol, candlesData, tiSettings }));

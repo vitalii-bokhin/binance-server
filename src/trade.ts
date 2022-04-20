@@ -24,7 +24,7 @@ let _symbolsObj: { [key: string]: any };
 (async function () {
     const { symbols, symbolsObj } = await getSymbols();
 
-    _symbols = ['GMTUSDT']; //symbols;
+    _symbols = ['GMTUSDT', 'ZILUSDT', 'WAVESUSDT']; //symbols;
     _symbolsObj = symbolsObj;
 
     CandlesTicksStream({ symbols: _symbols, interval, limit }, null);

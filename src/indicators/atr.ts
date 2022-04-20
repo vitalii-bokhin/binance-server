@@ -18,7 +18,7 @@ export function ATR({ data, period }: IndicatorEntry): {last: number; spreadPerc
 
     result.sort((a: number, b: number) => a - b);
 
-    const spreadPercent = (result[result.length - 1] - result[0]) / (result[0] / 100);
+    const spreadPercent = (result.slice(-1)[0] - result[0]) / (result[0] / 100);
 
     const last = atr.nextValue({
         high: lastCandle.high,

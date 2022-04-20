@@ -3,7 +3,7 @@ import { Aisle } from './aisle';
 // import { Fling } from './fling';
 import { Scalping } from './scalping';
 import { ATR, RSI, SMA } from '../indicators';
-import { LevelOpt, LineOpt } from '../indicators/types';
+import { LevelOpt, TrendOpt } from '../indicators/types';
 import { Levels } from './levels';
 import { tradeLinesCache } from '../bot';
 
@@ -174,8 +174,9 @@ export async function Strategy({ data, symbols, tradingSymbols, tradeLines }: { 
 
             if (purpose.levels.includes(symbol)) {
                 const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
+                const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
 
-                signals.push(Levels({ symbol, candlesData, tiSettings, levelsOpt }));
+                signals.push(Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }));
             }
 
             // if (purpose.scalping.includes(symbol)) {

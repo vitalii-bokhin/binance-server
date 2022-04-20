@@ -29,7 +29,7 @@ async function Bot() {
         const { symbols, symbolsObj } = await (0, symbols_1.default)();
         await BotControl();
         await ManageTradeLines();
-        const _symbols = symbols; //['ZILUSDT', 'WAVESUSDT', 'GMTUSDT'];
+        const _symbols = symbols;
         (0, CandlesTicksStream_1.CandlesTicksStream)(null, data => {
             (0, strategy_1.Strategy)({
                 data,

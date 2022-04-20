@@ -4,7 +4,7 @@ exports.Aisle = void 0;
 const indicators_1 = require("../indicators");
 '../indicators/candle';
 const cache = {};
-function Aisle({ symbol, candlesData, tiSettings, tdlOpt, levelsOpt }) {
+function Aisle({ symbol, candlesData, tiSettings, trendsOpt, levelsOpt }) {
     if (!cache[symbol]) {
         cache[symbol] = {
             execLevels: []

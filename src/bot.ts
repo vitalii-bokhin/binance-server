@@ -6,7 +6,7 @@ import { Strategy } from './strategy';
 import events from 'events';
 import { SymbolResult } from './strategy/types';
 import { OpenPosition } from './trade';
-import { LevelOpt, LineOpt } from './indicators/types';
+import { LevelOpt, TrendOpt } from './indicators/types';
 import { GetData, SaveData, Tradelines } from './db/db';
 
 const ev = new events.EventEmitter();
@@ -37,7 +37,7 @@ const depthCache: {
 export let tradeLinesCache: {
     [symbol: string]: {
         levels?: LevelOpt[];
-        trends?: LineOpt[];
+        trends?: TrendOpt[];
     };
 } = {};
 
@@ -57,7 +57,7 @@ export async function Bot(): Promise<events> {
 
         await ManageTradeLines();
 
-        const _symbols = symbols; //['ZILUSDT', 'WAVESUSDT', 'GMTUSDT'];
+        const _symbols = symbols;
 
         CandlesTicksStream(null, data => {
             Strategy({

@@ -1,4 +1,4 @@
-import { InputTime, LevelOpt, LineOpt } from '../indicators/types';
+import { InputTime, LevelOpt, TrendOpt } from '../indicators/types';
 
 export type SymbolResult = {
     symbol: string;
@@ -40,6 +40,6 @@ export type Entry = {
     fee?: number;
     limit?: number;
     tiSettings?: TiSettings;
-    tdlOpt?: LineOpt[];
+    trendsOpt?: TrendOpt[];
     levelsOpt?: LevelOpt[];
 };

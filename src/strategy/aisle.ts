@@ -9,7 +9,7 @@ const cache: {
     };
 } = {};
 
-export function Aisle({ symbol, candlesData, tiSettings, tdlOpt, levelsOpt }: Entry): SymbolResult {
+export function Aisle({ symbol, candlesData, tiSettings, trendsOpt, levelsOpt }: Entry): SymbolResult {
     if (!cache[symbol]) {
         cache[symbol] = {
             execLevels: []
