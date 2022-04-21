@@ -8,14 +8,14 @@ const binanceApi_1 = require("./binance_api/binanceApi");
 const CandlesTicksStream_1 = require("./binance_api/CandlesTicksStream");
 const position_1 = require("./position");
 const symbols_1 = __importDefault(require("./symbols"));
-const fee = .08, interval = '5m', limit = 100, leverage = 5;
+const fee = .08, interval = '5m', limit = 100, leverage = 10;
 const openedPositions = {};
 const excludedPositions = [];
 let botPositions = 0;
 let _symbolsObj;
 (async function () {
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
-    exports._symbols = ['GMTUSDT', 'ZILUSDT', 'WAVESUSDT']; //symbols;
+    exports._symbols = ['GMTUSDT', 'ZILUSDT', 'WAVESUSDT', 'MATICUSDT']; //symbols;
     _symbolsObj = symbolsObj;
     (0, CandlesTicksStream_1.CandlesTicksStream)({ symbols: exports._symbols, interval, limit }, null);
     (0, binanceApi_1.ordersUpdateStream)();
@@ -89,6 +89,7 @@ function OpenPosition(s, initiator) {
         }
         console.log('DELETE =' + positionKey + '= POSITION OBJECT');
     };
+    console.log(openedPositions);
 }
 exports.OpenPosition = OpenPosition;
 //# sourceMappingURL=trade.js.map

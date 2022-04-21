@@ -41,15 +41,15 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
     }
 
     if (lvl.signal == 'onLevel') {
-        console.log(symbol);
-        console.log(lvl);
-        console.log(i++);
+        // console.log(symbol);
+        // console.log(lvl);
+        // console.log(i++);
 
         if (
             lvl.direction == 'up'
             && lastPrice > lvl.topPrice
             && lastCandle.close > lastCandle.open
-            && lastCandle.low < lvl.topPrice
+            && lastPrice - lvl.topPrice < lvl.topPrice - lvl.bottomPrice
         ) {
             long(lvl.bottomPrice);
 
@@ -57,35 +57,36 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             lvl.direction == 'down'
             && lastPrice < lvl.bottomPrice
             && lastCandle.close < lastCandle.open
-            && lastCandle.high > lvl.bottomPrice
+            && lvl.bottomPrice - lastPrice < lvl.topPrice - lvl.bottomPrice
         ) {
             short(lvl.topPrice);
         }
-
-    } else if (tdl.signal == 'onTrend') {
-        console.log(symbol);
-        console.log(tdl);
-        console.log(j++);
+    }
+    
+    if (tdl.signal == 'onTrend') {
+        // console.log(symbol);
+        // console.log(tdl);
+        // console.log(j++);
 
         if (
             tdl.direction == 'up'
             && lastPrice > tdl.topPrice
             && lastCandle.close > lastCandle.open
-            && lastCandle.low < tdl.topPrice
+            && lastPrice - tdl.topPrice < tdl.topPrice - tdl.bottomPrice
         ) {
-            long(lvl.bottomPrice);
+            long(tdl.bottomPrice);
 
         } else if (
             tdl.direction == 'down'
             && lastPrice < tdl.bottomPrice
             && lastCandle.close < lastCandle.open
-            && lastCandle.high > tdl.bottomPrice
+            && tdl.bottomPrice - lastPrice < tdl.topPrice - tdl.bottomPrice
         ) {
             short(tdl.topPrice);
         }
     }
 
-    console.log(symbolResult.position);
+    // console.log(symbolResult);
 
     return symbolResult;
 }

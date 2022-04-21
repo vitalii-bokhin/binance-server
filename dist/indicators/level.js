@@ -6,8 +6,25 @@ function LVL({ candles, levelsOpt }) {
     let signal, topPrice, bottomPrice, direction;
     // const _candles = candles.slice(-3);
     const _candles = candles.slice(-3, -1);
+    const lastPrice = candles.slice(-1)[0].close;
     // const prePrevCdl = _candles[0];
     // const prevCdl = _candles[1];
+    // const nearLvl = {
+    //     price: null,
+    //     dist: 99999
+    // };
+    const nearLvl = levelsOpt
+        .reduce((p, c) => p.concat(c.price), [])
+        .sort((a, b) => Math.abs(lastPrice - a) - Math.abs(lastPrice - b))[0];
+    // for (const level of levelsOpt) {
+    //     for (const price of level.price) {
+    //         const dist = Math.abs(lastPrice - price);
+    //         if (dist < nearLvl.dist) {
+    //             nearLvl.dist = dist;
+    //             nearLvl.price = price;
+    //         }
+    //     }
+    // }
     for (const level of levelsOpt) {
         signal = null;
         topPrice = null;
@@ -25,6 +42,12 @@ function LVL({ candles, levelsOpt }) {
         const btmLvl = lvlPrice[1];
         topPrice = topLvl;
         bottomPrice = btmLvl;
+        // if (
+        //     lastCandle.high > btmLvl
+        //     && lastCandle.low < topLvl
+        // ) {
+        //     signal = 'onLevel';
+        // }
         for (const cdl of _candles) {
             if (cdl.high > btmLvl
                 && cdl.low < topLvl) {
@@ -61,7 +84,7 @@ function LVL({ candles, levelsOpt }) {
         // ) {
         //     signal = 'nextToTop';
         // }
-        if (signal) {
+        if (signal && level.price.includes(nearLvl)) {
             // const cdlsStack = candles.slice(-24, -2);
             // cdlsStack.reverse();
             // let cuddle = null;

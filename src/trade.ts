@@ -8,7 +8,7 @@ import getSymbols from './symbols';
 const fee: number = .08,
     interval: string = '5m',
     limit: number = 100,
-    leverage: number = 5;
+    leverage: number = 10;
 
 const openedPositions: {
     [key: string]: Position;
@@ -17,14 +17,14 @@ const openedPositions: {
 const excludedPositions: string[] = [];
 let botPositions = 0;
 
-export let _symbols: string[]; //= ['ZILUSDT', 'WAVESUSDT'];
+export let _symbols: string[];
 
 let _symbolsObj: { [key: string]: any };
 
 (async function () {
     const { symbols, symbolsObj } = await getSymbols();
 
-    _symbols = ['GMTUSDT', 'ZILUSDT', 'WAVESUSDT']; //symbols;
+    _symbols = ['GMTUSDT', 'ZILUSDT', 'WAVESUSDT', 'MATICUSDT']; //symbols;
     _symbolsObj = symbolsObj;
 
     CandlesTicksStream({ symbols: _symbols, interval, limit }, null);
@@ -117,4 +117,6 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
 
         console.log('DELETE =' + positionKey + '= POSITION OBJECT');
     }
+
+    console.log(openedPositions);
 }
