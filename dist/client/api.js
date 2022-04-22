@@ -11,7 +11,7 @@ const symbols_1 = __importDefault(require("../symbols"));
 const trade_1 = require("../trade");
 function default_1(api) {
     api.get('/bot', async (req, res) => {
-        (0, bot_1.Bot)();
+        await (0, bot_1.Bot)();
         const { resolvePositionMaking, tradingSymbols } = await (0, bot_1.BotControl)();
         res.json({
             status: 'Start connect',

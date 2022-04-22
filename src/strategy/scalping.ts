@@ -1,6 +1,5 @@
 import { getDepthCache } from '../bot';
 import { ATR } from '../indicators';
-import { CheckCandle } from '../indicators/candle';
 import { Candle, SymbolResult, Entry } from './types';
 
 let dd = false;
@@ -57,11 +56,10 @@ export function Scalping({ symbol, candlesData, tiSettings }: Entry): SymbolResu
 
         if (lastCandle.close > lastCandle.open /* && prevCandle.close > prevCandle.open */) {
 
-            const checkPrev = CheckCandle(prevCandle, 'long');
+            
 
             if (
-                (lastCandle.high - lastCandle.close) / (lastCandle.open - lastCandle.low) < .2 &&
-                checkPrev != 'stopLong'
+                (lastCandle.high - lastCandle.close) / (lastCandle.open - lastCandle.low) < .2
             ) {
                 // Long
                 const stopLoss = lastPrice - stoplossRate;
@@ -89,11 +87,10 @@ export function Scalping({ symbol, candlesData, tiSettings }: Entry): SymbolResu
 
         } else if (lastCandle.close < lastCandle.open /* && prevCandle.close < prevCandle.open */) {
 
-            const checkPrev = CheckCandle(prevCandle, 'short');
+            
 
             if (
-                (lastCandle.close - lastCandle.low) / (lastCandle.high - lastCandle.open) < .2 &&
-                checkPrev != 'stopShort'
+                (lastCandle.close - lastCandle.low) / (lastCandle.high - lastCandle.open) < .2
             ) {
                 // Short
                 const stopLoss = lastPrice + stoplossRate;

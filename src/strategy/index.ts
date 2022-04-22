@@ -6,6 +6,7 @@ import { ATR, RSI, SMA } from '../indicators';
 import { LevelOpt, TrendOpt } from '../indicators/types';
 import { Levels } from './levels';
 import { tradeLinesCache } from '../bot';
+import { Trend } from './trend';
 
 // export { Aisle, Fling };
 
@@ -172,13 +173,15 @@ export async function Strategy({ data, symbols, tradingSymbols, tradeLines }: { 
         if (Object.prototype.hasOwnProperty.call(data, symbol)) {
             const candlesData = data[symbol];
 
-            if (purpose.levels.includes(symbol)) {
-                const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
-                const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
+            // if (purpose.levels.includes(symbol)) {
+            //     const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
+            //     const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
 
-                signals.push(Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }));
-            }
+            //     signals.push(Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }));
+            // }
 
+            signals.push(Trend({ symbol, candlesData, tiSettings }));
+            
             // if (purpose.scalping.includes(symbol)) {
             //     signals.push(Scalping({ symbol, candlesData, tiSettings }));
             // }

@@ -15,7 +15,8 @@ function CandlesTicks({ symbols, interval, limit }, callback) {
                     open: +open,
                     high: +high,
                     low: +low,
-                    close: +close
+                    close: +close,
+                    volume: +volume
                 };
             });
             result[sym] = ticksArr;

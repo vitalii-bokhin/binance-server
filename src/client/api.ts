@@ -9,7 +9,7 @@ import { _symbols } from '../trade';
 
 export default function (api: ws.Router) {
     api.get('/bot', async (req, res) => {
-        Bot();
+        await Bot();
 
         const { resolvePositionMaking, tradingSymbols } = await BotControl();
 

@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Scalping = void 0;
 const bot_1 = require("../bot");
 const indicators_1 = require("../indicators");
-const candle_1 = require("../indicators/candle");
 let dd = false;
 function Scalping({ symbol, candlesData, tiSettings }) {
     const _candles = candlesData;
@@ -45,9 +44,7 @@ function Scalping({ symbol, candlesData, tiSettings }) {
     const stoplossRate = atr * .15;
     if (moved > .2 && moved < .5) {
         if (lastCandle.close > lastCandle.open /* && prevCandle.close > prevCandle.open */) {
-            const checkPrev = (0, candle_1.CheckCandle)(prevCandle, 'long');
-            if ((lastCandle.high - lastCandle.close) / (lastCandle.open - lastCandle.low) < .2 &&
-                checkPrev != 'stopLong') {
+            if ((lastCandle.high - lastCandle.close) / (lastCandle.open - lastCandle.low) < .2) {
                 // Long
                 const stopLoss = lastPrice - stoplossRate;
                 const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
@@ -70,9 +67,7 @@ function Scalping({ symbol, candlesData, tiSettings }) {
             } */
         }
         else if (lastCandle.close < lastCandle.open /* && prevCandle.close < prevCandle.open */) {
-            const checkPrev = (0, candle_1.CheckCandle)(prevCandle, 'short');
-            if ((lastCandle.close - lastCandle.low) / (lastCandle.high - lastCandle.open) < .2 &&
-                checkPrev != 'stopShort') {
+            if ((lastCandle.close - lastCandle.low) / (lastCandle.high - lastCandle.open) < .2) {
                 // Short
                 const stopLoss = lastPrice + stoplossRate;
                 const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);

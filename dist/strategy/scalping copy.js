@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Scalping = void 0;
 // import { getTickerStreamCache } from '../binanceApi';
 const indicators_1 = require("../indicators");
-const candle_1 = require("../indicators/candle");
 // const changeDelta: {
 //     [symbol: string]: {
 //         lastPrice: number;
@@ -275,8 +274,7 @@ function Scalping({ symbol, candlesData, tiSettings }) {
         prevCandle.close > prevCandle.open &&
         lastCandle.close > lastCandle.open &&
         lastCandle.close - lastCandle.open >= minCandleMove &&
-        rsi.last < avgRsiAbove &&
-        (0, candle_1.CheckCandle)(prevCandle, 'long') !== 'stopLong') {
+        rsi.last < avgRsiAbove) {
         let stopLoss = lastPrice - avgCandleMove;
         const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
         signalDetails.stopLoss = stopLoss;
@@ -290,8 +288,7 @@ function Scalping({ symbol, candlesData, tiSettings }) {
         prevCandle.close < prevCandle.open &&
         lastCandle.close < lastCandle.open &&
         lastCandle.open - lastCandle.close >= minCandleMove &&
-        rsi.last > avgRsiBelow &&
-        (0, candle_1.CheckCandle)(prevCandle, 'short') !== 'stopShort') {
+        rsi.last > avgRsiBelow) {
         let stopLoss = lastPrice + avgCandleMove;
         const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);
         signalDetails.stopLoss = stopLoss;

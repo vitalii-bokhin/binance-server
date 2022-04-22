@@ -57,9 +57,16 @@ app.get('/', function (req, res) {
     // res.render('index', opt);
     res.json({ key: "Halllow worrldd" });
 });
-app.get('/bot', function (req, res) {
-    (0, bot_1.Bot)();
-    res.json({ key: "Bot" });
+app.get('/bot', async (req, res) => {
+    await (0, bot_1.Bot)();
+    const query = {};
+    for (const key in req.query) {
+        if (Object.prototype.hasOwnProperty.call(req.query, key)) {
+            query[key] = (req.query[key] === 'false') ? false : req.query[key];
+        }
+    }
+    const { resolvePositionMaking, tradingSymbols } = await (0, bot_1.BotControl)(query);
+    res.json({ status: 'Bot started!', resolvePositionMaking, tradingSymbols });
 });
 app.get('/test', function (req, res) {
     res.json({ key: "Halllow worrldd" });

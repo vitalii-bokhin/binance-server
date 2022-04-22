@@ -1,56 +1,61 @@
-// import { Candle, CdlDir, SymbolResult, Entry, Result } from './types';
-// const analyzeCandle = function (cdl: Candle, pos: 'long' | 'short'): 'stopLong' | 'stopShort' | 'stopBoth' {
-//     if (cdl.close >= cdl.open) {
-//         // UP CANDLE
-//         const highTail = cdl.high - cdl.close;
-//         const body = cdl.close - cdl.open;
-//         const lowTail = cdl.open - cdl.low;
-//         if (body < lowTail && body < highTail) {
-//             return 'stopBoth';
-//         } else if (pos == 'long' && highTail / (body + lowTail) > .3) {
-//             return 'stopLong';
-//         } else if (pos == 'short' && lowTail / (body + highTail) > .3) {
-//             return 'stopShort';
-//         }
-//     } else {
-//         // DOWN CANDLE
-//         const highTail = cdl.high - cdl.open;
-//         const body = cdl.open - cdl.close;
-//         const lowTail = cdl.close - cdl.low;
-//         if (body < lowTail && body < highTail) {
-//             return 'stopBoth';
-//         } else if (pos == 'short' && lowTail / (body + highTail) > .3) {
-//             return 'stopShort';
-//         } else if (pos == 'long' && highTail / (body + lowTail) > .3) {
-//             return 'stopLong';
-//         }
-//     }
-// }
-// export function Trend({ fee, limit, data }: Entry) {
-//     return new Promise<Result>((resolve, reject) => {
-//         const result: Result = [];
-//         for (const key in data) {
-//             if (Object.prototype.hasOwnProperty.call(data, key)) {
-//                 const _item = data[key];
-//                 let item = [..._item];
-//                 const lastCandle: Candle = item.pop();
-//                 const volatility = {
-//                     avgChangeLong: 0,
-//                     avgChangeShort: 0
-//                 };
-//                 let sumChangeLongPerc = 0,
-//                     sumChangeShortPerc = 0;
-//                 item.forEach((cdl: Candle): void => {
-//                     const changeLongPerc = (cdl.high - cdl.low) / (cdl.low / 100);
-//                     const changeShortPerc = (cdl.high - cdl.low) / (cdl.high / 100);
-//                     sumChangeLongPerc += changeLongPerc;
-//                     sumChangeShortPerc += changeShortPerc;
-//                 });
-//                 volatility.avgChangeLong = sumChangeLongPerc / item.length;
-//                 volatility.avgChangeShort = sumChangeShortPerc / item.length;
-//             }
-//         }
-//         resolve(result);
-//     });
-// }
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Trend = void 0;
+const candle_1 = require("../indicators/candle");
+const cache = {};
+function Trend({ symbol, candlesData, tiSettings }) {
+    if (!cache[symbol]) {
+        cache[symbol] = {
+            startPrice: null
+        };
+    }
+    const _candles = candlesData;
+    const lastCandle = _candles.slice(-1)[0];
+    const lastPrice = lastCandle.close;
+    if (cache[symbol].startPrice === null) {
+        cache[symbol].startPrice = lastPrice;
+    }
+    const symbolResult = {
+        symbol,
+        position: null,
+        entryPrice: lastPrice,
+        percentLoss: null,
+        strategy: 'trend',
+        preferIndex: null,
+        rsiPeriod: tiSettings.rsiPeriod,
+        resolvePosition: null
+    };
+    const long = function (stopLoss) {
+        const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
+        symbolResult.position = 'long';
+        symbolResult.percentLoss = percentLoss;
+        symbolResult.preferIndex = 100 - percentLoss;
+        if (lastCandle.close > lastCandle.open
+            && (0, candle_1.CheckCandle)(lastCandle) != 'hasTails') {
+            symbolResult.resolvePosition = true;
+        }
+    };
+    const short = function (stopLoss) {
+        const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);
+        symbolResult.position = 'short';
+        symbolResult.percentLoss = percentLoss;
+        symbolResult.preferIndex = 100 - percentLoss;
+        if (lastCandle.close < lastCandle.open
+            && (0, candle_1.CheckCandle)(lastCandle) != 'hasTails') {
+            symbolResult.resolvePosition = true;
+        }
+    };
+    const changePercent = (lastPrice - cache[symbol].startPrice) / (cache[symbol].startPrice / 100);
+    if (Math.abs(changePercent) > .3) {
+        if (changePercent > 0) {
+            long(lastCandle.low);
+        }
+        else {
+            short(lastCandle.high);
+        }
+        cache[symbol].startPrice = null;
+    }
+    return symbolResult;
+}
+exports.Trend = Trend;
 //# sourceMappingURL=trend.js.map

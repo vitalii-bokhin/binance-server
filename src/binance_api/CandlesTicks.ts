@@ -1,5 +1,5 @@
 import { binance } from '.';
-import { CandlesTicksCallback, CandlesTicksEntry } from './types';
+import { CandlesTicksCallback, CandlesTicksEntry, Candle } from './types';
 
 export function CandlesTicks({ symbols, interval, limit }: CandlesTicksEntry, callback: CandlesTicksCallback): void {
     const result = {};
@@ -7,7 +7,7 @@ export function CandlesTicks({ symbols, interval, limit }: CandlesTicksEntry, ca
     let i = 0;
 
     symbols.forEach(sym => {
-        const ticksArr = [];
+        const ticksArr: Candle[] = [];
 
         binance.futuresCandles(sym, interval, { limit }).then((ticks: any[]) => {
             ticks.forEach((tick: [any, any, any, any, any, any, any, any, any, any, any, any], i: string | number) => {
@@ -18,7 +18,8 @@ export function CandlesTicks({ symbols, interval, limit }: CandlesTicksEntry, ca
                     open: +open,
                     high: +high,
                     low: +low,
-                    close: +close
+                    close: +close,
+                    volume: +volume
                 };
             });
 

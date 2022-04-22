@@ -74,40 +74,47 @@ export async function Bot(): Promise<events> {
             });
         });
 
-        // DepthStream(['WAVESUSDT'], data => {
-        //     console.log('RES');
-        //     console.log('ask', data['WAVESUSDT'].asks/* .sort((a, b) => +a[0] - +b[0]) */.slice(0, 5));
-        //     console.log('bid', data['WAVESUSDT'].bids/* .sort((a, b) => +b[0] - +a[0]) */.slice(0, 5));
-        //     let highA: number = 0;
-        //     let priceA: string;
-        //     let high: number = 0;
-        //     let price: string;
+        DepthStream(['ZILUSDT'], data => {
+            console.log('RES');
+            console.log('ask', data['ZILUSDT'].asks/* .sort((a, b) => +a[0] - +b[0]) */.slice(0, 5));
+            console.log('bid', data['ZILUSDT'].bids/* .sort((a, b) => +b[0] - +a[0]) */.slice(0, 5));
 
-        //     data['WAVESUSDT'].asks.forEach(it => {
-        //         if (+it[1] > highA) {
-        //             highA = +it[1];
-        //             priceA = it[0];
-        //         }
-        //     });
+            const asksSum = data['ZILUSDT'].asks.reduce((p, c) => p + +c[1], 0);
+            const bidsSum = data['ZILUSDT'].bids.reduce((p, c) => p + +c[1], 0);
 
-        //     data['WAVESUSDT'].bids.forEach(it => {
-        //         if (+it[1] > high) {
-        //             high = +it[1];
-        //             price = it[0];
-        //         }
-        //     });
+            let highA: number = 0;
+            let priceA: string;
+            let high: number = 0;
+            let price: string;
 
-        //     depthCache['WAVESUSDT'] = {
-        //         maxAsk: {
-        //             price: +priceA,
-        //             volume: highA
-        //         },
-        //         maxBid: {
-        //             price: +price,
-        //             volume: high
-        //         }
-        //     };
-        // });
+            data['ZILUSDT'].asks.forEach(it => {
+                if (+it[1] > highA) {
+                    highA = +it[1];
+                    priceA = it[0];
+                }
+            });
+
+            data['ZILUSDT'].bids.forEach(it => {
+                if (+it[1] > high) {
+                    high = +it[1];
+                    price = it[0];
+                }
+            });
+
+            depthCache['ZILUSDT'] = {
+                maxAsk: {
+                    price: +priceA,
+                    volume: highA
+                },
+                maxBid: {
+                    price: +price,
+                    volume: high
+                }
+            };
+
+            console.log(depthCache['ZILUSDT']);
+            console.log(asksSum > bidsSum ? 'ask' : 'bid');
+        });
     }
 
     return ev;

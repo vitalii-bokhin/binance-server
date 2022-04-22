@@ -1,6 +1,5 @@
 // import { getTickerStreamCache } from '../binanceApi';
 import { ATR, RSI, SMA } from '../indicators';
-import {CheckCandle} from '../indicators/candle';
 import { Candle, CdlDir, SymbolResult, Entry, Result } from './types';
 
 // const changeDelta: {
@@ -318,8 +317,7 @@ export function Scalping({ symbol, candlesData, tiSettings }: Entry): SymbolResu
         prevCandle.close > prevCandle.open &&
         lastCandle.close > lastCandle.open &&
         lastCandle.close - lastCandle.open >= minCandleMove &&
-        rsi.last < avgRsiAbove &&
-        CheckCandle(prevCandle, 'long') !== 'stopLong'
+        rsi.last < avgRsiAbove
     ) {
 
         let stopLoss = lastPrice - avgCandleMove;
@@ -339,8 +337,7 @@ export function Scalping({ symbol, candlesData, tiSettings }: Entry): SymbolResu
         prevCandle.close < prevCandle.open &&
         lastCandle.close < lastCandle.open &&
         lastCandle.open - lastCandle.close >= minCandleMove &&
-        rsi.last > avgRsiBelow &&
-        CheckCandle(prevCandle, 'short') !== 'stopShort'
+        rsi.last > avgRsiBelow 
     ) {
 
         let stopLoss = lastPrice + avgCandleMove;

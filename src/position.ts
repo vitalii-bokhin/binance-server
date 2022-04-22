@@ -31,10 +31,10 @@ export class Position {
         pricePrecision: number;
         minMarketLotSize: number;
     };
-    trailingStopStartTriggerPrice: number;
-    trailingStopStartOrder: number;
-    trailingStopTriggerPriceStep: number;
-    trailingStopOrderStep: number;
+    trailingStopStartTriggerPricePerc: number;
+    trailingStopStartOrderPerc: number;
+    trailingStopTriggerPriceStepPerc: number;
+    trailingStopOrderStepPerc: number;
     trailingSteps: number = 0;
     signal?: string;
     expectedProfit?: number;
@@ -43,7 +43,7 @@ export class Position {
     rsiPeriod: number;
     percentLoss: number;
     signalDetails?: any;
-    deletePosition: (positionKey: string, opt: any) => void;
+    deletePosition: (opt?: any) => void;
     setTakeProfit: boolean;
     useTrailingStop: boolean;
     initiator: 'bot' | 'user';
@@ -63,10 +63,10 @@ export class Position {
             pricePrecision: number;
             minMarketLotSize: number;
         };
-        trailingStopStartTriggerPrice: number;
-        trailingStopStartOrder: number;
-        trailingStopTriggerPriceStep: number;
-        trailingStopOrderStep: number;
+        trailingStopStartTriggerPricePerc: number;
+        trailingStopStartOrderPerc: number;
+        trailingStopTriggerPriceStepPerc: number;
+        trailingStopOrderStepPerc: number;
         signal?: string;
         expectedProfit?: number;
         interval: string;
@@ -88,10 +88,10 @@ export class Position {
         this.leverage = opt.leverage;
         this.symbols = opt.symbols;
         this.symbolInfo = opt.symbolInfo;
-        this.trailingStopStartTriggerPrice = opt.trailingStopStartTriggerPrice;
-        this.trailingStopStartOrder = opt.trailingStopStartOrder;
-        this.trailingStopTriggerPriceStep = opt.trailingStopTriggerPriceStep;
-        this.trailingStopOrderStep = opt.trailingStopOrderStep;
+        this.trailingStopStartTriggerPricePerc = opt.trailingStopStartTriggerPricePerc;
+        this.trailingStopStartOrderPerc = opt.trailingStopStartOrderPerc;
+        this.trailingStopTriggerPriceStepPerc = opt.trailingStopTriggerPriceStepPerc;
+        this.trailingStopOrderStepPerc = opt.trailingStopOrderStepPerc;
         this.signal = opt.signal;
         this.interval = opt.interval;
         this.limit = opt.limit;
@@ -223,7 +223,7 @@ export class Position {
         if (quantity < this.symbolInfo.minMarketLotSize) {
             console.log(`error: 'SMALL_LOT_SIZE', errorMsg: 'Min: ' + ${this.symbolInfo.minMarketLotSize} + '; Current: ' + ${quantity}, positionKey: ${this.positionKey}`);
 
-            this.deletePositionInner(/* { excludeKey: this.positionKey } */);
+            this.deletePositionInner({ excludeKey: this.positionKey });
 
             return;
         }
@@ -231,7 +231,7 @@ export class Position {
         if (usdtAmount < 5) {
             console.log(`error: 'SMALL_AMOUNT', errorMsg: 'Small Amount: ' + ${usdtAmount}, positionKey: ${this.positionKey}`);
 
-            this.deletePositionInner(/* { excludeKey: this.positionKey } */);
+            this.deletePositionInner({ excludeKey: this.positionKey });
 
             return;
         }
@@ -253,7 +253,7 @@ export class Position {
             if (!this.stopLossHasBeenMoved && this.useTrailingStop) {
                 let changePerc: number;
 
-                const triggerPerc = this.trailingSteps === 0 ? this.trailingStopStartTriggerPrice : this.trailingStopStartTriggerPrice + this.trailingStopTriggerPriceStep * this.trailingSteps;
+                const triggerPerc = this.trailingSteps === 0 ? this.trailingStopStartTriggerPricePerc : this.trailingStopStartTriggerPricePerc + this.trailingStopTriggerPriceStepPerc * this.trailingSteps;
 
                 if (this.position === 'long') {
                     changePerc = (lastPrice - this.realEntryPrice) / (this.realEntryPrice / 100);
@@ -297,7 +297,7 @@ export class Position {
             stopPrice: null
         };
 
-        const percentLoss = this.trailingSteps === 0 ? this.trailingStopStartOrder : this.trailingStopStartOrder + this.trailingStopOrderStep * this.trailingSteps;
+        const percentLoss = this.trailingSteps === 0 ? this.trailingStopStartOrderPerc : this.trailingStopStartOrderPerc + this.trailingStopOrderStepPerc * this.trailingSteps;
 
         if (this.position === 'long') {
             exitParams.stopPrice = this.realEntryPrice + ((percentLoss + this.fee) * (this.realEntryPrice / 100));
@@ -356,7 +356,7 @@ export class Position {
 
         binanceAuth.futuresCancelAll(this.symbol).then(() => {
             if (this.deletePosition !== undefined) {
-                this.deletePosition(this.positionKey, opt);
+                this.deletePosition(opt);
             }
         });
     }

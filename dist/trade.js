@@ -15,7 +15,7 @@ let botPositions = 0;
 let _symbolsObj;
 (async function () {
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
-    exports._symbols = ['GMTUSDT', 'ZILUSDT', 'WAVESUSDT', 'MATICUSDT']; //symbols;
+    exports._symbols = symbols; // ['GMTUSDT', 'ZILUSDT', 'WAVESUSDT', 'MATICUSDT']; //symbols;
     _symbolsObj = symbolsObj;
     (0, CandlesTicksStream_1.CandlesTicksStream)({ symbols: exports._symbols, interval, limit }, null);
     (0, binanceApi_1.ordersUpdateStream)();
@@ -26,22 +26,22 @@ function OpenPosition(s, initiator) {
     if (openedPositions[pKey]
         || !s.resolvePosition
         || excludedPositions.includes(pKey)
-        || (initiator == 'bot' && botPositions == 2)
+        || (initiator == 'bot' && botPositions >= 1)
         || s.percentLoss < fee) {
         return;
     }
     if (initiator == 'bot') {
         botPositions++;
     }
-    let trailingStopStartTriggerPrice;
-    let trailingStopStartOrder;
-    let trailingStopTriggerPriceStep;
-    let trailingStopOrderStep;
-    if (s.strategy == 'levels' || s.strategy == 'manual') {
-        trailingStopStartTriggerPrice = s.percentLoss;
-        trailingStopStartOrder = s.percentLoss / 2;
-        trailingStopTriggerPriceStep = s.percentLoss;
-        trailingStopOrderStep = s.percentLoss;
+    let trailingStopStartTriggerPricePerc;
+    let trailingStopStartOrderPerc;
+    let trailingStopTriggerPriceStepPerc;
+    let trailingStopOrderStepPerc;
+    if (s.strategy == 'trend') {
+        trailingStopStartTriggerPricePerc = .3;
+        trailingStopStartOrderPerc = fee;
+        trailingStopTriggerPriceStepPerc = s.percentLoss;
+        trailingStopOrderStepPerc = s.percentLoss;
     }
     openedPositions[pKey] = new position_1.Position({
         positionKey: pKey,
@@ -55,16 +55,18 @@ function OpenPosition(s, initiator) {
         leverage,
         symbols: exports._symbols,
         symbolInfo: _symbolsObj[s.symbol],
-        trailingStopStartTriggerPrice,
-        trailingStopStartOrder,
-        trailingStopTriggerPriceStep,
-        trailingStopOrderStep,
+        trailingStopStartTriggerPricePerc,
+        trailingStopStartOrderPerc,
+        trailingStopTriggerPriceStepPerc,
+        trailingStopOrderStepPerc,
         signal: s.signal,
         interval,
         limit,
         rsiPeriod: s.rsiPeriod,
         signalDetails: s.signalDetails,
-        initiator
+        initiator,
+        useTrailingStop: s.strategy === 'trend',
+        setTakeProfit: s.strategy !== 'trend'
     });
     openedPositions[pKey].setOrders().then(res => {
         console.log(res);
@@ -78,16 +80,16 @@ function OpenPosition(s, initiator) {
     //     //     }
     //     // });
     // }
-    openedPositions[pKey].deletePosition = function (positionKey, opt) {
+    openedPositions[pKey].deletePosition = function (opt) {
         if (opt && opt.excludeKey) {
             excludedPositions.push(opt.excludeKey);
             console.log('EXCLUDED =' + this.positionKey);
         }
-        delete openedPositions[positionKey];
+        delete openedPositions[this.positionKey];
         if (this.initiator == 'bot') {
             botPositions--;
         }
-        console.log('DELETE =' + positionKey + '= POSITION OBJECT');
+        console.log('DELETE =' + this.positionKey + '= POSITION OBJECT');
     };
     console.log(openedPositions);
 }

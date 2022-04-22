@@ -6,6 +6,7 @@ export type Candle = {
     open: number;
     close: number;
     low: number;
+    volume: number;
 };
 
 export type CandlesTicksEntry = {

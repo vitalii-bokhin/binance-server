@@ -1,71 +1,79 @@
-// import { Candle, CdlDir, SymbolResult, Entry, Result } from './types';
+import { CheckCandle } from '../indicators/candle';
+import { Candle, SymbolResult, Entry } from './types';
 
-// const analyzeCandle = function (cdl: Candle, pos: 'long' | 'short'): 'stopLong' | 'stopShort' | 'stopBoth' {
-//     if (cdl.close >= cdl.open) {
-//         // UP CANDLE
-//         const highTail = cdl.high - cdl.close;
-//         const body = cdl.close - cdl.open;
-//         const lowTail = cdl.open - cdl.low;
+const cache: {
+    [symbol: string]: {
+        startPrice: number;
+    };
+} = {};
 
-//         if (body < lowTail && body < highTail) {
-//             return 'stopBoth';
-//         } else if (pos == 'long' && highTail / (body + lowTail) > .3) {
-//             return 'stopLong';
-//         } else if (pos == 'short' && lowTail / (body + highTail) > .3) {
-//             return 'stopShort';
-//         }
+export function Trend({ symbol, candlesData, tiSettings }: Entry): SymbolResult {
+    if (!cache[symbol]) {
+        cache[symbol] = {
+            startPrice: null
+        };
+    }
 
-//     } else {
-//         // DOWN CANDLE
-//         const highTail = cdl.high - cdl.open;
-//         const body = cdl.open - cdl.close;
-//         const lowTail = cdl.close - cdl.low;
+    const _candles = candlesData;
+    const lastCandle: Candle = _candles.slice(-1)[0];
+    const lastPrice = lastCandle.close;
 
-//         if (body < lowTail && body < highTail) {
-//             return 'stopBoth';
-//         } else if (pos == 'short' && lowTail / (body + highTail) > .3) {
-//             return 'stopShort';
-//         } else if (pos == 'long' && highTail / (body + lowTail) > .3) {
-//             return 'stopLong';
-//         }
+    if (cache[symbol].startPrice === null) {
+        cache[symbol].startPrice = lastPrice;
+    }
 
-//     }
-// }
+    const symbolResult: SymbolResult = {
+        symbol,
+        position: null,
+        entryPrice: lastPrice,
+        percentLoss: null,
+        strategy: 'trend',
+        preferIndex: null,
+        rsiPeriod: tiSettings.rsiPeriod,
+        resolvePosition: null
+    };
 
+    const long = function (stopLoss) {
+        const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
 
-// export function Trend({ fee, limit, data }: Entry) {
-//     return new Promise<Result>((resolve, reject) => {
-//         const result: Result = [];
+        symbolResult.position = 'long';
+        symbolResult.percentLoss = percentLoss;
+        symbolResult.preferIndex = 100 - percentLoss;
 
-//         for (const key in data) {
-//             if (Object.prototype.hasOwnProperty.call(data, key)) {
-//                 const _item = data[key];
+        if (
+            lastCandle.close > lastCandle.open
+            && CheckCandle(lastCandle) != 'hasTails'
+        ) {
+            symbolResult.resolvePosition = true;
+        }
+    }
 
-//                 let item = [..._item];
+    const short = function (stopLoss) {
+        const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);
 
-//                 const lastCandle: Candle = item.pop();
+        symbolResult.position = 'short';
+        symbolResult.percentLoss = percentLoss;
+        symbolResult.preferIndex = 100 - percentLoss;
 
-//                 const volatility = {
-//                     avgChangeLong: 0,
-//                     avgChangeShort: 0
-//                 };
+        if (
+            lastCandle.close < lastCandle.open
+            && CheckCandle(lastCandle) != 'hasTails'
+        ) {
+            symbolResult.resolvePosition = true;
+        }
+    }
 
-//                 let sumChangeLongPerc = 0,
-//                     sumChangeShortPerc = 0;
+    const changePercent = (lastPrice - cache[symbol].startPrice) / (cache[symbol].startPrice / 100);
 
-//                 item.forEach((cdl: Candle): void => {
-//                     const changeLongPerc = (cdl.high - cdl.low) / (cdl.low / 100);
-//                     const changeShortPerc = (cdl.high - cdl.low) / (cdl.high / 100);
+    if (Math.abs(changePercent) > .3) {
+        if (changePercent > 0) {
+            long(lastCandle.low);
+        } else {
+            short(lastCandle.high);
+        }
 
-//                     sumChangeLongPerc += changeLongPerc;
-//                     sumChangeShortPerc += changeShortPerc;
-//                 });
+        cache[symbol].startPrice = null;
+    }
 
-//                 volatility.avgChangeLong = sumChangeLongPerc / item.length;
-//                 volatility.avgChangeShort = sumChangeShortPerc / item.length;
-//             }
-//         }
-
-//         resolve(result);
-//     });
-// }
+    return symbolResult;
+}

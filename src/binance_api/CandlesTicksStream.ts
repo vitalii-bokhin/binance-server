@@ -32,14 +32,15 @@ export function CandlesTicksStream(opt: CandlesTicksEntry, callback: CandlesTick
 
             ws.on('message', function message(wsMsg: any) {
                 const { e: eventType, E: eventTime, s: symbol, k: ticks } = JSON.parse(wsMsg).data;
-                const { t: openTime, o: open, h: high, l: low, c: close } = ticks;
+                const { t: openTime, o: open, h: high, l: low, c: close, v: volume, V: buyVolume } = ticks;
 
                 const candle: Candle = {
                     openTime: openTime,
                     open: +open,
                     high: +high,
                     low: +low,
-                    close: +close
+                    close: +close,
+                    volume: +volume
                 };
 
                 if (result[symbol][result[symbol].length - 1].openTime !== openTime) {

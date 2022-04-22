@@ -8,9 +8,8 @@ import multer from 'multer';
 // import websocket from 'ws';
 import apiRouter from './api';
 // import { Chart } from './chart';
-// import { Bot } from './bot';
 import path from 'path';
-import { Bot } from '../bot';
+import { Bot, BotControl } from '../bot';
 
 const db = require('../database'),
     user = require('../user'),
@@ -84,9 +83,20 @@ app.get('/', function (req, res) {
     res.json({key: "Halllow worrldd"});
 });
 
-app.get('/bot', function (req, res) {
-    Bot();
-    res.json({key: "Bot"});
+app.get('/bot', async (req, res) => {
+    await Bot();
+
+    const query = {};
+
+    for (const key in req.query) {
+        if (Object.prototype.hasOwnProperty.call(req.query, key)) {
+            query[key] = (req.query[key] === 'false') ? false : req.query[key];
+        }
+    }
+
+    const { resolvePositionMaking, tradingSymbols } = await BotControl(query);
+
+    res.json({status: 'Bot started!', resolvePositionMaking, tradingSymbols});
 });
 
 app.get('/test', function (req, res) {

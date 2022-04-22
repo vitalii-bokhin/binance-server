@@ -91,4 +91,8 @@ import { test2Var } from './test2';
 //     console.log(test2Var);
 // }, 5000);
 
-console.log(['a','b','c','d','e','f'].slice(-5,-2));
+// console.log(['a','b','c','d','e','f'].slice(-5,-2));
+
+const x = 'false';
+
+console.log(Boolean(x));
