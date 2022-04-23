@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ManageTradeLines = exports.BotControl = exports.getDepthCache = exports.Bot = exports.tradeLinesCache = exports.controls = void 0;
-const binanceApi_1 = require("./binance_api/binanceApi");
+const DepthStream_1 = require("./binance_api/DepthStream");
 const CandlesTicksStream_1 = require("./binance_api/CandlesTicksStream");
 const symbols_1 = __importDefault(require("./symbols"));
 const strategy_1 = require("./strategy");
@@ -26,7 +26,6 @@ async function Bot() {
     else {
         console.log('Bot has been run!');
         botIsRun = true;
-        // tickerStream();
         const { symbols, symbolsObj } = await (0, symbols_1.default)();
         await BotControl();
         await ManageTradeLines();
@@ -44,40 +43,52 @@ async function Bot() {
                 ev.emit('bot', { strategy: res });
             });
         });
-        (0, binanceApi_1.DepthStream)(['ZILUSDT'], data => {
+        (0, DepthStream_1.DepthStream)(['ZILUSDT'], data => {
             console.log('RES');
-            console.log('ask', data['ZILUSDT'].asks /* .sort((a, b) => +a[0] - +b[0]) */.slice(0, 5));
-            console.log('bid', data['ZILUSDT'].bids /* .sort((a, b) => +b[0] - +a[0]) */.slice(0, 5));
-            const asksSum = data['ZILUSDT'].asks.reduce((p, c) => p + +c[1], 0);
-            const bidsSum = data['ZILUSDT'].bids.reduce((p, c) => p + +c[1], 0);
+            console.log('ask', data['ZILUSDT'].asks[0]);
+            console.log('bid', data['ZILUSDT'].bids[0]);
+            let asksSum = 0;
+            let bidsSum = 0;
+            const asksEstimatePrice = +data['ZILUSDT'].asks[0][0] + (1 * (+data['ZILUSDT'].asks[0][0] / 100));
+            const bidsEstimatePrice = +data['ZILUSDT'].bids[0][0] - (1 * (+data['ZILUSDT'].bids[0][0] / 100));
             let highA = 0;
             let priceA;
-            let high = 0;
-            let price;
-            data['ZILUSDT'].asks.forEach(it => {
-                if (+it[1] > highA) {
-                    highA = +it[1];
-                    priceA = it[0];
+            let highB = 0;
+            let priceB;
+            for (const ask of data['ZILUSDT'].asks) {
+                asksSum += +ask[1];
+                if (+ask[1] > highA) {
+                    highA = +ask[1];
+                    priceA = ask[0];
                 }
-            });
-            data['ZILUSDT'].bids.forEach(it => {
-                if (+it[1] > high) {
-                    high = +it[1];
-                    price = it[0];
+                if (+ask[0] >= asksEstimatePrice) {
+                    break;
                 }
-            });
+            }
+            for (const bid of data['ZILUSDT'].bids) {
+                bidsSum += +bid[1];
+                if (+bid[1] > highB) {
+                    highB = +bid[1];
+                    priceB = bid[0];
+                }
+                if (+bid[0] <= bidsEstimatePrice) {
+                    break;
+                }
+            }
             depthCache['ZILUSDT'] = {
                 maxAsk: {
                     price: +priceA,
                     volume: highA
                 },
                 maxBid: {
-                    price: +price,
-                    volume: high
+                    price: +priceB,
+                    volume: highB
                 }
             };
             console.log(depthCache['ZILUSDT']);
             console.log(asksSum > bidsSum ? 'ask' : 'bid');
+            console.log('sum', asksSum, bidsSum);
+            console.log('Estimate prices', asksEstimatePrice, bidsEstimatePrice);
         });
     }
     return ev;
