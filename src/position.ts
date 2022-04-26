@@ -1,8 +1,7 @@
 import Binance from 'node-binance-api';
 import { BINANCE_KEY, BINANCE_SECRET } from './config';
-import { ordersUpdateStream, positionUpdateStream, priceStream } from './binance_api/binanceApi';
-import { CandlesTicksStream, symbolCandlesTicksStream } from "./binance_api/CandlesTicksStream";
-import { RSI } from './indicators';
+import { ordersUpdateStream, positionUpdateStream } from './binance_api/binanceApi';
+import { symbolCandlesTicksStream } from "./binance_api/CandlesTicksStream";
 
 const binanceAuth = new Binance().options({
     APIKEY: BINANCE_KEY,
@@ -34,7 +33,7 @@ export class Position {
     trailingStopStartTriggerPricePerc: number;
     trailingStopStartOrderPerc: number;
     trailingStopTriggerPriceStepPerc: number;
-    trailingStopOrderStepPerc: number;
+    trailingStopOrderDistancePerc: number;
     trailingSteps: number = 0;
     signal?: string;
     expectedProfit?: number;
@@ -66,7 +65,7 @@ export class Position {
         trailingStopStartTriggerPricePerc: number;
         trailingStopStartOrderPerc: number;
         trailingStopTriggerPriceStepPerc: number;
-        trailingStopOrderStepPerc: number;
+        trailingStopOrderDistancePerc: number;
         signal?: string;
         expectedProfit?: number;
         interval: string;
@@ -91,7 +90,7 @@ export class Position {
         this.trailingStopStartTriggerPricePerc = opt.trailingStopStartTriggerPricePerc;
         this.trailingStopStartOrderPerc = opt.trailingStopStartOrderPerc;
         this.trailingStopTriggerPriceStepPerc = opt.trailingStopTriggerPriceStepPerc;
-        this.trailingStopOrderStepPerc = opt.trailingStopOrderStepPerc;
+        this.trailingStopOrderDistancePerc = opt.trailingStopOrderDistancePerc;
         this.signal = opt.signal;
         this.interval = opt.interval;
         this.limit = opt.limit;
@@ -279,6 +278,7 @@ export class Position {
         });
 
         positionUpdateStream(this.symbol, (pos: any) => {
+            console.log('positionUpdateStream');
             console.log(pos);
 
             if (pos.positionAmount == '0') {
@@ -297,7 +297,17 @@ export class Position {
             stopPrice: null
         };
 
-        const percentLoss = this.trailingSteps === 0 ? this.trailingStopStartOrderPerc : this.trailingStopStartOrderPerc + this.trailingStopOrderStepPerc * this.trailingSteps;
+        let percentLoss: number;
+
+        if (this.trailingSteps === 0) {
+            percentLoss = this.trailingStopStartOrderPerc;
+        } else {
+            percentLoss = this.trailingStopStartTriggerPricePerc + this.trailingStopTriggerPriceStepPerc * this.trailingSteps - this.trailingStopOrderDistancePerc;
+
+            if (percentLoss <= this.trailingStopStartOrderPerc) {
+                percentLoss = this.trailingStopStartOrderPerc;
+            }
+        }
 
         if (this.position === 'long') {
             exitParams.stopPrice = this.realEntryPrice + ((percentLoss + this.fee) * (this.realEntryPrice / 100));

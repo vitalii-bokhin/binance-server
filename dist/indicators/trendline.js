@@ -34,8 +34,8 @@ function TDL({ candles, trendsOpt }) {
         for (const cdl of _candles) {
             const topLvl = getPriceOnLine(topLine, cdl.openTime);
             const btmLvl = getPriceOnLine(btmLine, cdl.openTime);
-            if (cdl.high > btmLvl
-                && cdl.low < topLvl) {
+            if (cdl.high >= btmLvl
+                && cdl.low <= topLvl) {
                 signal = 'onTrend';
             }
         }

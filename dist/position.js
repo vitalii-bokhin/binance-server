@@ -32,7 +32,7 @@ class Position {
         this.trailingStopStartTriggerPricePerc = opt.trailingStopStartTriggerPricePerc;
         this.trailingStopStartOrderPerc = opt.trailingStopStartOrderPerc;
         this.trailingStopTriggerPriceStepPerc = opt.trailingStopTriggerPriceStepPerc;
-        this.trailingStopOrderStepPerc = opt.trailingStopOrderStepPerc;
+        this.trailingStopOrderDistancePerc = opt.trailingStopOrderDistancePerc;
         this.signal = opt.signal;
         this.interval = opt.interval;
         this.limit = opt.limit;
@@ -175,6 +175,7 @@ class Position {
             // }
         });
         (0, binanceApi_1.positionUpdateStream)(this.symbol, (pos) => {
+            console.log('positionUpdateStream');
             console.log(pos);
             if (pos.positionAmount == '0') {
                 this.deletePositionInner();
@@ -189,7 +190,16 @@ class Position {
             closePosition: true,
             stopPrice: null
         };
-        const percentLoss = this.trailingSteps === 0 ? this.trailingStopStartOrderPerc : this.trailingStopStartOrderPerc + this.trailingStopOrderStepPerc * this.trailingSteps;
+        let percentLoss;
+        if (this.trailingSteps === 0) {
+            percentLoss = this.trailingStopStartOrderPerc;
+        }
+        else {
+            percentLoss = this.trailingStopStartTriggerPricePerc + this.trailingStopTriggerPriceStepPerc * this.trailingSteps - this.trailingStopOrderDistancePerc;
+            if (percentLoss <= this.trailingStopStartOrderPerc) {
+                percentLoss = this.trailingStopStartOrderPerc;
+            }
+        }
         if (this.position === 'long') {
             exitParams.stopPrice = this.realEntryPrice + ((percentLoss + this.fee) * (this.realEntryPrice / 100));
         }

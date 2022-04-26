@@ -47,8 +47,8 @@ export function TDL({ candles, trendsOpt }: TrendlineInput): TrendlineResult {
             const btmLvl = getPriceOnLine(btmLine, cdl.openTime);
 
             if (
-                cdl.high > btmLvl
-                && cdl.low < topLvl
+                cdl.high >= btmLvl
+                && cdl.low <= topLvl
             ) {
                 signal = 'onTrend';
             }

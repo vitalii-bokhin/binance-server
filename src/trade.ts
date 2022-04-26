@@ -1,6 +1,5 @@
 import { ordersUpdateStream } from './binance_api/binanceApi';
 import { CandlesTicksStream } from "./binance_api/CandlesTicksStream";
-import { Bot, ManageTradeLines } from './bot';
 import { Position } from './position';
 import { SymbolResult } from './strategy/types';
 import getSymbols from './symbols';
@@ -24,7 +23,7 @@ let _symbolsObj: { [key: string]: any };
 (async function () {
     const { symbols, symbolsObj } = await getSymbols();
 
-    _symbols = symbols; // ['GMTUSDT', 'ZILUSDT', 'WAVESUSDT', 'MATICUSDT']; //symbols;
+    _symbols = ['ZILUSDT',  'WAVESUSDT']; //symbols;
     _symbolsObj = symbolsObj;
 
     CandlesTicksStream({ symbols: _symbols, interval, limit }, null);
@@ -54,13 +53,13 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
     let trailingStopStartTriggerPricePerc: number;
     let trailingStopStartOrderPerc: number;
     let trailingStopTriggerPriceStepPerc: number;
-    let trailingStopOrderStepPerc: number;
+    let trailingStopOrderDistancePerc: number;
 
-    if (s.strategy == 'trend') {
-        trailingStopStartTriggerPricePerc = .3;
+    if (s.strategy == 'levels') {
+        trailingStopStartTriggerPricePerc = s.percentLoss > .3 ? .3 : s.percentLoss;
         trailingStopStartOrderPerc = fee;
-        trailingStopTriggerPriceStepPerc = s.percentLoss;
-        trailingStopOrderStepPerc = s.percentLoss;
+        trailingStopTriggerPriceStepPerc = s.percentLoss / 2;
+        trailingStopOrderDistancePerc = s.percentLoss / 4;
     }
 
     openedPositions[pKey] = new Position({
@@ -78,15 +77,15 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
         trailingStopStartTriggerPricePerc,
         trailingStopStartOrderPerc,
         trailingStopTriggerPriceStepPerc,
-        trailingStopOrderStepPerc,
+        trailingStopOrderDistancePerc,
         signal: s.signal,
         interval,
         limit,
         rsiPeriod: s.rsiPeriod,
         signalDetails: s.signalDetails,
         initiator,
-        useTrailingStop: s.strategy === 'trend',
-        setTakeProfit: s.strategy !== 'trend'
+        useTrailingStop: s.strategy === 'levels',
+        setTakeProfit: s.strategy !== 'levels'
     });
 
     openedPositions[pKey].setOrders().then(res => {

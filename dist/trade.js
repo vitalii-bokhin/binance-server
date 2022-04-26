@@ -15,7 +15,7 @@ let botPositions = 0;
 let _symbolsObj;
 (async function () {
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
-    exports._symbols = symbols; // ['GMTUSDT', 'ZILUSDT', 'WAVESUSDT', 'MATICUSDT']; //symbols;
+    exports._symbols = ['ZILUSDT', 'WAVESUSDT']; //symbols;
     _symbolsObj = symbolsObj;
     (0, CandlesTicksStream_1.CandlesTicksStream)({ symbols: exports._symbols, interval, limit }, null);
     (0, binanceApi_1.ordersUpdateStream)();
@@ -36,12 +36,12 @@ function OpenPosition(s, initiator) {
     let trailingStopStartTriggerPricePerc;
     let trailingStopStartOrderPerc;
     let trailingStopTriggerPriceStepPerc;
-    let trailingStopOrderStepPerc;
-    if (s.strategy == 'trend') {
-        trailingStopStartTriggerPricePerc = .3;
+    let trailingStopOrderDistancePerc;
+    if (s.strategy == 'levels') {
+        trailingStopStartTriggerPricePerc = s.percentLoss > .3 ? .3 : s.percentLoss;
         trailingStopStartOrderPerc = fee;
-        trailingStopTriggerPriceStepPerc = s.percentLoss;
-        trailingStopOrderStepPerc = s.percentLoss;
+        trailingStopTriggerPriceStepPerc = s.percentLoss / 2;
+        trailingStopOrderDistancePerc = s.percentLoss / 4;
     }
     openedPositions[pKey] = new position_1.Position({
         positionKey: pKey,
@@ -58,15 +58,15 @@ function OpenPosition(s, initiator) {
         trailingStopStartTriggerPricePerc,
         trailingStopStartOrderPerc,
         trailingStopTriggerPriceStepPerc,
-        trailingStopOrderStepPerc,
+        trailingStopOrderDistancePerc,
         signal: s.signal,
         interval,
         limit,
         rsiPeriod: s.rsiPeriod,
         signalDetails: s.signalDetails,
         initiator,
-        useTrailingStop: s.strategy === 'trend',
-        setTakeProfit: s.strategy !== 'trend'
+        useTrailingStop: s.strategy === 'levels',
+        setTakeProfit: s.strategy !== 'levels'
     });
     openedPositions[pKey].setOrders().then(res => {
         console.log(res);

@@ -7,24 +7,24 @@ export function SMA({ data, period }: IndicatorEntry): Result {
         input = {
             values: candles.map(cdl => cdl.close),
             period
-        },
-        inputHigh = {
-            values: candles.map(cdl => cdl.high),
-            period
-        },
-        inputLow = {
-            values: candles.map(cdl => cdl.low),
-            period
-        }
+        };
+        // inputHigh = {
+        //     values: candles.map(cdl => cdl.high),
+        //     period
+        // },
+        // inputLow = {
+        //     values: candles.map(cdl => cdl.low),
+        //     period
+        // }
 
     const sma = new tiSma(input);
-    const smaH = new tiSma(inputHigh);
-    const smaL = new tiSma(inputLow);
+    // const smaH = new tiSma(inputHigh);
+    // const smaL = new tiSma(inputLow);
 
     return {
         stack: sma.getResult(),
-        stackHigh: smaH.getResult(),
-        stackLow: smaL.getResult(),
+        // stackHigh: smaH.getResult(),
+        // stackLow: smaL.getResult(),
         last: sma.nextValue(lastCandle.close)
     };
 }

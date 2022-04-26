@@ -73,8 +73,8 @@ export function LVL({ candles, levelsOpt }: LevelInput): Result {
 
         for (const cdl of _candles) {
             if (
-                cdl.high > btmLvl
-                && cdl.low < topLvl
+                cdl.high >= btmLvl
+                && cdl.low <= topLvl
             ) {
                 signal = 'onLevel';
             }

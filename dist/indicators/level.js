@@ -49,8 +49,8 @@ function LVL({ candles, levelsOpt }) {
         //     signal = 'onLevel';
         // }
         for (const cdl of _candles) {
-            if (cdl.high > btmLvl
-                && cdl.low < topLvl) {
+            if (cdl.high >= btmLvl
+                && cdl.low <= topLvl) {
                 signal = 'onLevel';
             }
         }

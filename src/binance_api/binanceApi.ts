@@ -110,7 +110,7 @@ export function positionUpdateStream(symbol: string, callback: (arg0: {}) => voi
     }
 
     if (!userFutureDataSubscribers['positions_update']) {
-        userFutureDataSubscribe('positions_update', function (positions: any[]) {
+        userFutureDataSubscribe('positions_update', (positions: any[]) => {
             positions.forEach((pos: { symbol: string | number; }) => {
                 positionUpdateSubscribers[pos.symbol].forEach(cb => cb(pos));
             });
@@ -120,6 +120,9 @@ export function positionUpdateStream(symbol: string, callback: (arg0: {}) => voi
     if (clearSymbolCallback && positionUpdateSubscribers[symbol]) {
         positionUpdateSubscribers[symbol] = [];
     }
+
+    console.log('positionUpdateSubscribers');
+    console.log(positionUpdateSubscribers);
 }
 
 // price stream

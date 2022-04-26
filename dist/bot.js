@@ -3,10 +3,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ManageTradeLines = exports.BotControl = exports.getDepthCache = exports.Bot = exports.tradeLinesCache = exports.controls = void 0;
+exports.ManageTradeLines = exports.BotControl = exports.Bot = exports.tradeLinesCache = exports.depthCache = exports.controls = void 0;
 const DepthStream_1 = require("./binance_api/DepthStream");
 const CandlesTicksStream_1 = require("./binance_api/CandlesTicksStream");
-const symbols_1 = __importDefault(require("./symbols"));
 const strategy_1 = require("./strategy");
 const events_1 = __importDefault(require("events"));
 const trade_1 = require("./trade");
@@ -17,7 +16,7 @@ exports.controls = {
     resolvePositionMaking: false,
     tradingSymbols: []
 };
-const depthCache = {};
+exports.depthCache = {};
 exports.tradeLinesCache = {};
 async function Bot() {
     if (botIsRun) {
@@ -26,14 +25,12 @@ async function Bot() {
     else {
         console.log('Bot has been run!');
         botIsRun = true;
-        const { symbols, symbolsObj } = await (0, symbols_1.default)();
         await BotControl();
         await ManageTradeLines();
-        const _symbols = symbols;
         (0, CandlesTicksStream_1.CandlesTicksStream)(null, data => {
             (0, strategy_1.Strategy)({
                 data,
-                symbols: _symbols,
+                symbols: trade_1._symbols,
                 tradingSymbols: exports.controls.tradingSymbols,
                 tradeLines: exports.tradeLinesCache
             }).then(res => {
@@ -43,61 +40,57 @@ async function Bot() {
                 ev.emit('bot', { strategy: res });
             });
         });
-        (0, DepthStream_1.DepthStream)(['ZILUSDT'], data => {
-            console.log('RES');
-            console.log('ask', data['ZILUSDT'].asks[0]);
-            console.log('bid', data['ZILUSDT'].bids[0]);
-            let asksSum = 0;
-            let bidsSum = 0;
-            const asksEstimatePrice = +data['ZILUSDT'].asks[0][0] + (1 * (+data['ZILUSDT'].asks[0][0] / 100));
-            const bidsEstimatePrice = +data['ZILUSDT'].bids[0][0] - (1 * (+data['ZILUSDT'].bids[0][0] / 100));
-            let highA = 0;
-            let priceA;
-            let highB = 0;
-            let priceB;
-            for (const ask of data['ZILUSDT'].asks) {
-                asksSum += +ask[1];
-                if (+ask[1] > highA) {
-                    highA = +ask[1];
-                    priceA = ask[0];
-                }
-                if (+ask[0] >= asksEstimatePrice) {
-                    break;
+        (0, DepthStream_1.DepthStream)(trade_1._symbols, data => {
+            for (const symbol in data) {
+                if (Object.prototype.hasOwnProperty.call(data, symbol)) {
+                    const dataItem = data[symbol];
+                    const asksEstimatePrice = +dataItem.asks[0][0] + (2 * (+dataItem.asks[0][0] / 100));
+                    const bidsEstimatePrice = +dataItem.bids[0][0] - (2 * (+dataItem.bids[0][0] / 100));
+                    let highA = 0;
+                    let priceA;
+                    let highB = 0;
+                    let priceB;
+                    let asksSum = 0;
+                    let bidsSum = 0;
+                    for (const ask of dataItem.asks) {
+                        asksSum += +ask[1];
+                        if (+ask[1] > highA) {
+                            highA = +ask[1];
+                            priceA = ask[0];
+                        }
+                        if (+ask[0] >= asksEstimatePrice) {
+                            break;
+                        }
+                    }
+                    for (const bid of dataItem.bids) {
+                        bidsSum += +bid[1];
+                        if (+bid[1] > highB) {
+                            highB = +bid[1];
+                            priceB = bid[0];
+                        }
+                        if (+bid[0] <= bidsEstimatePrice) {
+                            break;
+                        }
+                    }
+                    exports.depthCache[symbol] = {
+                        maxAsk: {
+                            price: +priceA,
+                            volume: highA
+                        },
+                        maxBid: {
+                            price: +priceB,
+                            volume: highB
+                        },
+                        asksSum,
+                        bidsSum
+                    };
                 }
             }
-            for (const bid of data['ZILUSDT'].bids) {
-                bidsSum += +bid[1];
-                if (+bid[1] > highB) {
-                    highB = +bid[1];
-                    priceB = bid[0];
-                }
-                if (+bid[0] <= bidsEstimatePrice) {
-                    break;
-                }
-            }
-            depthCache['ZILUSDT'] = {
-                maxAsk: {
-                    price: +priceA,
-                    volume: highA
-                },
-                maxBid: {
-                    price: +priceB,
-                    volume: highB
-                }
-            };
-            console.log(depthCache['ZILUSDT']);
-            console.log(asksSum > bidsSum ? 'ask' : 'bid');
-            console.log('sum', asksSum, bidsSum);
-            console.log('Estimate prices', asksEstimatePrice, bidsEstimatePrice);
         });
     }
     return ev;
 }
 exports.Bot = Bot;
-function getDepthCache(symbol) {
-    return depthCache[symbol];
-}
-exports.getDepthCache = getDepthCache;
 async function BotControl(req) {
     let botControls = await (0, db_1.GetData)('botcontrols');
     if (!botControls) {

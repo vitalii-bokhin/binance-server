@@ -1,9 +1,8 @@
 import { DepthStream } from "./binance_api/DepthStream";
 import { CandlesTicksStream } from "./binance_api/CandlesTicksStream";
-import getSymbols from './symbols';
 import { Strategy } from './strategy';
 import events from 'events';
-import { OpenPosition } from './trade';
+import { OpenPosition, _symbols } from './trade';
 import { LevelOpt, TrendOpt } from './indicators/types';
 import { GetData, SaveData, Tradelines } from './db/db';
 
@@ -19,7 +18,7 @@ export let controls: {
     tradingSymbols: []
 }
 
-const depthCache: {
+export const depthCache: {
     [symbol: string]: {
         maxAsk: {
             price: number;
@@ -29,6 +28,8 @@ const depthCache: {
             price: number;
             volume: number;
         };
+        asksSum: number;
+        bidsSum: number;
     }
 } = {};
 
@@ -48,13 +49,9 @@ export async function Bot(): Promise<events> {
 
         botIsRun = true;
 
-        const { symbols, symbolsObj } = await getSymbols();
-
         await BotControl();
 
         await ManageTradeLines();
-
-        const _symbols = symbols;
 
         CandlesTicksStream(null, data => {
             Strategy({
@@ -71,81 +68,66 @@ export async function Bot(): Promise<events> {
             });
         });
 
-        DepthStream(['ZILUSDT'], data => {
-            console.log('RES');
-            console.log('ask', data['ZILUSDT'].asks[0]);
-            console.log('bid', data['ZILUSDT'].bids[0]);
+        DepthStream(_symbols, data => {
+            for (const symbol in data) {
+                if (Object.prototype.hasOwnProperty.call(data, symbol)) {
+                    const dataItem = data[symbol];
+                    
+                    const asksEstimatePrice = +dataItem.asks[0][0] + (2 * (+dataItem.asks[0][0] / 100));
+                    const bidsEstimatePrice = +dataItem.bids[0][0] - (2 * (+dataItem.bids[0][0] / 100));
+        
+                    let highA: number = 0;
+                    let priceA: string;
+                    let highB: number = 0;
+                    let priceB: string;
+                    let asksSum: number = 0;
+                    let bidsSum: number = 0;
+          
+                    for (const ask of dataItem.asks) {
+                        asksSum += +ask[1];
 
-            let asksSum = 0;
-            let bidsSum = 0;
+                        if (+ask[1] > highA) {
+                            highA = +ask[1];
+                            priceA = ask[0];
+                        }
+        
+                        if (+ask[0] >= asksEstimatePrice) {
+                            break;
+                        }
+                    }
+        
+                    for (const bid of dataItem.bids) {
+                        bidsSum += +bid[1];
 
-            const asksEstimatePrice = +data['ZILUSDT'].asks[0][0] + (1 * (+data['ZILUSDT'].asks[0][0] / 100));
-            const bidsEstimatePrice = +data['ZILUSDT'].bids[0][0] - (1 * (+data['ZILUSDT'].bids[0][0] / 100));
-
-            let highA: number = 0;
-            let priceA: string;
-            let highB: number = 0;
-            let priceB: string;
-
-
-            for (const ask of data['ZILUSDT'].asks) {
-                asksSum += +ask[1];
-
-                if (+ask[1] > highA) {
-                    highA = +ask[1];
-                    priceA = ask[0];
-                }
-
-                if (+ask[0] >= asksEstimatePrice) {
-                    break;
+                        if (+bid[1] > highB) {
+                            highB = +bid[1];
+                            priceB = bid[0];
+                        }
+        
+                        if (+bid[0] <= bidsEstimatePrice) {
+                            break;
+                        }
+                    }
+        
+                    depthCache[symbol] = {
+                        maxAsk: {
+                            price: +priceA,
+                            volume: highA
+                        },
+                        maxBid: {
+                            price: +priceB,
+                            volume: highB
+                        },
+                        asksSum,
+                        bidsSum
+                    };
+                    
                 }
             }
-
-            for (const bid of data['ZILUSDT'].bids) {
-                bidsSum += +bid[1];
-
-                if (+bid[1] > highB) {
-                    highB = +bid[1];
-                    priceB = bid[0];
-                }
-
-                if (+bid[0] <= bidsEstimatePrice) {
-                    break;
-                }
-            }
-
-            depthCache['ZILUSDT'] = {
-                maxAsk: {
-                    price: +priceA,
-                    volume: highA
-                },
-                maxBid: {
-                    price: +priceB,
-                    volume: highB
-                }
-            };
-
-            console.log(depthCache['ZILUSDT']);
-            console.log(asksSum > bidsSum ? 'ask' : 'bid');
-            console.log('sum', asksSum, bidsSum);
-            console.log('Estimate prices', asksEstimatePrice, bidsEstimatePrice);
         });
     }
 
     return ev;
-}
-
-export function getDepthCache(symbol: string): {
-    maxAsk: {
-        price: number;
-        volume: number;
-    };
-    maxBid: {
-        price: number;
-        volume: number;
-    };
-} {
-    return depthCache[symbol];
 }
 
 export async function BotControl(req?: { [x: string]: any; }): Promise<{ resolvePositionMaking: boolean; tradingSymbols: string[]; }> {

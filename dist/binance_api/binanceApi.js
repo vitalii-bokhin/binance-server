@@ -54,7 +54,7 @@ function positionUpdateStream(symbol, callback, clearSymbolCallback) {
         positionUpdateSubscribers[symbol].push(callback);
     }
     if (!userFutureDataSubscribers['positions_update']) {
-        userFutureDataSubscribe('positions_update', function (positions) {
+        userFutureDataSubscribe('positions_update', (positions) => {
             positions.forEach((pos) => {
                 positionUpdateSubscribers[pos.symbol].forEach(cb => cb(pos));
             });
@@ -63,6 +63,8 @@ function positionUpdateStream(symbol, callback, clearSymbolCallback) {
     if (clearSymbolCallback && positionUpdateSubscribers[symbol]) {
         positionUpdateSubscribers[symbol] = [];
     }
+    console.log('positionUpdateSubscribers');
+    console.log(positionUpdateSubscribers);
 }
 exports.positionUpdateStream = positionUpdateStream;
 // price stream

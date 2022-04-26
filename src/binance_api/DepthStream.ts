@@ -14,12 +14,15 @@ export function DepthStream(symbols: string[], callback: DepthCallback): void {
 
     if (!depthStreamExecuted) {
         const streams = symbols.map(s => s.toLowerCase() + '@depth@500ms').join('/');
-
+console.log(streams);
         depthStreamExecuted = true;
 
         Depth(symbols, data => {
             let ws: WebSocket;
-            let lastFinalUpdId: number;
+            let lastFinalUpdId: {
+                [symbol: string]: number;
+            } = {};
+
             const result: typeof data = Object.assign({}, data);
 
             if (wsStreams[streams] !== undefined) {
@@ -39,15 +42,17 @@ export function DepthStream(symbols: string[], callback: DepthCallback): void {
                 } = JSON.parse(data).data;
 
                 const { s: symbol, b: bids, a: asks, u: finalUpdId, pu: finalUpdIdInLast } = res;
-
+                
                 if (finalUpdId < result[symbol].lastUpdateId) {
+                    console.log('finalUpdId < result[symbol].lastUpdateId', symbol);
                     return;
                 }
 
-                if (lastFinalUpdId && finalUpdIdInLast !== lastFinalUpdId) {
+                if (lastFinalUpdId[symbol] !== undefined && finalUpdIdInLast !== lastFinalUpdId[symbol]) {
+                    console.log('finalUpdIdInLast !== lastFinalUpdId[symbol]', symbol);
                     return;
                 } else {
-                    lastFinalUpdId = finalUpdId;
+                    lastFinalUpdId[symbol] = finalUpdId;
                 }
 
                 // Bids

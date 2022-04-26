@@ -1,8 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReuseStrategy = exports.Strategy = void 0;
-const trend_1 = require("./trend");
-// export { Aisle, Fling };
+const levels_1 = require("./levels");
 let analizedSymbols = {};
 let analizedSymbolsCount = 0;
 const purpose = {
@@ -14,7 +13,7 @@ const purpose = {
     levelsMax: 2
 };
 const tiSettings = {
-    smaPeriod: 24,
+    smaPeriod: 99,
     rsiPeriod: 9,
     atrPeriod: 14,
 };
@@ -114,12 +113,12 @@ async function Strategy({ data, symbols, tradingSymbols, tradeLines }) {
     for (const symbol in data) {
         if (Object.prototype.hasOwnProperty.call(data, symbol)) {
             const candlesData = data[symbol];
-            // if (purpose.levels.includes(symbol)) {
-            //     const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
-            //     const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
-            //     signals.push(Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }));
-            // }
-            signals.push((0, trend_1.Trend)({ symbol, candlesData, tiSettings }));
+            if (purpose.levels.includes(symbol)) {
+                const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
+                const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
+                signals.push((0, levels_1.Levels)({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }));
+            }
+            // signals.push(Trend({ symbol, candlesData, tiSettings }));
             // if (purpose.scalping.includes(symbol)) {
             //     signals.push(Scalping({ symbol, candlesData, tiSettings }));
             // }

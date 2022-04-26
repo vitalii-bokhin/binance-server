@@ -6,20 +6,22 @@ function SMA({ data, period }) {
     const candles = [...data], lastCandle = candles.pop(), input = {
         values: candles.map(cdl => cdl.close),
         period
-    }, inputHigh = {
-        values: candles.map(cdl => cdl.high),
-        period
-    }, inputLow = {
-        values: candles.map(cdl => cdl.low),
-        period
     };
+    // inputHigh = {
+    //     values: candles.map(cdl => cdl.high),
+    //     period
+    // },
+    // inputLow = {
+    //     values: candles.map(cdl => cdl.low),
+    //     period
+    // }
     const sma = new technicalindicators_1.SMA(input);
-    const smaH = new technicalindicators_1.SMA(inputHigh);
-    const smaL = new technicalindicators_1.SMA(inputLow);
+    // const smaH = new tiSma(inputHigh);
+    // const smaL = new tiSma(inputLow);
     return {
         stack: sma.getResult(),
-        stackHigh: smaH.getResult(),
-        stackLow: smaL.getResult(),
+        // stackHigh: smaH.getResult(),
+        // stackLow: smaL.getResult(),
         last: sma.nextValue(lastCandle.close)
     };
 }

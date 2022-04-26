@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Scalping = void 0;
-const bot_1 = require("../bot");
 const indicators_1 = require("../indicators");
 let dd = false;
 function Scalping({ symbol, candlesData, tiSettings }) {
@@ -12,17 +11,14 @@ function Scalping({ symbol, candlesData, tiSettings }) {
     const lastPrice = lastCandle.close;
     const cdlHiLo = lastCandle.high - lastCandle.low;
     const moved = cdlHiLo / atr;
-    const depth = (0, bot_1.getDepthCache)(symbol);
-    if (depth) {
-        if (depth.maxAsk.volume > depth.maxBid.volume && lastPrice >= depth.maxAsk.price) {
-            dd = true;
-        }
-        else if (depth.maxAsk.volume < depth.maxBid.volume && lastPrice <= depth.maxBid.price) {
-            dd = true;
-        }
-    }
+    // if (depth) {
+    //     if (depth.maxAsk.volume > depth.maxBid.volume && lastPrice >= depth.maxAsk.price) {
+    //         dd = true;
+    //     } else if (depth.maxAsk.volume < depth.maxBid.volume && lastPrice <= depth.maxBid.price) {
+    //         dd = true;
+    //     }
+    // }
     console.log(dd);
-    console.log(depth);
     console.log(lastPrice);
     const signalDetails = {
         lastPrice: lastPrice,

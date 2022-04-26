@@ -16,10 +16,11 @@ function DepthStream(symbols, callback) {
     }
     if (!depthStreamExecuted) {
         const streams = symbols.map(s => s.toLowerCase() + '@depth@500ms').join('/');
+        console.log(streams);
         depthStreamExecuted = true;
         (0, Depth_1.Depth)(symbols, data => {
             let ws;
-            let lastFinalUpdId;
+            let lastFinalUpdId = {};
             const result = Object.assign({}, data);
             if (binanceApi_1.wsStreams[streams] !== undefined) {
                 ws = binanceApi_1.wsStreams[streams];
@@ -32,13 +33,15 @@ function DepthStream(symbols, callback) {
                 const res = JSON.parse(data).data;
                 const { s: symbol, b: bids, a: asks, u: finalUpdId, pu: finalUpdIdInLast } = res;
                 if (finalUpdId < result[symbol].lastUpdateId) {
+                    console.log('finalUpdId < result[symbol].lastUpdateId', symbol);
                     return;
                 }
-                if (lastFinalUpdId && finalUpdIdInLast !== lastFinalUpdId) {
+                if (lastFinalUpdId[symbol] !== undefined && finalUpdIdInLast !== lastFinalUpdId[symbol]) {
+                    console.log('finalUpdIdInLast !== lastFinalUpdId[symbol]', symbol);
                     return;
                 }
                 else {
-                    lastFinalUpdId = finalUpdId;
+                    lastFinalUpdId[symbol] = finalUpdId;
                 }
                 // Bids
                 bids.reverse();
