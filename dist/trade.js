@@ -3,13 +3,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OpenPosition = exports._symbols = void 0;
+exports.OpenPosition = exports._symbols = exports.openedPositions = void 0;
 const binanceApi_1 = require("./binance_api/binanceApi");
 const CandlesTicksStream_1 = require("./binance_api/CandlesTicksStream");
 const position_1 = require("./position");
 const symbols_1 = __importDefault(require("./symbols"));
 const fee = .08, interval = '5m', limit = 100, leverage = 10;
-const openedPositions = {};
+exports.openedPositions = {};
 const excludedPositions = [];
 let botPositions = 0;
 let _symbolsObj;
@@ -23,7 +23,7 @@ let _symbolsObj;
 })();
 function OpenPosition(s, initiator) {
     const pKey = s.symbol;
-    if (openedPositions[pKey]
+    if (exports.openedPositions[pKey]
         || !s.resolvePosition
         || excludedPositions.includes(pKey)
         || (initiator == 'bot' && botPositions >= 1)
@@ -38,12 +38,12 @@ function OpenPosition(s, initiator) {
     let trailingStopTriggerPriceStepPerc;
     let trailingStopOrderDistancePerc;
     if (s.strategy == 'levels') {
-        trailingStopStartTriggerPricePerc = s.percentLoss > .3 ? .3 : s.percentLoss;
-        trailingStopStartOrderPerc = fee;
-        trailingStopTriggerPriceStepPerc = s.percentLoss / 2;
-        trailingStopOrderDistancePerc = s.percentLoss / 4;
+        trailingStopStartTriggerPricePerc = .5;
+        trailingStopStartOrderPerc = .2;
+        trailingStopTriggerPriceStepPerc = s.percentLoss > 1 ? 1 : s.percentLoss;
+        trailingStopOrderDistancePerc = s.percentLoss > 1 ? .5 : s.percentLoss / 2;
     }
-    openedPositions[pKey] = new position_1.Position({
+    exports.openedPositions[pKey] = new position_1.Position({
         positionKey: pKey,
         position: s.position,
         symbol: s.symbol,
@@ -68,7 +68,7 @@ function OpenPosition(s, initiator) {
         useTrailingStop: s.strategy === 'levels',
         setTakeProfit: s.strategy !== 'levels'
     });
-    openedPositions[pKey].setOrders().then(res => {
+    exports.openedPositions[pKey].setOrders().then(res => {
         console.log(res);
     });
     // if (s.signal == 'scalping') {
@@ -80,18 +80,18 @@ function OpenPosition(s, initiator) {
     //     //     }
     //     // });
     // }
-    openedPositions[pKey].deletePosition = function (opt) {
+    exports.openedPositions[pKey].deletePosition = function (opt) {
         if (opt && opt.excludeKey) {
             excludedPositions.push(opt.excludeKey);
             console.log('EXCLUDED =' + this.positionKey);
         }
-        delete openedPositions[this.positionKey];
+        delete exports.openedPositions[this.positionKey];
         if (this.initiator == 'bot') {
             botPositions--;
         }
         console.log('DELETE =' + this.positionKey + '= POSITION OBJECT');
     };
-    console.log(openedPositions);
+    console.log(exports.openedPositions);
 }
 exports.OpenPosition = OpenPosition;
 //# sourceMappingURL=trade.js.map

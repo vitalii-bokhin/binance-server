@@ -1,6 +1,7 @@
 import { Result, Candle, TiSettings } from './types';
 import { Levels } from './levels';
 import { tradeLinesCache } from '../bot';
+import { openedPositions } from '../trade';
 
 let analizedSymbols: {
     [symbol: string]: {
@@ -34,7 +35,7 @@ const purpose: {
 };
 
 const tiSettings: TiSettings = {
-    smaPeriod: 99,
+    smaPeriod: 69,
     rsiPeriod: 9,
     atrPeriod: 14,
 };
@@ -162,7 +163,7 @@ export async function Strategy({ data, symbols, tradingSymbols, tradeLines }: { 
     const signals: Result = [];
 
     for (const symbol in data) {
-        if (Object.prototype.hasOwnProperty.call(data, symbol)) {
+        if (Object.prototype.hasOwnProperty.call(data, symbol) && !openedPositions[symbol]) {
             const candlesData = data[symbol];
 
             if (purpose.levels.includes(symbol)) {
@@ -173,7 +174,7 @@ export async function Strategy({ data, symbols, tradingSymbols, tradeLines }: { 
             }
 
             // signals.push(Trend({ symbol, candlesData, tiSettings }));
-            
+
             // if (purpose.scalping.includes(symbol)) {
             //     signals.push(Scalping({ symbol, candlesData, tiSettings }));
             // }

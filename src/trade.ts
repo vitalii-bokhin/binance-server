@@ -9,7 +9,7 @@ const fee: number = .08,
     limit: number = 100,
     leverage: number = 10;
 
-const openedPositions: {
+export const openedPositions: {
     [key: string]: Position;
 } = {};
 
@@ -56,10 +56,10 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
     let trailingStopOrderDistancePerc: number;
 
     if (s.strategy == 'levels') {
-        trailingStopStartTriggerPricePerc = s.percentLoss > .3 ? .3 : s.percentLoss;
-        trailingStopStartOrderPerc = fee;
-        trailingStopTriggerPriceStepPerc = s.percentLoss / 2;
-        trailingStopOrderDistancePerc = s.percentLoss / 4;
+        trailingStopStartTriggerPricePerc = .5;
+        trailingStopStartOrderPerc = .2;
+        trailingStopTriggerPriceStepPerc = s.percentLoss > 1 ? 1 : s.percentLoss;
+        trailingStopOrderDistancePerc = s.percentLoss > 1 ? .5 : s.percentLoss / 2;
     }
 
     openedPositions[pKey] = new Position({

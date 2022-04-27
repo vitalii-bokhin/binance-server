@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReuseStrategy = exports.Strategy = void 0;
 const levels_1 = require("./levels");
+const trade_1 = require("../trade");
 let analizedSymbols = {};
 let analizedSymbolsCount = 0;
 const purpose = {
@@ -13,7 +14,7 @@ const purpose = {
     levelsMax: 2
 };
 const tiSettings = {
-    smaPeriod: 99,
+    smaPeriod: 69,
     rsiPeriod: 9,
     atrPeriod: 14,
 };
@@ -111,7 +112,7 @@ async function Strategy({ data, symbols, tradingSymbols, tradeLines }) {
     // };
     const signals = [];
     for (const symbol in data) {
-        if (Object.prototype.hasOwnProperty.call(data, symbol)) {
+        if (Object.prototype.hasOwnProperty.call(data, symbol) && !trade_1.openedPositions[symbol]) {
             const candlesData = data[symbol];
             if (purpose.levels.includes(symbol)) {
                 const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];

@@ -66,10 +66,23 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
 
     const _candles = candlesData;
 
-    const smaSlow = SMA({ data: _candles, period: tiSettings.smaPeriod }).last;
-    const smaQuick = SMA({ data: _candles, period: Math.ceil(tiSettings.smaPeriod / 5) }).last;
-
+    const smaLast = SMA({ data: _candles, period: tiSettings.smaPeriod }).last;
+    const smaStack = SMA({ data: _candles, period: tiSettings.smaPeriod }).stack;
+    
     const atr = ATR({ data: _candles, period: tiSettings.atrPeriod }).last;
+
+    let moveDir: 'up' | 'down';
+
+    const smaPrev = smaStack.slice(tiSettings.atrPeriod * -1)[0];
+
+    if (smaLast > smaPrev + atr / 2) {
+        moveDir = 'up';
+    } else if (smaLast < smaPrev - atr / 2) {
+        moveDir = 'down';
+    }
+
+    console.log(symbol);
+    console.log(moveDir);
 
     const tdl = TDL({ candles: _candles, trendsOpt });
     const lvl = LVL({ candles: _candles, levelsOpt });
@@ -92,7 +105,9 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
     };
 
     const long = function (stopLoss) {
-        if (smaQuick > smaSlow) {
+        if (moveDir == 'up') {
+
+            stopLoss -= atr;
 
             if (lastPrice - stopLoss < atr * 2) {
                 stopLoss = lastPrice - atr * 2;
@@ -110,7 +125,9 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
     }
 
     const short = function (stopLoss) {
-        if (smaQuick < smaSlow) {
+        if (moveDir == 'down') {
+
+            stopLoss += atr;
 
             if (stopLoss - lastPrice < atr * 2) {
                 stopLoss = lastPrice + atr * 2;
@@ -127,44 +144,6 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
         }
     }
 
-    for (const askLvl of askLevels) {
-        if (
-            (
-                prePrevCandle.low <= askLvl.price
-                && prePrevCandle.high >= askLvl.price
-                || prevCandle.low <= askLvl.price
-                && prevCandle.high >= askLvl.price
-            )
-            && lastCandle.close < lastCandle.open
-            && lastPrice < askLvl.price
-            && lastCandle.open - lastCandle.close > atr / 3
-            && askLvl.price - lastPrice < atr
-            // && depth.bidsSum < depth.asksSum
-        ) {
-            short(askLevels.slice(-1)[0].price);
-            break;
-        }
-    }
-
-    for (const bidLvl of bidLevels) {
-        if (
-            (
-                prePrevCandle.low <= bidLvl.price
-                && prePrevCandle.high >= bidLvl.price
-                || prevCandle.low <= bidLvl.price
-                && prevCandle.high >= bidLvl.price
-            )
-            && lastCandle.close > lastCandle.open
-            && lastPrice > bidLvl.price
-            && lastCandle.close - lastCandle.open > atr / 3
-            && lastPrice - bidLvl.price < atr
-            // && depth.bidsSum > depth.asksSum
-        ) {
-            long(bidLevels.slice(-1)[0].price);
-            break;
-        }
-    }
-
     if (lvl.signal == 'onLevel') {
         // console.log(symbol);
         // console.log(lvl);
@@ -176,6 +155,7 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             && lastCandle.close > lastCandle.open
             && lastCandle.close - lastCandle.open > atr / 3
             && lastPrice - tdl.topPrice < atr
+            && lastPrice > prevCandle.open
         ) {
             long(lvl.bottomPrice);
 
@@ -185,12 +165,12 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             && lastCandle.close < lastCandle.open
             && lastCandle.open - lastCandle.close > atr / 3
             && tdl.bottomPrice - lastPrice < atr
+            && lastPrice < prevCandle.open
         ) {
             short(lvl.topPrice);
         }
-    }
 
-    if (tdl.signal == 'onTrend') {
+    } else if (tdl.signal == 'onTrend') {
         // console.log(symbol);
         // console.log(tdl);
         // console.log(j++);
@@ -201,6 +181,7 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             && lastCandle.close > lastCandle.open
             && lastCandle.close - lastCandle.open > atr / 3
             && lastPrice - tdl.topPrice < atr
+            && lastPrice > prevCandle.open
         ) {
             long(tdl.bottomPrice);
 
@@ -210,8 +191,50 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             && lastCandle.close < lastCandle.open
             && lastCandle.open - lastCandle.close > atr / 3
             && tdl.bottomPrice - lastPrice < atr
+            && lastPrice < prevCandle.open
         ) {
             short(tdl.topPrice);
+        }
+
+    } else {
+        for (const askLvl of askLevels) {
+            if (
+                (
+                    prePrevCandle.low <= askLvl.price
+                    && prePrevCandle.high >= askLvl.price
+                    || prevCandle.low <= askLvl.price
+                    && prevCandle.high >= askLvl.price
+                )
+                && lastCandle.close < lastCandle.open
+                && lastPrice < askLvl.price
+                && lastCandle.open - lastCandle.close > atr / 3
+                && askLvl.price - lastPrice < atr
+                && lastPrice < prevCandle.open
+                // && depth.bidsSum < depth.asksSum
+            ) {
+                short(askLevels.slice(-1)[0].price);
+                break;
+            }
+        }
+
+        for (const bidLvl of bidLevels) {
+            if (
+                (
+                    prePrevCandle.low <= bidLvl.price
+                    && prePrevCandle.high >= bidLvl.price
+                    || prevCandle.low <= bidLvl.price
+                    && prevCandle.high >= bidLvl.price
+                )
+                && lastCandle.close > lastCandle.open
+                && lastPrice > bidLvl.price
+                && lastCandle.close - lastCandle.open > atr / 3
+                && lastPrice - bidLvl.price < atr
+                && lastPrice > prevCandle.open
+                // && depth.bidsSum > depth.asksSum
+            ) {
+                long(bidLevels.slice(-1)[0].price);
+                break;
+            }
         }
     }
 

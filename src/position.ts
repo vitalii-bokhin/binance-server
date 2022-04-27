@@ -46,7 +46,7 @@ export class Position {
     setTakeProfit: boolean;
     useTrailingStop: boolean;
     initiator: 'bot' | 'user';
-    lossAmount: number = .1;
+    lossAmount: number = .15;
 
     constructor(opt: {
         positionKey: string;
