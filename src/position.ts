@@ -39,14 +39,14 @@ export class Position {
     expectedProfit?: number;
     interval: string;
     limit: number;
-    rsiPeriod: number;
+    rsiPeriod?: number;
     percentLoss: number;
     signalDetails?: any;
     deletePosition: (opt?: any) => void;
     setTakeProfit: boolean;
     useTrailingStop: boolean;
     initiator: 'bot' | 'user';
-    lossAmount: number = .15;
+    lossAmount: number = .5;
 
     constructor(opt: {
         positionKey: string;
@@ -70,7 +70,7 @@ export class Position {
         expectedProfit?: number;
         interval: string;
         limit: number;
-        rsiPeriod: number;
+        rsiPeriod?: number;
         percentLoss: number;
         signalDetails?: any;
         setTakeProfit?: boolean;

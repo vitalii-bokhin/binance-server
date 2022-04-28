@@ -101,11 +101,12 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
         strategy: 'levels',
         preferIndex: null,
         rsiPeriod: tiSettings.rsiPeriod,
-        resolvePosition: false
+        resolvePosition: false,
+        atr
     };
 
     const long = function (stopLoss) {
-        if (moveDir == 'up') {
+        if (true/* moveDir == 'up' */) {
 
             stopLoss -= atr;
 
@@ -125,7 +126,7 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
     }
 
     const short = function (stopLoss) {
-        if (moveDir == 'down') {
+        if (true/* moveDir == 'down' */) {
 
             stopLoss += atr;
 
@@ -155,7 +156,7 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             && lastCandle.close > lastCandle.open
             && lastCandle.close - lastCandle.open > atr / 3
             && lastPrice - tdl.topPrice < atr
-            && lastPrice > prevCandle.open
+            // && lastPrice > prevCandle.open
         ) {
             long(lvl.bottomPrice);
 
@@ -165,7 +166,7 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             && lastCandle.close < lastCandle.open
             && lastCandle.open - lastCandle.close > atr / 3
             && tdl.bottomPrice - lastPrice < atr
-            && lastPrice < prevCandle.open
+            // && lastPrice < prevCandle.open
         ) {
             short(lvl.topPrice);
         }
@@ -181,7 +182,7 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             && lastCandle.close > lastCandle.open
             && lastCandle.close - lastCandle.open > atr / 3
             && lastPrice - tdl.topPrice < atr
-            && lastPrice > prevCandle.open
+            // && lastPrice > prevCandle.open
         ) {
             long(tdl.bottomPrice);
 
@@ -191,51 +192,51 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             && lastCandle.close < lastCandle.open
             && lastCandle.open - lastCandle.close > atr / 3
             && tdl.bottomPrice - lastPrice < atr
-            && lastPrice < prevCandle.open
+            // && lastPrice < prevCandle.open
         ) {
             short(tdl.topPrice);
         }
 
     } else {
-        for (const askLvl of askLevels) {
-            if (
-                (
-                    prePrevCandle.low <= askLvl.price
-                    && prePrevCandle.high >= askLvl.price
-                    || prevCandle.low <= askLvl.price
-                    && prevCandle.high >= askLvl.price
-                )
-                && lastCandle.close < lastCandle.open
-                && lastPrice < askLvl.price
-                && lastCandle.open - lastCandle.close > atr / 3
-                && askLvl.price - lastPrice < atr
-                && lastPrice < prevCandle.open
-                // && depth.bidsSum < depth.asksSum
-            ) {
-                short(askLevels.slice(-1)[0].price);
-                break;
-            }
-        }
+        // for (const askLvl of askLevels) {
+        //     if (
+        //         (
+        //             prePrevCandle.low <= askLvl.price
+        //             && prePrevCandle.high >= askLvl.price
+        //             || prevCandle.low <= askLvl.price
+        //             && prevCandle.high >= askLvl.price
+        //         )
+        //         && lastCandle.close < lastCandle.open
+        //         && lastPrice < askLvl.price
+        //         && lastCandle.open - lastCandle.close > atr / 3
+        //         && askLvl.price - lastPrice < atr
+        //         && lastPrice < prevCandle.open
+        //         // && depth.bidsSum < depth.asksSum
+        //     ) {
+        //         short(askLevels.slice(-1)[0].price);
+        //         break;
+        //     }
+        // }
 
-        for (const bidLvl of bidLevels) {
-            if (
-                (
-                    prePrevCandle.low <= bidLvl.price
-                    && prePrevCandle.high >= bidLvl.price
-                    || prevCandle.low <= bidLvl.price
-                    && prevCandle.high >= bidLvl.price
-                )
-                && lastCandle.close > lastCandle.open
-                && lastPrice > bidLvl.price
-                && lastCandle.close - lastCandle.open > atr / 3
-                && lastPrice - bidLvl.price < atr
-                && lastPrice > prevCandle.open
-                // && depth.bidsSum > depth.asksSum
-            ) {
-                long(bidLevels.slice(-1)[0].price);
-                break;
-            }
-        }
+        // for (const bidLvl of bidLevels) {
+        //     if (
+        //         (
+        //             prePrevCandle.low <= bidLvl.price
+        //             && prePrevCandle.high >= bidLvl.price
+        //             || prevCandle.low <= bidLvl.price
+        //             && prevCandle.high >= bidLvl.price
+        //         )
+        //         && lastCandle.close > lastCandle.open
+        //         && lastPrice > bidLvl.price
+        //         && lastCandle.close - lastCandle.open > atr / 3
+        //         && lastPrice - bidLvl.price < atr
+        //         && lastPrice > prevCandle.open
+        //         // && depth.bidsSum > depth.asksSum
+        //     ) {
+        //         long(bidLevels.slice(-1)[0].price);
+        //         break;
+        //     }
+        // }
     }
 
     // if (symbolResult.resolvePosition) {

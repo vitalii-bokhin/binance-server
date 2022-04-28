@@ -18,7 +18,7 @@ class Position {
         this.stopLossHasBeenMoved = false;
         this.marketCloseOrderHasBeenCalled = false;
         this.trailingSteps = 0;
-        this.lossAmount = .15;
+        this.lossAmount = .5;
         this.positionKey = opt.positionKey;
         this.position = opt.position;
         this.symbol = opt.symbol;

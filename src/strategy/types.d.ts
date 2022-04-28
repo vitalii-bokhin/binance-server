@@ -13,6 +13,7 @@ export type SymbolResult = {
     possibleLoss?: number;
     expectedProfit?: number;
     rsiPeriod?: number;
+    atr?: number;
     resolvePosition: boolean;
 };
 

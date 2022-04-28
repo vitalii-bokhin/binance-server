@@ -15,7 +15,7 @@ let botPositions = 0;
 let _symbolsObj;
 (async function () {
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
-    exports._symbols = ['ZILUSDT', 'WAVESUSDT']; //symbols;
+    exports._symbols = ['ZILUSDT', 'WAVESUSDT', 'GMTUSDT', 'MATICUSDT']; //symbols;
     _symbolsObj = symbolsObj;
     (0, CandlesTicksStream_1.CandlesTicksStream)({ symbols: exports._symbols, interval, limit }, null);
     (0, binanceApi_1.ordersUpdateStream)();
@@ -38,10 +38,11 @@ function OpenPosition(s, initiator) {
     let trailingStopTriggerPriceStepPerc;
     let trailingStopOrderDistancePerc;
     if (s.strategy == 'levels') {
-        trailingStopStartTriggerPricePerc = .5;
-        trailingStopStartOrderPerc = .2;
-        trailingStopTriggerPriceStepPerc = s.percentLoss > 1 ? 1 : s.percentLoss;
-        trailingStopOrderDistancePerc = s.percentLoss > 1 ? .5 : s.percentLoss / 2;
+        const atrPerc = s.atr / (s.entryPrice / 100);
+        trailingStopStartTriggerPricePerc = atrPerc + .2;
+        trailingStopStartOrderPerc = .2 - fee;
+        trailingStopTriggerPriceStepPerc = atrPerc;
+        trailingStopOrderDistancePerc = atrPerc;
     }
     exports.openedPositions[pKey] = new position_1.Position({
         positionKey: pKey,

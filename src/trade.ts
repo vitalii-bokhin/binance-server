@@ -23,7 +23,7 @@ let _symbolsObj: { [key: string]: any };
 (async function () {
     const { symbols, symbolsObj } = await getSymbols();
 
-    _symbols = ['ZILUSDT',  'WAVESUSDT']; //symbols;
+    _symbols = ['ZILUSDT', 'WAVESUSDT', 'GMTUSDT', 'MATICUSDT']; //symbols;
     _symbolsObj = symbolsObj;
 
     CandlesTicksStream({ symbols: _symbols, interval, limit }, null);
@@ -56,10 +56,12 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
     let trailingStopOrderDistancePerc: number;
 
     if (s.strategy == 'levels') {
-        trailingStopStartTriggerPricePerc = .5;
-        trailingStopStartOrderPerc = .2;
-        trailingStopTriggerPriceStepPerc = s.percentLoss > 1 ? 1 : s.percentLoss;
-        trailingStopOrderDistancePerc = s.percentLoss > 1 ? .5 : s.percentLoss / 2;
+        const atrPerc = s.atr / (s.entryPrice / 100);
+
+        trailingStopStartTriggerPricePerc = atrPerc + .2;
+        trailingStopStartOrderPerc = .2 - fee;
+        trailingStopTriggerPriceStepPerc = atrPerc;
+        trailingStopOrderDistancePerc = atrPerc;
     }
 
     openedPositions[pKey] = new Position({
