@@ -8,7 +8,7 @@ const binanceApi_1 = require("./binance_api/binanceApi");
 const CandlesTicksStream_1 = require("./binance_api/CandlesTicksStream");
 const position_1 = require("./position");
 const symbols_1 = __importDefault(require("./symbols"));
-const fee = .08, interval = '5m', limit = 100, leverage = 10;
+const fee = .08, interval = '5m', limit = 100, leverage = 20;
 exports.openedPositions = {};
 const excludedPositions = [];
 let botPositions = 0;
@@ -23,6 +23,15 @@ let _symbolsObj;
 })();
 function OpenPosition(s, initiator) {
     const pKey = s.symbol;
+    // console.log('******************************************************');
+    // console.log('s.symbol', s.symbol);
+    // console.log('open positions', Object.keys(openedPositions));
+    // console.log('s.resolvePosition', s.resolvePosition);
+    // console.log('excludedPositions', excludedPositions);
+    // console.log('initiator', initiator);
+    // console.log('botPositions', botPositions);
+    // console.log('s.percentLoss', s.percentLoss);
+    // console.log('******************************************************');
     if (exports.openedPositions[pKey]
         || !s.resolvePosition
         || excludedPositions.includes(pKey)
@@ -37,8 +46,12 @@ function OpenPosition(s, initiator) {
     let trailingStopStartOrderPerc;
     let trailingStopTriggerPriceStepPerc;
     let trailingStopOrderDistancePerc;
+    let takeProfitPerc;
+    const atrPerc = s.atr / (s.entryPrice / 100);
+    if (s.strategy == 'follow_candle') {
+        takeProfitPerc = atrPerc / 5;
+    }
     if (s.strategy == 'levels') {
-        const atrPerc = s.atr / (s.entryPrice / 100);
         trailingStopStartTriggerPricePerc = atrPerc + .2;
         trailingStopStartOrderPerc = .2 - fee;
         trailingStopTriggerPriceStepPerc = atrPerc;
@@ -67,7 +80,8 @@ function OpenPosition(s, initiator) {
         signalDetails: s.signalDetails,
         initiator,
         useTrailingStop: s.strategy === 'levels',
-        setTakeProfit: s.strategy !== 'levels'
+        setTakeProfit: s.strategy !== 'levels',
+        takeProfitPerc
     });
     exports.openedPositions[pKey].setOrders().then(res => {
         console.log(res);

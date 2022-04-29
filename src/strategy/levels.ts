@@ -1,7 +1,6 @@
 import { depthCache } from '../bot';
 import { ATR, LVL, SMA, TDL } from '../indicators';
 import { Candle, SymbolResult, Entry } from './types';
-let i = 0, j = 0;
 
 const cache: {
     [symbol: string]: {
@@ -66,23 +65,23 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
 
     const _candles = candlesData;
 
-    const smaLast = SMA({ data: _candles, period: tiSettings.smaPeriod }).last;
-    const smaStack = SMA({ data: _candles, period: tiSettings.smaPeriod }).stack;
+    // const smaLast = SMA({ data: _candles, period: tiSettings.smaPeriod }).last;
+    // const smaStack = SMA({ data: _candles, period: tiSettings.smaPeriod }).stack;
     
     const atr = ATR({ data: _candles, period: tiSettings.atrPeriod }).last;
 
-    let moveDir: 'up' | 'down';
+    // let moveDir: 'up' | 'down';
 
-    const smaPrev = smaStack.slice(tiSettings.atrPeriod * -1)[0];
+    // const smaPrev = smaStack.slice(tiSettings.atrPeriod * -1)[0];
 
-    if (smaLast > smaPrev + atr / 2) {
-        moveDir = 'up';
-    } else if (smaLast < smaPrev - atr / 2) {
-        moveDir = 'down';
-    }
+    // if (smaLast > smaPrev + atr / 2) {
+    //     moveDir = 'up';
+    // } else if (smaLast < smaPrev - atr / 2) {
+    //     moveDir = 'down';
+    // }
 
-    console.log(symbol);
-    console.log(moveDir);
+    // console.log(symbol);
+    // console.log(moveDir);
 
     const tdl = TDL({ candles: _candles, trendsOpt });
     const lvl = LVL({ candles: _candles, levelsOpt });
@@ -146,9 +145,9 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
     }
 
     if (lvl.signal == 'onLevel') {
-        // console.log(symbol);
-        // console.log(lvl);
-        // console.log(i++);
+        console.log('=====================================================================');
+        console.log('symbol lvl', symbol, lvl);
+        console.log('=====================================================================');
 
         if (
             lvl.direction == 'up'
@@ -172,9 +171,9 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
         }
 
     } else if (tdl.signal == 'onTrend') {
-        // console.log(symbol);
-        // console.log(tdl);
-        // console.log(j++);
+        console.log('=====================================================================');
+        console.log('symbol tld', symbol, tdl);
+        console.log('=====================================================================');
 
         if (
             tdl.direction == 'up'

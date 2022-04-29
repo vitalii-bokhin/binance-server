@@ -37,7 +37,7 @@ async function Bot() {
                 if (exports.controls.resolvePositionMaking) {
                     res.forEach(sym => (0, trade_1.OpenPosition)(sym, 'bot'));
                 }
-                ev.emit('bot', { strategy: res });
+                // ev.emit('bot', { strategy: res });
             });
         });
         (0, DepthStream_1.DepthStream)(trade_1._symbols, data => {

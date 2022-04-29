@@ -7,7 +7,7 @@ import getSymbols from './symbols';
 const fee: number = .08,
     interval: string = '5m',
     limit: number = 100,
-    leverage: number = 10;
+    leverage: number = 20;
 
 export const openedPositions: {
     [key: string]: Position;
@@ -36,6 +36,16 @@ let _symbolsObj: { [key: string]: any };
 export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
     const pKey = s.symbol;
 
+    // console.log('******************************************************');
+    // console.log('s.symbol', s.symbol);
+    // console.log('open positions', Object.keys(openedPositions));
+    // console.log('s.resolvePosition', s.resolvePosition);
+    // console.log('excludedPositions', excludedPositions);
+    // console.log('initiator', initiator);
+    // console.log('botPositions', botPositions);
+    // console.log('s.percentLoss', s.percentLoss);
+    // console.log('******************************************************');
+
     if (
         openedPositions[pKey]
         || !s.resolvePosition
@@ -54,10 +64,15 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
     let trailingStopStartOrderPerc: number;
     let trailingStopTriggerPriceStepPerc: number;
     let trailingStopOrderDistancePerc: number;
+    let takeProfitPerc: number;
+
+    const atrPerc = s.atr / (s.entryPrice / 100);
+
+    if (s.strategy == 'follow_candle') {
+        takeProfitPerc = atrPerc / 5;
+    }
 
     if (s.strategy == 'levels') {
-        const atrPerc = s.atr / (s.entryPrice / 100);
-
         trailingStopStartTriggerPricePerc = atrPerc + .2;
         trailingStopStartOrderPerc = .2 - fee;
         trailingStopTriggerPriceStepPerc = atrPerc;
@@ -87,7 +102,8 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
         signalDetails: s.signalDetails,
         initiator,
         useTrailingStop: s.strategy === 'levels',
-        setTakeProfit: s.strategy !== 'levels'
+        setTakeProfit: s.strategy !== 'levels',
+        takeProfitPerc
     });
 
     openedPositions[pKey].setOrders().then(res => {

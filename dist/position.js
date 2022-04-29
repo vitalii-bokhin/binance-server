@@ -18,7 +18,7 @@ class Position {
         this.stopLossHasBeenMoved = false;
         this.marketCloseOrderHasBeenCalled = false;
         this.trailingSteps = 0;
-        this.lossAmount = .5;
+        this.lossAmount = .1;
         this.positionKey = opt.positionKey;
         this.position = opt.position;
         this.symbol = opt.symbol;
@@ -40,6 +40,7 @@ class Position {
         this.percentLoss = opt.percentLoss;
         this.signalDetails = opt.signalDetails;
         this.setTakeProfit = opt.setTakeProfit !== undefined ? opt.setTakeProfit : true;
+        this.takeProfitPerc = opt.takeProfitPerc !== undefined ? opt.takeProfitPerc : null;
         this.useTrailingStop = opt.useTrailingStop !== undefined ? opt.useTrailingStop : false;
         this.initiator = opt.initiator;
     }
@@ -86,19 +87,24 @@ class Position {
                 if (this.setTakeProfit) {
                     const profitSide = this.position === 'long' ? 'SELL' : 'BUY';
                     const profitParams = {
-                        type: 'TAKE_PROFIT_MARKET',
-                        closePosition: true,
-                        stopPrice: null
+                        type: 'LIMIT',
+                        timeInForce: 'GTC',
+                        reduceOnly: true
                     };
+                    let stopPrice;
+                    const profitPercent = (this.takeProfitPerc || this.percentLoss) + this.fee;
+                    const multiplier = this.realEntryPrice / 100;
                     if (this.position === 'long') {
-                        profitParams.stopPrice = this.realEntryPrice + ((this.percentLoss + this.fee) * (this.realEntryPrice / 100));
+                        stopPrice = this.realEntryPrice + (profitPercent * multiplier);
                     }
                     else {
-                        profitParams.stopPrice = this.realEntryPrice - ((this.percentLoss + this.fee) * (this.realEntryPrice / 100));
+                        stopPrice = this.realEntryPrice - (profitPercent * multiplier);
                     }
-                    profitParams.stopPrice = +profitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
-                    binanceAuth.futuresOrder(profitSide, this.symbol, false, false, profitParams).then(ord => {
-                        // console.log(ord);
+                    stopPrice = +stopPrice.toFixed(this.symbolInfo.pricePrecision);
+                    binanceAuth.futuresOrder(profitSide, this.symbol, this.quantity, stopPrice, profitParams)
+                        .then(arg => {
+                        console.log(arg);
+                        console.log(profitSide, this.symbol, this.quantity, stopPrice, profitParams);
                     });
                 }
                 // stop loss

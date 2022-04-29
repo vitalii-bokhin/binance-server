@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Levels = void 0;
 const bot_1 = require("../bot");
 const indicators_1 = require("../indicators");
-let i = 0, j = 0;
 const cache = {};
 function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }) {
     if (!cache[symbol]) {
@@ -41,19 +40,18 @@ function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }) {
     // console.log('bidLevels');
     // console.log(bidLevels);
     const _candles = candlesData;
-    const smaLast = (0, indicators_1.SMA)({ data: _candles, period: tiSettings.smaPeriod }).last;
-    const smaStack = (0, indicators_1.SMA)({ data: _candles, period: tiSettings.smaPeriod }).stack;
+    // const smaLast = SMA({ data: _candles, period: tiSettings.smaPeriod }).last;
+    // const smaStack = SMA({ data: _candles, period: tiSettings.smaPeriod }).stack;
     const atr = (0, indicators_1.ATR)({ data: _candles, period: tiSettings.atrPeriod }).last;
-    let moveDir;
-    const smaPrev = smaStack.slice(tiSettings.atrPeriod * -1)[0];
-    if (smaLast > smaPrev + atr / 2) {
-        moveDir = 'up';
-    }
-    else if (smaLast < smaPrev - atr / 2) {
-        moveDir = 'down';
-    }
-    console.log(symbol);
-    console.log(moveDir);
+    // let moveDir: 'up' | 'down';
+    // const smaPrev = smaStack.slice(tiSettings.atrPeriod * -1)[0];
+    // if (smaLast > smaPrev + atr / 2) {
+    //     moveDir = 'up';
+    // } else if (smaLast < smaPrev - atr / 2) {
+    //     moveDir = 'down';
+    // }
+    // console.log(symbol);
+    // console.log(moveDir);
     const tdl = (0, indicators_1.TDL)({ candles: _candles, trendsOpt });
     const lvl = (0, indicators_1.LVL)({ candles: _candles, levelsOpt });
     const prePrevCandle = _candles.slice(-3)[0];
@@ -100,9 +98,9 @@ function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }) {
         }
     };
     if (lvl.signal == 'onLevel') {
-        // console.log(symbol);
-        // console.log(lvl);
-        // console.log(i++);
+        console.log('=====================================================================');
+        console.log('symbol lvl', symbol, lvl);
+        console.log('=====================================================================');
         if (lvl.direction == 'up'
             && lastPrice > lvl.topPrice
             && lastCandle.close > lastCandle.open
@@ -123,9 +121,9 @@ function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }) {
         }
     }
     else if (tdl.signal == 'onTrend') {
-        // console.log(symbol);
-        // console.log(tdl);
-        // console.log(j++);
+        console.log('=====================================================================');
+        console.log('symbol tld', symbol, tdl);
+        console.log('=====================================================================');
         if (tdl.direction == 'up'
             && lastPrice > tdl.topPrice
             && lastCandle.close > lastCandle.open

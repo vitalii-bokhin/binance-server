@@ -64,7 +64,7 @@ export async function Bot(): Promise<events> {
                     res.forEach(sym => OpenPosition(sym, 'bot'));
                 }
 
-                ev.emit('bot', { strategy: res });
+                // ev.emit('bot', { strategy: res });
             });
         });
 

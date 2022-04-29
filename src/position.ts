@@ -44,9 +44,10 @@ export class Position {
     signalDetails?: any;
     deletePosition: (opt?: any) => void;
     setTakeProfit: boolean;
+    takeProfitPerc: number;
     useTrailingStop: boolean;
     initiator: 'bot' | 'user';
-    lossAmount: number = .5;
+    lossAmount: number = .1;
 
     constructor(opt: {
         positionKey: string;
@@ -74,6 +75,7 @@ export class Position {
         percentLoss: number;
         signalDetails?: any;
         setTakeProfit?: boolean;
+        takeProfitPerc?: number;
         useTrailingStop?: boolean;
         initiator: 'bot' | 'user';
     }) {
@@ -98,6 +100,7 @@ export class Position {
         this.percentLoss = opt.percentLoss;
         this.signalDetails = opt.signalDetails;
         this.setTakeProfit = opt.setTakeProfit !== undefined ? opt.setTakeProfit : true;
+        this.takeProfitPerc = opt.takeProfitPerc !== undefined ? opt.takeProfitPerc : null;
         this.useTrailingStop = opt.useTrailingStop !== undefined ? opt.useTrailingStop : false;
         this.initiator = opt.initiator;
     }
@@ -157,22 +160,29 @@ export class Position {
                 if (this.setTakeProfit) {
                     const profitSide = this.position === 'long' ? 'SELL' : 'BUY';
                     const profitParams = {
-                        type: 'TAKE_PROFIT_MARKET',
-                        closePosition: true,
-                        stopPrice: null
+                        type: 'LIMIT',
+                        timeInForce: 'GTC',
+                        reduceOnly: true
                     };
 
+                    let stopPrice: number;
+
+                    const profitPercent = (this.takeProfitPerc || this.percentLoss) + this.fee;
+                    const multiplier = this.realEntryPrice / 100;
+
                     if (this.position === 'long') {
-                        profitParams.stopPrice = this.realEntryPrice + ((this.percentLoss + this.fee) * (this.realEntryPrice / 100));
+                        stopPrice = this.realEntryPrice + (profitPercent * multiplier);
                     } else {
-                        profitParams.stopPrice = this.realEntryPrice - ((this.percentLoss + this.fee) * (this.realEntryPrice / 100));
+                        stopPrice = this.realEntryPrice - (profitPercent * multiplier);
                     }
 
-                    profitParams.stopPrice = +profitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
+                    stopPrice = +stopPrice.toFixed(this.symbolInfo.pricePrecision);
 
-                    binanceAuth.futuresOrder(profitSide, this.symbol, false, false, profitParams).then(ord => {
-                        // console.log(ord);
-                    });
+                    binanceAuth.futuresOrder(profitSide, this.symbol, this.quantity, stopPrice, profitParams)
+                        .then(arg => {
+                            console.log(arg);
+                            console.log(profitSide, this.symbol, this.quantity, stopPrice, profitParams);
+                        });
                 }
 
                 // stop loss
