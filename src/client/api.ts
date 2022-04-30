@@ -4,7 +4,7 @@ import { symbolCandlesTicksStream } from '../binance_api/CandlesTicksStream';
 import { Bot, BotControl, ManageTradeLines, tradeLinesCache } from '../bot';
 import { ImmediatelyPosition } from '../manual';
 import { ReuseStrategy } from '../strategy';
-import getSymbols from '../symbols';
+import getSymbols from '../binance_api/symbols';
 import { _symbols } from '../trade';
 
 export default function (api: ws.Router) {

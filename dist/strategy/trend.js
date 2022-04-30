@@ -31,7 +31,7 @@ function Trend({ symbol, candlesData, tiSettings }) {
         symbolResult.percentLoss = percentLoss;
         symbolResult.preferIndex = 100 - percentLoss;
         if (lastCandle.close > lastCandle.open
-            && (0, candle_1.CheckCandle)(lastCandle) != 'hasTails') {
+            && (0, candle_1.CheckCandle)(lastCandle) != 'has_tails') {
             symbolResult.resolvePosition = true;
         }
     };
@@ -41,7 +41,7 @@ function Trend({ symbol, candlesData, tiSettings }) {
         symbolResult.percentLoss = percentLoss;
         symbolResult.preferIndex = 100 - percentLoss;
         if (lastCandle.close < lastCandle.open
-            && (0, candle_1.CheckCandle)(lastCandle) != 'hasTails') {
+            && (0, candle_1.CheckCandle)(lastCandle) != 'has_tails') {
             symbolResult.resolvePosition = true;
         }
     };

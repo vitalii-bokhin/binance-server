@@ -7,7 +7,7 @@ const CandlesTicksStream_1 = require("../binance_api/CandlesTicksStream");
 const bot_1 = require("../bot");
 const manual_1 = require("../manual");
 const strategy_1 = require("../strategy");
-const symbols_1 = __importDefault(require("../symbols"));
+const symbols_1 = __importDefault(require("../binance_api/symbols"));
 const trade_1 = require("../trade");
 function default_1(api) {
     api.get('/bot', async (req, res) => {

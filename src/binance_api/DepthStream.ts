@@ -13,10 +13,10 @@ export function DepthStream(symbols: string[], callback: DepthCallback): void {
     }
 
     if (!depthStreamExecuted) {
-        const streams = symbols.map(s => s.toLowerCase() + '@depth@500ms').join('/');
-console.log(streams);
         depthStreamExecuted = true;
 
+        const streams = symbols.map(s => s.toLowerCase() + '@depth@500ms').join('/');
+        
         Depth(symbols, data => {
             let ws: WebSocket;
             let lastFinalUpdId: {

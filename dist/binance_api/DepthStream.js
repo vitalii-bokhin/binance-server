@@ -15,9 +15,8 @@ function DepthStream(symbols, callback) {
         depthStreamSubscribers.push(callback);
     }
     if (!depthStreamExecuted) {
-        const streams = symbols.map(s => s.toLowerCase() + '@depth@500ms').join('/');
-        console.log(streams);
         depthStreamExecuted = true;
+        const streams = symbols.map(s => s.toLowerCase() + '@depth@500ms').join('/');
         (0, Depth_1.Depth)(symbols, data => {
             let ws;
             let lastFinalUpdId = {};

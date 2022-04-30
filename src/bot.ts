@@ -5,6 +5,7 @@ import events from 'events';
 import { OpenPosition, _symbols } from './trade';
 import { LevelOpt, TrendOpt } from './indicators/types';
 import { GetData, SaveData, Tradelines } from './db/db';
+import { TradesListStream } from './binance_api';
 
 const ev = new events.EventEmitter();
 
@@ -17,21 +18,6 @@ export let controls: {
     resolvePositionMaking: false,
     tradingSymbols: []
 }
-
-export const depthCache: {
-    [symbol: string]: {
-        maxAsk: {
-            price: number;
-            volume: number;
-        };
-        maxBid: {
-            price: number;
-            volume: number;
-        };
-        asksSum: number;
-        bidsSum: number;
-    }
-} = {};
 
 export let tradeLinesCache: {
     [symbol: string]: {
@@ -66,64 +52,6 @@ export async function Bot(): Promise<events> {
 
                 // ev.emit('bot', { strategy: res });
             });
-        });
-
-        DepthStream(_symbols, data => {
-            for (const symbol in data) {
-                if (Object.prototype.hasOwnProperty.call(data, symbol)) {
-                    const dataItem = data[symbol];
-                    
-                    const asksEstimatePrice = +dataItem.asks[0][0] + (2 * (+dataItem.asks[0][0] / 100));
-                    const bidsEstimatePrice = +dataItem.bids[0][0] - (2 * (+dataItem.bids[0][0] / 100));
-        
-                    let highA: number = 0;
-                    let priceA: string;
-                    let highB: number = 0;
-                    let priceB: string;
-                    let asksSum: number = 0;
-                    let bidsSum: number = 0;
-          
-                    for (const ask of dataItem.asks) {
-                        asksSum += +ask[1];
-
-                        if (+ask[1] > highA) {
-                            highA = +ask[1];
-                            priceA = ask[0];
-                        }
-        
-                        if (+ask[0] >= asksEstimatePrice) {
-                            break;
-                        }
-                    }
-        
-                    for (const bid of dataItem.bids) {
-                        bidsSum += +bid[1];
-
-                        if (+bid[1] > highB) {
-                            highB = +bid[1];
-                            priceB = bid[0];
-                        }
-        
-                        if (+bid[0] <= bidsEstimatePrice) {
-                            break;
-                        }
-                    }
-        
-                    depthCache[symbol] = {
-                        maxAsk: {
-                            price: +priceA,
-                            volume: highA
-                        },
-                        maxBid: {
-                            price: +priceB,
-                            volume: highB
-                        },
-                        asksSum,
-                        bidsSum
-                    };
-                    
-                }
-            }
         });
     }
 
@@ -267,4 +195,202 @@ export async function ManageTradeLines(saveReq?: {
             }
         }
     }
+}
+
+let depthStreamHasBeenRun: boolean = false;
+
+export const depthCache: {
+    [symbol: string]: {
+        maxAsk: {
+            price: number;
+            volume: number;
+        };
+        maxBid: {
+            price: number;
+            volume: number;
+        };
+        prevMaxAsk: {
+            price: number;
+            volume: number;
+        };
+        prevMaxBid: {
+            price: number;
+            volume: number;
+        };
+        asksSum: number;
+        bidsSum: number;
+        bestAsk: number;
+        bestBid: number;
+        prevBestAsk: number;
+        prevBestBid: number;
+    }
+} = {};
+
+export function runDepthStream(): void {
+    if (depthStreamHasBeenRun) {
+        return;
+    }
+
+    depthStreamHasBeenRun = true;
+
+    DepthStream(_symbols, data => {
+        for (const symbol in data) {
+            if (Object.prototype.hasOwnProperty.call(data, symbol)) {
+                const dataItem = data[symbol];
+
+                const asksEstimatePrice = +dataItem.asks[0][0] + (3 * (+dataItem.asks[0][0] / 100));
+                const bidsEstimatePrice = +dataItem.bids[0][0] - (3 * (+dataItem.bids[0][0] / 100));
+
+                let highA: number = 0;
+                let priceA: string;
+                let highB: number = 0;
+                let priceB: string;
+                let prevHighA: number;
+                let prevPriceA: number;
+                let prevHighB: number;
+                let prevPriceB: number;
+                let asksSum: number = 0;
+                let bidsSum: number = 0;
+                let bestAsk: number;
+                let bestBid: number;
+                let prevBestAsk: number;
+                let prevBestBid: number;
+
+                bestAsk = +dataItem.asks[0][0];
+                bestBid = +dataItem.bids[0][0];
+
+                for (const ask of dataItem.asks) {
+                    asksSum += +ask[1];
+
+                    if (+ask[1] > highA) {
+                        highA = +ask[1];
+                        priceA = ask[0];
+                    }
+
+                    if (+ask[0] >= asksEstimatePrice) {
+                        break;
+                    }
+                }
+
+                for (const bid of dataItem.bids) {
+                    bidsSum += +bid[1];
+
+                    if (+bid[1] > highB) {
+                        highB = +bid[1];
+                        priceB = bid[0];
+                    }
+
+                    if (+bid[0] <= bidsEstimatePrice) {
+                        break;
+                    }
+                }
+
+                if (depthCache[symbol]) {
+                    if (depthCache[symbol].maxAsk.price != +priceA) {
+                        prevPriceA = depthCache[symbol].maxAsk.price;
+                        prevHighA = depthCache[symbol].maxAsk.volume;
+                    } else {
+                        prevPriceA = depthCache[symbol].prevMaxAsk.price;
+                        prevHighA = depthCache[symbol].prevMaxAsk.volume;
+                    }
+
+                    if (depthCache[symbol].maxBid.price != +priceB) {
+                        prevPriceB = depthCache[symbol].maxBid.price;
+                        prevHighB = depthCache[symbol].maxBid.volume;
+                    } else {
+                        prevPriceB = depthCache[symbol].prevMaxBid.price;
+                        prevHighB = depthCache[symbol].prevMaxBid.volume;
+                    }
+
+                    if (depthCache[symbol].bestAsk != bestAsk) {
+                        prevBestAsk = depthCache[symbol].bestAsk;
+                    } else {
+                        prevBestAsk = depthCache[symbol].prevBestAsk;
+                    }
+
+                    if (depthCache[symbol].bestBid != bestBid) {
+                        prevBestBid = depthCache[symbol].bestBid;
+                    } else {
+                        prevBestBid = depthCache[symbol].prevBestBid;
+                    }
+                }
+
+                depthCache[symbol] = {
+                    maxAsk: {
+                        price: +priceA,
+                        volume: highA
+                    },
+                    maxBid: {
+                        price: +priceB,
+                        volume: highB
+                    },
+                    prevMaxAsk: {
+                        price: prevPriceA,
+                        volume: prevHighA
+                    },
+                    prevMaxBid: {
+                        price: prevPriceB,
+                        volume: prevHighB
+                    },
+                    asksSum,
+                    bidsSum,
+                    bestAsk,
+                    bestBid,
+                    prevBestAsk,
+                    prevBestBid
+                };
+
+            }
+        }
+    });
+}
+
+let tradeListStreamHasBeenRun: boolean = false;
+
+export const tradeListCache: {
+    [symbol: string]: {
+        buyVol: number;
+        sellVol: number;
+        prevBuyVol: number;
+        prevSellVol: number;
+        count: number;
+    }
+} = {};
+
+export function runTradeListStream(): void {
+    if (tradeListStreamHasBeenRun) {
+        return;
+    }
+
+    tradeListStreamHasBeenRun = true;
+
+    TradesListStream(_symbols, data => {
+
+        if (!tradeListCache[data.symbol]) {
+            tradeListCache[data.symbol] = {
+                buyVol: !data.isBuyerMaker ? 0 : +data.qty,
+                sellVol: data.isBuyerMaker ? +data.qty : 0,
+                prevBuyVol: null,
+                prevSellVol: null,
+                count: 0
+            };
+        } else {
+            tradeListCache[data.symbol].count++;
+
+            if (data.isBuyerMaker) {
+                tradeListCache[data.symbol].sellVol += +data.qty;
+            } else {
+                tradeListCache[data.symbol].buyVol += +data.qty;
+            }
+
+            if (tradeListCache[data.symbol].count >= 2) {
+                tradeListCache[data.symbol].prevBuyVol = tradeListCache[data.symbol].buyVol;
+                tradeListCache[data.symbol].prevSellVol = tradeListCache[data.symbol].sellVol;
+                tradeListCache[data.symbol].buyVol = 0;
+                tradeListCache[data.symbol].sellVol = 0;
+                tradeListCache[data.symbol].count = 0;
+            }
+        }
+
+    });
 }

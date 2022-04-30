@@ -2,7 +2,9 @@
 // import { candlesTicksStream, DepthStream } from './binance_api/binanceApi';
 // import { LVL, TDL } from './indicators';
 
-import { test2Var } from './test2';
+import getSymbols from './binance_api/symbols';
+
+
 
 // const lineOpt = {
 //     start: {
@@ -93,6 +95,20 @@ import { test2Var } from './test2';
 
 // console.log(['a','b','c','d','e','f'].slice(-5,-2));
 
-const x = 'false';
+// const x = 'false';
 
-console.log(Boolean(x));
+// console.log(Boolean(x));
+
+// getSymbols().then(res => {
+//     const gmt = res.symbolsObj['GMTUSDT'];
+
+//     console.log(gmt);
+
+//     gmt.all.filters.forEach(el => {
+//         console.log(el);
+//     });
+
+//     // console.log(3.74523 * gmt.priceTickSize / );
+//     // console.log(3.74523 % gmt.priceTickSize);
+//     // console.log(3.7452 % gmt.priceTickSize);
+// });

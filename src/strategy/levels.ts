@@ -1,4 +1,4 @@
-import { depthCache } from '../bot';
+import { depthCache, runDepthStream } from '../bot';
 import { ATR, LVL, SMA, TDL } from '../indicators';
 import { Candle, SymbolResult, Entry } from './types';
 
@@ -18,6 +18,8 @@ const cache: {
 } = {};
 
 export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }: Entry): SymbolResult {
+    runDepthStream();
+    
     if (!cache[symbol]) {
         cache[symbol] = {
             levelsByDepth: {

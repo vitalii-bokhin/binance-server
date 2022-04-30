@@ -3,10 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FollowCandle = void 0;
 const technicalindicators_1 = require("technicalindicators");
 const indicators_1 = require("../indicators");
+const candle_1 = require("../indicators/candle");
 const cache = {};
 function FollowCandle({ symbol, candlesData, tiSettings }) {
     const _candles = candlesData;
-    const haCandles = _candles.slice(-14, -1);
+    // const sma = SMA({ data: _candles, period: 50 }).last;
+    const haCandles = _candles.slice(-14);
     const haData = {
         open: haCandles.map(c => c.open),
         close: haCandles.map(c => c.close),
@@ -15,6 +17,13 @@ function FollowCandle({ symbol, candlesData, tiSettings }) {
     };
     const ha = (0, technicalindicators_1.heikinashi)(haData);
     const prevCandleHa = {
+        high: ha.high.slice(-2)[0],
+        open: ha.open.slice(-2)[0],
+        close: ha.close.slice(-2)[0],
+        low: ha.low.slice(-2)[0],
+        openTime: null
+    };
+    const lastCandleHa = {
         high: ha.high.slice(-1)[0],
         open: ha.open.slice(-1)[0],
         close: ha.close.slice(-1)[0],
@@ -30,55 +39,43 @@ function FollowCandle({ symbol, candlesData, tiSettings }) {
         entryPrice: lastPrice,
         percentLoss: null,
         strategy: 'follow_candle',
-        preferIndex: atr / (lastPrice / 100),
+        preferIndex: null,
         rsiPeriod: tiSettings.rsiPeriod,
         resolvePosition: false,
         atr
     };
-    if (!cache[symbol]) {
-        cache[symbol] = {
-            lastOpenTime: lastCandle.openTime
-        };
-    }
     const long = function (stopLoss) {
-        if (cache[symbol].lastOpenTime !== lastCandle.openTime) {
-            // stopLoss -= atr;
+        if (true /* lastPrice > sma */) {
             if (lastPrice - stopLoss < atr) {
                 stopLoss = lastPrice - atr;
             }
             const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
             symbolResult.position = 'long';
             symbolResult.percentLoss = percentLoss;
+            symbolResult.preferIndex = 100 - percentLoss;
             symbolResult.resolvePosition = true;
-            cache[symbol].lastOpenTime = lastCandle.openTime;
         }
     };
     const short = function (stopLoss) {
-        if (cache[symbol].lastOpenTime !== lastCandle.openTime) {
-            // stopLoss += atr;
+        if (true /* lastPrice < sma */) {
             if (stopLoss - lastPrice < atr) {
                 stopLoss = lastPrice + atr;
             }
             const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);
             symbolResult.position = 'short';
             symbolResult.percentLoss = percentLoss;
+            symbolResult.preferIndex = 100 - percentLoss;
             symbolResult.resolvePosition = true;
-            cache[symbol].lastOpenTime = lastCandle.openTime;
         }
     };
-    // console.log(symbol, prevCandleHa);
-    if (prevCandleHa.close > prevCandleHa.open) {
-        if (prevCandleHa.open <= prevCandleHa.low
-            && lastCandle.close - lastCandle.open > atr / 5) {
-            // console.log(symbol, 'long');
-            long(prevCandleHa.open);
+    if ((0, candle_1.CheckCandle)(prevCandleHa) !== 'has_tails') {
+        if (prevCandleHa.close > prevCandleHa.open
+            && lastCandleHa.close > lastCandleHa.open) {
+            long(prevCandleHa.low);
         }
-    }
-    else if (prevCandleHa.close < prevCandleHa.open) {
-        if (prevCandleHa.open >= prevCandleHa.high
-            && lastCandle.open - lastCandle.close > atr / 5) {
-            // console.log(symbol, 'short');
-            short(prevCandleHa.open);
+        else if (prevCandleHa.close < prevCandleHa.open
+            && lastCandleHa.close < lastCandleHa.open) {
+            short(prevCandleHa.high);
         }
     }
     return symbolResult;

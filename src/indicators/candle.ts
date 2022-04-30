@@ -1,14 +1,14 @@
 import { Candle } from './types';
 
-export function CheckCandle(cdl: Candle/* , pos: 'long' | 'short' */): 'hasTails' /*'stopLong' | 'stopShort'  | 'stopBoth' */ {
+export function CheckCandle(cdl: Candle/* , pos: 'long' | 'short' */): 'has_tails' /*'stopLong' | 'stopShort'  | 'stopBoth' */ {
     if (cdl.close > cdl.open) {
         // UP CANDLE
         const highTail = cdl.high - cdl.close;
         const body = cdl.close - cdl.open;
         const lowTail = cdl.open - cdl.low;
 
-         if (body < lowTail || body < highTail) {
-            return 'hasTails';
+         if (body < lowTail && body < highTail) {
+            return 'has_tails';
         } /*else  if (pos == 'long' && highTail / (body + lowTail) > .33) {
             return 'stopLong';
         } else if (pos == 'short' && lowTail / (body + highTail) > .33) {
@@ -21,8 +21,8 @@ export function CheckCandle(cdl: Candle/* , pos: 'long' | 'short' */): 'hasTails
         const body = cdl.open - cdl.close;
         const lowTail = cdl.close - cdl.low;
 
-         if (body < lowTail || body < highTail) {
-            return 'hasTails';
+         if (body < lowTail && body < highTail) {
+            return 'has_tails';
         } /*else  if (pos == 'short' && lowTail / (body + highTail) > .33) {
             return 'stopShort';
         } else if (pos == 'long' && highTail / (body + lowTail) > .33) {

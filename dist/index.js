@@ -2,6 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 require("./client");
 require("./trade");
+// import { Bot } from './bot';
+// import { ordersUpdateStream, positionUpdateStream, priceStream } from './binanceApi';
+// import getSymbols from './binance_api/symbols';
 // import getSymbols from './symbols';
 // Bot();
 // const item = ['a','b','c','d','e','f','j'];

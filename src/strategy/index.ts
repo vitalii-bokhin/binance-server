@@ -3,6 +3,7 @@ import { Levels } from './levels';
 import { tradeLinesCache } from '../bot';
 import { openedPositions } from '../trade';
 import { FollowCandle } from './followCandle';
+import { TradesStrong } from './tradesStrong';
 
 let analizedSymbols: {
     [symbol: string]: {
@@ -174,7 +175,9 @@ export async function Strategy({ data, symbols, tradingSymbols, tradeLines }: { 
                 signals.push(Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }));
             } */
 
-            signals.push(FollowCandle({ symbol, candlesData, tiSettings }));
+            // signals.push(FollowCandle({ symbol, candlesData, tiSettings }));
+
+            TradesStrong({ symbol, candlesData, tiSettings });
 
             // signals.push(Trend({ symbol, candlesData, tiSettings }));
 

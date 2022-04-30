@@ -5,6 +5,7 @@ const bot_1 = require("../bot");
 const indicators_1 = require("../indicators");
 const cache = {};
 function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }) {
+    (0, bot_1.runDepthStream)();
     if (!cache[symbol]) {
         cache[symbol] = {
             levelsByDepth: {

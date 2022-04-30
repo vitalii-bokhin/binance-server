@@ -42,7 +42,7 @@ export function Trend({ symbol, candlesData, tiSettings }: Entry): SymbolResult 
 
         if (
             lastCandle.close > lastCandle.open
-            && CheckCandle(lastCandle) != 'hasTails'
+            && CheckCandle(lastCandle) != 'has_tails'
         ) {
             symbolResult.resolvePosition = true;
         }
@@ -57,7 +57,7 @@ export function Trend({ symbol, candlesData, tiSettings }: Entry): SymbolResult 
 
         if (
             lastCandle.close < lastCandle.open
-            && CheckCandle(lastCandle) != 'hasTails'
+            && CheckCandle(lastCandle) != 'has_tails'
         ) {
             symbolResult.resolvePosition = true;
         }

@@ -72,6 +72,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 //     console.log(test2Var);
 // }, 5000);
 // console.log(['a','b','c','d','e','f'].slice(-5,-2));
-const x = 'false';
-console.log(Boolean(x));
+// const x = 'false';
+// console.log(Boolean(x));
+// getSymbols().then(res => {
+//     const gmt = res.symbolsObj['GMTUSDT'];
+//     console.log(gmt);
+//     gmt.all.filters.forEach(el => {
+//         console.log(el);
+//     });
+//     // console.log(3.74523 * gmt.priceTickSize / );
+//     // console.log(3.74523 % gmt.priceTickSize);
+//     // console.log(3.7452 % gmt.priceTickSize);
+// });
 //# sourceMappingURL=test.js.map

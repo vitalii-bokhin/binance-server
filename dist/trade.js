@@ -7,15 +7,15 @@ exports.OpenPosition = exports._symbols = exports.openedPositions = void 0;
 const binanceApi_1 = require("./binance_api/binanceApi");
 const CandlesTicksStream_1 = require("./binance_api/CandlesTicksStream");
 const position_1 = require("./position");
-const symbols_1 = __importDefault(require("./symbols"));
-const fee = .08, interval = '5m', limit = 100, leverage = 20;
+const symbols_1 = __importDefault(require("./binance_api/symbols"));
+const fee = .08, interval = '5m', limit = 100, leverage = 20, maxBotPositions = 2;
 exports.openedPositions = {};
-const excludedPositions = [];
+let excludedPositions = [];
 let botPositions = 0;
 let _symbolsObj;
 (async function () {
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
-    exports._symbols = ['ZILUSDT', 'WAVESUSDT', 'GMTUSDT', 'MATICUSDT']; //symbols;
+    exports._symbols = [/* 'ZILUSDT', */ 'WAVESUSDT' /* , 'GMTUSDT', 'MATICUSDT' */]; //symbols;
     _symbolsObj = symbolsObj;
     (0, CandlesTicksStream_1.CandlesTicksStream)({ symbols: exports._symbols, interval, limit }, null);
     (0, binanceApi_1.ordersUpdateStream)();
@@ -35,7 +35,7 @@ function OpenPosition(s, initiator) {
     if (exports.openedPositions[pKey]
         || !s.resolvePosition
         || excludedPositions.includes(pKey)
-        || (initiator == 'bot' && botPositions >= 1)
+        || (initiator == 'bot' && botPositions >= maxBotPositions)
         || s.percentLoss < fee) {
         return;
     }
@@ -47,9 +47,12 @@ function OpenPosition(s, initiator) {
     let trailingStopTriggerPriceStepPerc;
     let trailingStopOrderDistancePerc;
     let takeProfitPerc;
+    let setTakeProfit;
     const atrPerc = s.atr / (s.entryPrice / 100);
     if (s.strategy == 'follow_candle') {
-        takeProfitPerc = atrPerc / 5;
+        setTakeProfit = true;
+        // takeProfitPerc = atrPerc / 5;
+        takeProfitPerc = s.percentLoss / 10;
     }
     if (s.strategy == 'levels') {
         trailingStopStartTriggerPricePerc = atrPerc + .2;
@@ -80,12 +83,10 @@ function OpenPosition(s, initiator) {
         signalDetails: s.signalDetails,
         initiator,
         useTrailingStop: s.strategy === 'levels',
-        setTakeProfit: s.strategy !== 'levels',
+        setTakeProfit,
         takeProfitPerc
     });
-    exports.openedPositions[pKey].setOrders().then(res => {
-        console.log(res);
-    });
+    exports.openedPositions[pKey].setOrders();
     // if (s.signal == 'scalping') {
     // } else {
     //     // botPositions[pKey].setEntryOrder().then((res) => {
@@ -96,16 +97,22 @@ function OpenPosition(s, initiator) {
     //     // });
     // }
     exports.openedPositions[pKey].deletePosition = function (opt) {
-        if (opt && opt.excludeKey) {
-            excludedPositions.push(opt.excludeKey);
-            console.log('EXCLUDED =' + this.positionKey);
+        if (opt) {
+            if (opt.excludeKey) {
+                excludedPositions.push(opt.excludeKey);
+                console.log('EXCLUDED =' + this.positionKey);
+            }
+            else if (opt.excludeKey === null) {
+                excludedPositions = [];
+            }
         }
-        delete exports.openedPositions[this.positionKey];
         if (this.initiator == 'bot') {
             botPositions--;
         }
         console.log('DELETE =' + this.positionKey + '= POSITION OBJECT');
+        delete exports.openedPositions[this.positionKey];
     };
+    console.log('trade.ts -> OpenPosition -> openedPositions');
     console.log(exports.openedPositions);
 }
 exports.OpenPosition = OpenPosition;

@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReuseStrategy = exports.Strategy = void 0;
 const trade_1 = require("../trade");
-const followCandle_1 = require("./followCandle");
+const tradesStrong_1 = require("./tradesStrong");
 let analizedSymbols = {};
 let analizedSymbolsCount = 0;
 const purpose = {
@@ -120,7 +120,8 @@ async function Strategy({ data, symbols, tradingSymbols, tradeLines }) {
 
                 signals.push(Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }));
             } */
-            signals.push((0, followCandle_1.FollowCandle)({ symbol, candlesData, tiSettings }));
+            // signals.push(FollowCandle({ symbol, candlesData, tiSettings }));
+            (0, tradesStrong_1.TradesStrong)({ symbol, candlesData, tiSettings });
             // signals.push(Trend({ symbol, candlesData, tiSettings }));
             // if (purpose.scalping.includes(symbol)) {
             //     signals.push(Scalping({ symbol, candlesData, tiSettings }));

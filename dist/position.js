@@ -39,7 +39,7 @@ class Position {
         this.rsiPeriod = opt.rsiPeriod;
         this.percentLoss = opt.percentLoss;
         this.signalDetails = opt.signalDetails;
-        this.setTakeProfit = opt.setTakeProfit !== undefined ? opt.setTakeProfit : true;
+        this.setTakeProfit = opt.setTakeProfit !== undefined ? opt.setTakeProfit : false;
         this.takeProfitPerc = opt.takeProfitPerc !== undefined ? opt.takeProfitPerc : null;
         this.useTrailingStop = opt.useTrailingStop !== undefined ? opt.useTrailingStop : false;
         this.initiator = opt.initiator;
@@ -80,6 +80,39 @@ class Position {
     // SCALPING Orders
     async setOrders() {
         this.entryClientOrderId = 'luf21_scalp_' + this.symbol;
+        // watch
+        this.watchOrder();
+        this.watchPosition();
+        // leverage
+        const lvr = await binanceAuth.futuresLeverage(this.symbol, this.leverage);
+        // entry
+        const entrySide = this.position === 'long' ? 'BUY' : 'SELL';
+        let usdtAmount = this.lossAmount * (100 / this.percentLoss - this.fee);
+        const quantity = +(usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
+        console.log('Position -> setOrders -> ', { quantity, usdtAmount });
+        const entryParams = {
+            type: 'MARKET',
+            newClientOrderId: this.entryClientOrderId
+        };
+        if (quantity < this.symbolInfo.minMarketLotSize) {
+            console.log(`Position -> setOrders() -> Error: 'SMALL_LOT_SIZE', errorMsg: 'Min: ' + ${this.symbolInfo.minMarketLotSize} + '; Current: ' + ${quantity}, positionKey: ${this.positionKey}`);
+            this.deletePositionInner({ excludeKey: this.positionKey });
+            return;
+        }
+        if (usdtAmount < 5) {
+            console.log(`Position -> setOrders() -> Error: 'SMALL_AMOUNT', errorMsg: 'Small Amount: ' + ${usdtAmount}, positionKey: ${this.positionKey}`);
+            this.deletePositionInner({ excludeKey: this.positionKey });
+            return;
+        }
+        const entryOrd = await binanceAuth.futuresOrder(entrySide, this.symbol, quantity, false, entryParams);
+        console.log('Position -> setOrders() -> entryOrd');
+        console.log(entryOrd);
+        this.quantity = +entryOrd.origQty;
+        if (entryOrd.code == -4164) {
+            this.deletePositionInner({ excludeKey: this.positionKey });
+        }
+    }
+    watchOrder() {
         (0, binanceApi_1.ordersUpdateStream)(this.symbol, order => {
             if (order.clientOrderId == this.entryClientOrderId && order.orderStatus == 'FILLED') {
                 this.realEntryPrice = +order.averagePrice;
@@ -103,8 +136,8 @@ class Position {
                     stopPrice = +stopPrice.toFixed(this.symbolInfo.pricePrecision);
                     binanceAuth.futuresOrder(profitSide, this.symbol, this.quantity, stopPrice, profitParams)
                         .then(arg => {
+                        console.log('Position -> watchOrder() -> take profit order');
                         console.log(arg);
-                        console.log(profitSide, this.symbol, this.quantity, stopPrice, profitParams);
                     });
                 }
                 // stop loss
@@ -123,39 +156,12 @@ class Position {
                 exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
                 binanceAuth.futuresOrder(exitSide, this.symbol, false, false, exitParams).then(ord => {
                     this.stopLossClientOrderId = ord.clientOrderId;
+                    console.log('Position -> watchOrder() -> stop loss order');
+                    console.log(ord);
                 });
             }
         });
-        // watch
-        this.watchPosition();
-        // leverage
-        const lvr = await binanceAuth.futuresLeverage(this.symbol, this.leverage);
-        // entry
-        const entrySide = this.position === 'long' ? 'BUY' : 'SELL';
-        let usdtAmount = this.lossAmount * (100 / this.percentLoss - this.fee);
-        console.log({ usdtAmount });
-        const quantity = +(usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
-        console.log({ quantity });
-        const entryParams = {
-            type: 'MARKET',
-            newClientOrderId: this.entryClientOrderId
-        };
-        if (quantity < this.symbolInfo.minMarketLotSize) {
-            console.log(`error: 'SMALL_LOT_SIZE', errorMsg: 'Min: ' + ${this.symbolInfo.minMarketLotSize} + '; Current: ' + ${quantity}, positionKey: ${this.positionKey}`);
-            this.deletePositionInner({ excludeKey: this.positionKey });
-            return;
-        }
-        if (usdtAmount < 5) {
-            console.log(`error: 'SMALL_AMOUNT', errorMsg: 'Small Amount: ' + ${usdtAmount}, positionKey: ${this.positionKey}`);
-            this.deletePositionInner({ excludeKey: this.positionKey });
-            return;
-        }
-        // return {};
-        const entryOrd = await binanceAuth.futuresOrder(entrySide, this.symbol, quantity, false, entryParams);
-        this.quantity = +entryOrd.origQty;
-        return { entryOrder: entryOrd };
     }
-    // WATCH POSITION
     watchPosition() {
         (0, CandlesTicksStream_1.symbolCandlesTicksStream)(this.symbol, data => {
             const lastPrice = data[data.length - 1].close;
@@ -181,10 +187,8 @@ class Position {
             // }
         });
         (0, binanceApi_1.positionUpdateStream)(this.symbol, (pos) => {
-            console.log('positionUpdateStream');
-            console.log(pos);
             if (pos.positionAmount == '0') {
-                this.deletePositionInner();
+                this.deletePositionInner({ excludeKey: null });
             }
         });
     }
@@ -214,6 +218,8 @@ class Position {
         }
         exitParams.stopPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
         const stopOrd = await binanceAuth.futuresOrder(exitSide, this.symbol, false, false, exitParams);
+        console.log('Position -> moveStopLoss() -> trailing stop order');
+        console.log(stopOrd);
         this.stopLossClientOrderId = stopOrd.clientOrderId;
         this.trailingSteps++;
         this.stopLossHasBeenMoved = false;
