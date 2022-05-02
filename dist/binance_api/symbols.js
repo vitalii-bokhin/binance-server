@@ -10,18 +10,18 @@ async function getSymbols() {
     const exchInfo = await _1.binance.futuresExchangeInfo();
     exchInfo.symbols.forEach((sym) => {
         if (sym.contractType == 'PERPETUAL' && sym.status == 'TRADING' && sym.marginAsset == 'USDT') {
-            let minMarketLotSize;
             symbolsObj[sym.symbol] = {
                 quantityPrecision: sym.quantityPrecision,
                 pricePrecision: 0,
-                minMarketLotSize,
-                priceTickSize: null
+                minMarketLotSize: null,
+                priceTickSize: null,
+                allData: sym
             };
             for (const key in sym.filters) {
                 if (Object.prototype.hasOwnProperty.call(sym.filters, key)) {
                     const item = sym.filters[key];
                     if (item.filterType == 'MARKET_LOT_SIZE') {
-                        minMarketLotSize = +item.minQty;
+                        symbolsObj[sym.symbol].minMarketLotSize = +item.minQty;
                     }
                     if (item.filterType == 'PRICE_FILTER') {
                         symbolsObj[sym.symbol].priceTickSize = +item.tickSize;

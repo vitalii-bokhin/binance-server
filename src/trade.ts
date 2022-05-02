@@ -24,7 +24,7 @@ let _symbolsObj: { [key: string]: any };
 (async function () {
     const { symbols, symbolsObj } = await getSymbols();
 
-    _symbols = [/* 'ZILUSDT', */ 'WAVESUSDT'/* , 'GMTUSDT', 'MATICUSDT' */]; //symbols;
+    _symbols = ['GMTUSDT', 'FTMUSDT', 'ZILUSDT']; //symbols, ,'LUNAUSDT', 'WAVESUSDT', 'MATICUSDT';
     _symbolsObj = symbolsObj;
 
     CandlesTicksStream({ symbols: _symbols, interval, limit }, null);
@@ -67,6 +67,7 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
     let trailingStopOrderDistancePerc: number;
     let takeProfitPerc: number;
     let setTakeProfit: boolean;
+    let useTrailingStop: boolean;
 
     const atrPerc = s.atr / (s.entryPrice / 100);
 
@@ -76,7 +77,16 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
         takeProfitPerc = s.percentLoss / 10;
     }
 
+    if (s.strategy == 'traders_force') {
+        setTakeProfit = true;
+        useTrailingStop = true;
+        trailingStopStartTriggerPricePerc = s.percentLoss / 2;
+        trailingStopStartOrderPerc = fee;
+        // takeProfitPerc = s.percentLoss / 2;
+    }
+
     if (s.strategy == 'levels') {
+        useTrailingStop = true;
         trailingStopStartTriggerPricePerc = atrPerc + .2;
         trailingStopStartOrderPerc = .2 - fee;
         trailingStopTriggerPriceStepPerc = atrPerc;
@@ -105,7 +115,7 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
         rsiPeriod: s.rsiPeriod,
         signalDetails: s.signalDetails,
         initiator,
-        useTrailingStop: s.strategy === 'levels',
+        useTrailingStop,
         setTakeProfit,
         takeProfitPerc
     });

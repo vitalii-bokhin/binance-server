@@ -18,7 +18,7 @@ class Position {
         this.stopLossHasBeenMoved = false;
         this.marketCloseOrderHasBeenCalled = false;
         this.trailingSteps = 0;
-        this.lossAmount = .1;
+        this.lossAmount = .5;
         this.positionKey = opt.positionKey;
         this.position = opt.position;
         this.symbol = opt.symbol;
@@ -166,6 +166,9 @@ class Position {
         (0, CandlesTicksStream_1.symbolCandlesTicksStream)(this.symbol, data => {
             const lastPrice = data[data.length - 1].close;
             if (!this.stopLossHasBeenMoved && this.useTrailingStop) {
+                if (this.trailingSteps > 0 && !this.trailingStopTriggerPriceStepPerc) {
+                    return;
+                }
                 let changePerc;
                 const triggerPerc = this.trailingSteps === 0 ? this.trailingStopStartTriggerPricePerc : this.trailingStopStartTriggerPricePerc + this.trailingStopTriggerPriceStepPerc * this.trailingSteps;
                 if (this.position === 'long') {

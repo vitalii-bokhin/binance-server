@@ -169,8 +169,8 @@ function runDepthStream() {
         for (const symbol in data) {
             if (Object.prototype.hasOwnProperty.call(data, symbol)) {
                 const dataItem = data[symbol];
-                const asksEstimatePrice = +dataItem.asks[0][0] + (3 * (+dataItem.asks[0][0] / 100));
-                const bidsEstimatePrice = +dataItem.bids[0][0] - (3 * (+dataItem.bids[0][0] / 100));
+                const asksEstimatePrice = +dataItem.asks[0][0] + (5 * (+dataItem.asks[0][0] / 100));
+                const bidsEstimatePrice = +dataItem.bids[0][0] - (5 * (+dataItem.bids[0][0] / 100));
                 let highA = 0;
                 let priceA;
                 let highB = 0;

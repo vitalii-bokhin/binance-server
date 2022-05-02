@@ -2,7 +2,11 @@
 // import { TradesList, TradesListStream } from './binance_api';
 // import { candlesTicksStream, DepthStream } from './binance_api/binanceApi';
 // import { LVL, TDL } from './indicators';
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+const symbols_1 = __importDefault(require("./binance_api/symbols"));
 // const lineOpt = {
 //     start: {
 //         price: 23.7273,
@@ -74,14 +78,22 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // console.log(['a','b','c','d','e','f'].slice(-5,-2));
 // const x = 'false';
 // console.log(Boolean(x));
-// getSymbols().then(res => {
-//     const gmt = res.symbolsObj['GMTUSDT'];
-//     console.log(gmt);
-//     gmt.all.filters.forEach(el => {
-//         console.log(el);
-//     });
-//     // console.log(3.74523 * gmt.priceTickSize / );
-//     // console.log(3.74523 % gmt.priceTickSize);
-//     // console.log(3.7452 % gmt.priceTickSize);
-// });
+(0, symbols_1.default)().then(res => {
+    const gmt = res.symbolsObj['LUNAUSDT'];
+    console.log(gmt);
+    gmt.allData.filters.forEach(el => {
+        console.log(el);
+    });
+    // console.log(3.74523 * gmt.priceTickSize / );
+    // console.log(3.74523 % gmt.priceTickSize);
+    // console.log(3.7452 % gmt.priceTickSize);
+});
+// let a = 22;
+// for (let i = 0; i < 1000; i++) {
+//     const f = function (b) {
+//         b = 55;
+//     }
+//     f(a);
+// }
+// console.log(process.memoryUsage());
 //# sourceMappingURL=test.js.map

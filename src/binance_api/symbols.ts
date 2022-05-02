@@ -6,6 +6,7 @@ const symbolsObj: {
         pricePrecision: number;
         minMarketLotSize: number;
         priceTickSize: number;
+        allData?: any;
     }
 } = {};
 
@@ -20,13 +21,12 @@ export default async function getSymbols(): Promise<{ symbols: string[]; symbols
 
     exchInfo.symbols.forEach((sym: any) => {
         if (sym.contractType == 'PERPETUAL' && sym.status == 'TRADING' && sym.marginAsset == 'USDT') {
-            let minMarketLotSize: number;
-
             symbolsObj[sym.symbol] = {
                 quantityPrecision: sym.quantityPrecision,
                 pricePrecision: 0,
-                minMarketLotSize,
-                priceTickSize: null
+                minMarketLotSize: null,
+                priceTickSize: null,
+                allData: sym
             };
 
             for (const key in sym.filters) {
@@ -34,7 +34,7 @@ export default async function getSymbols(): Promise<{ symbols: string[]; symbols
                     const item = sym.filters[key];
 
                     if (item.filterType == 'MARKET_LOT_SIZE') {
-                        minMarketLotSize = +item.minQty;
+                        symbolsObj[sym.symbol].minMarketLotSize = +item.minQty;
                     }
 
                     if (item.filterType == 'PRICE_FILTER') {

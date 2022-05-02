@@ -47,7 +47,7 @@ export class Position {
     takeProfitPerc: number;
     useTrailingStop: boolean;
     initiator: 'bot' | 'user';
-    lossAmount: number = .1;
+    lossAmount: number = .5;
 
     constructor(opt: {
         positionKey: string;
@@ -266,6 +266,10 @@ export class Position {
             const lastPrice = data[data.length - 1].close;
 
             if (!this.stopLossHasBeenMoved && this.useTrailingStop) {
+                if (this.trailingSteps > 0 && !this.trailingStopTriggerPriceStepPerc) {
+                    return;
+                }
+
                 let changePerc: number;
 
                 const triggerPerc = this.trailingSteps === 0 ? this.trailingStopStartTriggerPricePerc : this.trailingStopStartTriggerPricePerc + this.trailingStopTriggerPriceStepPerc * this.trailingSteps;

@@ -15,7 +15,7 @@ let botPositions = 0;
 let _symbolsObj;
 (async function () {
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
-    exports._symbols = [/* 'ZILUSDT', */ 'WAVESUSDT' /* , 'GMTUSDT', 'MATICUSDT' */]; //symbols;
+    exports._symbols = ['GMTUSDT', 'FTMUSDT', 'ZILUSDT']; //symbols, ,'LUNAUSDT', 'WAVESUSDT', 'MATICUSDT';
     _symbolsObj = symbolsObj;
     (0, CandlesTicksStream_1.CandlesTicksStream)({ symbols: exports._symbols, interval, limit }, null);
     (0, binanceApi_1.ordersUpdateStream)();
@@ -48,13 +48,22 @@ function OpenPosition(s, initiator) {
     let trailingStopOrderDistancePerc;
     let takeProfitPerc;
     let setTakeProfit;
+    let useTrailingStop;
     const atrPerc = s.atr / (s.entryPrice / 100);
     if (s.strategy == 'follow_candle') {
         setTakeProfit = true;
         // takeProfitPerc = atrPerc / 5;
         takeProfitPerc = s.percentLoss / 10;
     }
+    if (s.strategy == 'traders_force') {
+        setTakeProfit = true;
+        useTrailingStop = true;
+        trailingStopStartTriggerPricePerc = s.percentLoss / 2;
+        trailingStopStartOrderPerc = fee;
+        // takeProfitPerc = s.percentLoss / 2;
+    }
     if (s.strategy == 'levels') {
+        useTrailingStop = true;
         trailingStopStartTriggerPricePerc = atrPerc + .2;
         trailingStopStartOrderPerc = .2 - fee;
         trailingStopTriggerPriceStepPerc = atrPerc;
@@ -82,7 +91,7 @@ function OpenPosition(s, initiator) {
         rsiPeriod: s.rsiPeriod,
         signalDetails: s.signalDetails,
         initiator,
-        useTrailingStop: s.strategy === 'levels',
+        useTrailingStop,
         setTakeProfit,
         takeProfitPerc
     });

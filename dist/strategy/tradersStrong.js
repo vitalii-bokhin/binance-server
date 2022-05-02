@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TradesStrong = void 0;
+exports.TradersStrong = void 0;
 const bot_1 = require("../bot");
 const indicators_1 = require("../indicators");
 const cache = {};
-function TradesStrong({ symbol, candlesData, tiSettings }) {
+function TradersStrong({ symbol, candlesData, tiSettings }) {
     // runTradeListStream();
     (0, bot_1.runDepthStream)();
     if (!cache[symbol]) {
@@ -23,7 +23,7 @@ function TradesStrong({ symbol, candlesData, tiSettings }) {
         position: null,
         entryPrice: lastPrice,
         percentLoss: null,
-        strategy: 'follow_candle',
+        strategy: 'traders_strong',
         preferIndex: null,
         rsiPeriod: tiSettings.rsiPeriod,
         resolvePosition: false
@@ -117,5 +117,5 @@ function TradesStrong({ symbol, candlesData, tiSettings }) {
     }
     return symbolResult;
 }
-exports.TradesStrong = TradesStrong;
-//# sourceMappingURL=tradesStrong.js.map
+exports.TradersStrong = TradersStrong;
+//# sourceMappingURL=tradersStrong.js.map

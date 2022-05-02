@@ -106,7 +106,7 @@ function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }) {
             && lastPrice > lvl.topPrice
             && lastCandle.close > lastCandle.open
             && lastCandle.close - lastCandle.open > atr / 3
-            && lastPrice - tdl.topPrice < atr
+            && lastPrice - lvl.topPrice < atr
         // && lastPrice > prevCandle.open
         ) {
             long(lvl.bottomPrice);
@@ -115,7 +115,7 @@ function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }) {
             && lastPrice < lvl.bottomPrice
             && lastCandle.close < lastCandle.open
             && lastCandle.open - lastCandle.close > atr / 3
-            && tdl.bottomPrice - lastPrice < atr
+            && lvl.bottomPrice - lastPrice < atr
         // && lastPrice < prevCandle.open
         ) {
             short(lvl.topPrice);

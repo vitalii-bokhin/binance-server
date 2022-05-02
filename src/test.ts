@@ -99,16 +99,28 @@ import getSymbols from './binance_api/symbols';
 
 // console.log(Boolean(x));
 
-// getSymbols().then(res => {
-//     const gmt = res.symbolsObj['GMTUSDT'];
+getSymbols().then(res => {
+    const gmt = res.symbolsObj['LUNAUSDT'];
 
-//     console.log(gmt);
+    console.log(gmt);
 
-//     gmt.all.filters.forEach(el => {
-//         console.log(el);
-//     });
+    gmt.allData.filters.forEach(el => {
+        console.log(el);
+    });
 
-//     // console.log(3.74523 * gmt.priceTickSize / );
-//     // console.log(3.74523 % gmt.priceTickSize);
-//     // console.log(3.7452 % gmt.priceTickSize);
-// });
+    // console.log(3.74523 * gmt.priceTickSize / );
+    // console.log(3.74523 % gmt.priceTickSize);
+    // console.log(3.7452 % gmt.priceTickSize);
+});
+
+// let a = 22;
+
+// for (let i = 0; i < 1000; i++) {
+//     const f = function (b) {
+//         b = 55;
+//     }
+
+//     f(a);
+// }
+
+// console.log(process.memoryUsage());
