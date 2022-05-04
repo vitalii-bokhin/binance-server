@@ -87,10 +87,10 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
 
     if (s.strategy == 'levels') {
         useTrailingStop = true;
-        trailingStopStartTriggerPricePerc = atrPerc + .2;
-        trailingStopStartOrderPerc = .2 - fee;
-        trailingStopTriggerPriceStepPerc = atrPerc;
-        trailingStopOrderDistancePerc = atrPerc;
+        trailingStopStartTriggerPricePerc = s.percentLoss + fee;
+        trailingStopStartOrderPerc = fee;
+        trailingStopTriggerPriceStepPerc = s.percentLoss;
+        trailingStopOrderDistancePerc = s.percentLoss;
     }
 
     openedPositions[pKey] = new Position({

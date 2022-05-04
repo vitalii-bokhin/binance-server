@@ -64,10 +64,10 @@ function OpenPosition(s, initiator) {
     }
     if (s.strategy == 'levels') {
         useTrailingStop = true;
-        trailingStopStartTriggerPricePerc = atrPerc + .2;
-        trailingStopStartOrderPerc = .2 - fee;
-        trailingStopTriggerPriceStepPerc = atrPerc;
-        trailingStopOrderDistancePerc = atrPerc;
+        trailingStopStartTriggerPricePerc = s.percentLoss + fee;
+        trailingStopStartOrderPerc = fee;
+        trailingStopTriggerPriceStepPerc = s.percentLoss;
+        trailingStopOrderDistancePerc = s.percentLoss;
     }
     exports.openedPositions[pKey] = new position_1.Position({
         positionKey: pKey,

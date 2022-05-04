@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReuseStrategy = exports.Strategy = void 0;
-const levels_1 = require("./levels");
 const trade_1 = require("../trade");
+const patterns_1 = require("./patterns");
 let analizedSymbols = {};
 let analizedSymbolsCount = 0;
 const purpose = {
@@ -114,11 +114,12 @@ async function Strategy({ data, symbols, tradingSymbols, tradeLines }) {
     for (const symbol in data) {
         if (Object.prototype.hasOwnProperty.call(data, symbol) && !trade_1.openedPositions[symbol]) {
             const candlesData = data[symbol];
-            if (purpose.levels.includes(symbol)) {
-                const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
-                const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
-                signals.push((0, levels_1.Levels)({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }));
-            }
+            // if (purpose.levels.includes(symbol)) {
+            //     const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
+            //     const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
+            //     signals.push(Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }));
+            // }
+            (0, patterns_1.Patterns)({ symbol, candlesData, tiSettings });
             // signals.push(FollowCandle({ symbol, candlesData, tiSettings }));
             // signals.push(TradersForce({ symbol, candlesData, tiSettings }));
             // signals.push(Trend({ symbol, candlesData, tiSettings }));

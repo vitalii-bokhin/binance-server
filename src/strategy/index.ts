@@ -4,6 +4,7 @@ import { tradeLinesCache } from '../bot';
 import { openedPositions } from '../trade';
 import { FollowCandle } from './followCandle';
 import { TradersForce } from './tradersForce';
+import { Patterns } from './patterns';
 
 let analizedSymbols: {
     [symbol: string]: {
@@ -168,12 +169,14 @@ export async function Strategy({ data, symbols, tradingSymbols, tradeLines }: { 
         if (Object.prototype.hasOwnProperty.call(data, symbol) && !openedPositions[symbol]) {
             const candlesData = data[symbol];
 
-            if (purpose.levels.includes(symbol)) {
-                const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
-                const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
+            // if (purpose.levels.includes(symbol)) {
+            //     const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
+            //     const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
 
-                signals.push(Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }));
-            }
+            //     signals.push(Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }));
+            // }
+
+            Patterns({ symbol, candlesData, tiSettings });
 
             // signals.push(FollowCandle({ symbol, candlesData, tiSettings }));
 
