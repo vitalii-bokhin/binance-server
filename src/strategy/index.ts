@@ -176,7 +176,7 @@ export async function Strategy({ data, symbols, tradingSymbols, tradeLines }: { 
             //     signals.push(Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }));
             // }
 
-            Patterns({ symbol, candlesData, tiSettings });
+            signals.push(Patterns({ symbol, candlesData, tiSettings }));
 
             // signals.push(FollowCandle({ symbol, candlesData, tiSettings }));
 

@@ -85,6 +85,11 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
         // takeProfitPerc = s.percentLoss / 2;
     }
 
+    if (s.strategy == 'patterns') {
+        setTakeProfit = true;
+        takeProfitPerc = s.percentLoss;
+    }
+
     if (s.strategy == 'levels') {
         useTrailingStop = true;
         trailingStopStartTriggerPricePerc = s.percentLoss + fee;

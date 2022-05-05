@@ -119,7 +119,7 @@ async function Strategy({ data, symbols, tradingSymbols, tradeLines }) {
             //     const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
             //     signals.push(Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }));
             // }
-            (0, patterns_1.Patterns)({ symbol, candlesData, tiSettings });
+            signals.push((0, patterns_1.Patterns)({ symbol, candlesData, tiSettings }));
             // signals.push(FollowCandle({ symbol, candlesData, tiSettings }));
             // signals.push(TradersForce({ symbol, candlesData, tiSettings }));
             // signals.push(Trend({ symbol, candlesData, tiSettings }));

@@ -62,6 +62,10 @@ function OpenPosition(s, initiator) {
         trailingStopStartOrderPerc = fee;
         // takeProfitPerc = s.percentLoss / 2;
     }
+    if (s.strategy == 'patterns') {
+        setTakeProfit = true;
+        takeProfitPerc = s.percentLoss;
+    }
     if (s.strategy == 'levels') {
         useTrailingStop = true;
         trailingStopStartTriggerPricePerc = s.percentLoss + fee;
