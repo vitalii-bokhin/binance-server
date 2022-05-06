@@ -89,12 +89,13 @@ export async function ManageTradeLines(saveReq?: {
         lines?: [];
     };
     removeId: string;
+    removeAll: string;
 }): Promise<void> {
 
     let tradeLines = await GetData<Tradelines>('tradelines');
 
     if (saveReq) {
-        const { obj, removeId } = saveReq;
+        const { obj, removeId, removeAll } = saveReq;
 
         if (obj) {
             if (!obj.symbol) {
@@ -159,6 +160,17 @@ export async function ManageTradeLines(saveReq?: {
 
             for (const tLine of tradeLines) {
                 if (removeId !== tLine.id) {
+                    survivors.push(tLine);
+                }
+            }
+
+            tradeLines = survivors;
+        
+        } else if (removeAll) {
+            const survivors = [];
+
+            for (const tLine of tradeLines) {
+                if (removeAll !== tLine.symbol) {
                     survivors.push(tLine);
                 }
             }

@@ -64,7 +64,7 @@ exports.BotControl = BotControl;
 async function ManageTradeLines(saveReq) {
     let tradeLines = await (0, db_1.GetData)('tradelines');
     if (saveReq) {
-        const { obj, removeId } = saveReq;
+        const { obj, removeId, removeAll } = saveReq;
         if (obj) {
             if (!obj.symbol) {
                 return;
@@ -125,6 +125,15 @@ async function ManageTradeLines(saveReq) {
             const survivors = [];
             for (const tLine of tradeLines) {
                 if (removeId !== tLine.id) {
+                    survivors.push(tLine);
+                }
+            }
+            tradeLines = survivors;
+        }
+        else if (removeAll) {
+            const survivors = [];
+            for (const tLine of tradeLines) {
+                if (removeAll !== tLine.symbol) {
                     survivors.push(tLine);
                 }
             }

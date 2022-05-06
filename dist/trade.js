@@ -15,7 +15,7 @@ let botPositions = 0;
 let _symbolsObj;
 (async function () {
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
-    exports._symbols = ['GMTUSDT', 'FTMUSDT', 'ZILUSDT']; //symbols, ,'LUNAUSDT', 'WAVESUSDT', 'MATICUSDT';
+    exports._symbols = ['GMTUSDT', 'TRXUSDT', 'WAVESUSDT', 'ZILUSDT']; //symbols, ,'LUNAUSDT','FTMUSDT' 'WAVESUSDT', 'MATICUSDT';
     _symbolsObj = symbolsObj;
     (0, CandlesTicksStream_1.CandlesTicksStream)({ symbols: exports._symbols, interval, limit }, null);
     (0, binanceApi_1.ordersUpdateStream)();
