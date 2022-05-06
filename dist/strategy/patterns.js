@@ -65,29 +65,50 @@ function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }) {
         console.log(symbol, 'outside bar short');
     }
     else if ( // pinbar long
-    cdl_2_Split.lowTail > cdl_2_Split.body * 2
-        && cdl_2_Split.highTail <= cdl_2_Split.body
-        && cdl_1.close > cdl_1.open
+    cdl_1_Split.lowTail > cdl_1_Split.body * 3
+        && cdl_1_Split.highTail <= cdl_1_Split.body
         && lastPrice > cdl_1.high) {
-        long(cdl_1.low);
+        long(cdl_1.low + (cdl_1.high - cdl_1.low) / 2);
         console.log(symbol, 'pinbar long');
     }
     else if ( // pinbar short
-    cdl_2_Split.highTail > cdl_2_Split.body * 2
-        && cdl_2_Split.lowTail <= cdl_2_Split.body
-        && cdl_1.close < cdl_1.open
+    cdl_1_Split.highTail > cdl_1_Split.body * 3
+        && cdl_1_Split.lowTail <= cdl_1_Split.body
         && lastPrice < cdl_1.low) {
-        short(cdl_1.high);
+        short(cdl_1.low + (cdl_1.high - cdl_1.low) / 2);
         console.log(symbol, 'pinbar short');
     }
     else if ( // hanging man
-    cdl_3.close > cdl_3.open
-        && cdl_2_Split.highTail <= cdl_2_Split.body
-        && cdl_2_Split.lowTail > cdl_2_Split.body * 2
-        && cdl_1.close < cdl_1.open
+    cdl_2.close > cdl_2.open
+        && cdl_1_Split.highTail <= cdl_1_Split.body
+        && cdl_1_Split.lowTail > cdl_1_Split.body * 2
         && lastPrice < cdl_1.low) {
         short(cdl_1.high);
         console.log(symbol, 'hanging man');
+    }
+    else if ( // inverted hummer
+    cdl_2.close < cdl_2.open
+        && cdl_1_Split.lowTail <= cdl_1_Split.body
+        && cdl_1_Split.highTail > cdl_1_Split.body * 2
+        && lastPrice > cdl_1.high) {
+        long(cdl_1.low);
+        console.log(symbol, 'inverted hummer');
+    }
+    else if ( // spinning top long
+    cdl_2.close < cdl_2.open
+        && cdl_1_Split.lowTail > cdl_1_Split.body * 2
+        && cdl_1_Split.highTail > cdl_1_Split.body * 2
+        && lastPrice > cdl_1.high) {
+        long(cdl_1.low);
+        console.log(symbol, 'spinning top long');
+    }
+    else if ( // spinning top short
+    cdl_2.close > cdl_2.open
+        && cdl_1_Split.lowTail > cdl_1_Split.body * 2
+        && cdl_1_Split.highTail > cdl_1_Split.body * 2
+        && lastPrice < cdl_1.low) {
+        short(cdl_1.high);
+        console.log(symbol, 'spinning top short');
     }
     // if ( // hummer
     //     fourthCandle.close < fourthCandle.open
