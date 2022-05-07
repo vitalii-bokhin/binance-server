@@ -19,6 +19,12 @@ const splitCdl = function (cdl: Candle): { highTail: number; body: number; lowTa
     return { highTail, body, lowTail };
 }
 
+const cache: {
+    [symbol: string]: {
+        lastCandleOpenTime: number;
+    };
+} = {};
+
 export function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }: Entry): SymbolResult {
     const _candles = candlesData;
 
@@ -26,6 +32,19 @@ export function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt
     const cdl_2: Candle = _candles.slice(-3)[0];
     const cdl_1: Candle = _candles.slice(-2)[0];
     const cdl_0: Candle = _candles.slice(-1)[0];
+
+    if (!cache[symbol]) {
+        cache[symbol] = {
+            lastCandleOpenTime: cdl_0.openTime
+        };
+    }
+
+    let newCandleHasBeenOpened: boolean = false;
+
+    if (cdl_0.openTime !== cache[symbol].lastCandleOpenTime) {
+        newCandleHasBeenOpened = true;
+        cache[symbol].lastCandleOpenTime = cdl_0.openTime;
+    }
 
     const lastPrice = cdl_0.close;
 
@@ -37,7 +56,8 @@ export function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt
         strategy: 'patterns',
         preferIndex: null,
         rsiPeriod: tiSettings.rsiPeriod,
-        resolvePosition: false
+        resolvePosition: false,
+        newCandleHasBeenOpened
     };
 
     const long = function (stopLoss) {
@@ -61,9 +81,11 @@ export function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt
     const cdl_2_Split = splitCdl(cdl_2);
     const cdl_1_Split = splitCdl(cdl_1);
 
-    if ( // outside bar long
-        cdl_2.close < cdl_2.open
+    /* if ( // outside bar long
+        cdl_3.close < cdl_3.open
+        && cdl_2.close < cdl_2.open
         && cdl_1.close > cdl_1.open
+        && cdl_1.low < cdl_2.low
         && cdl_1.close > cdl_2.high
         && lastPrice > cdl_1.high
     ) {
@@ -71,35 +93,57 @@ export function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt
         console.log(symbol, 'outside bar long');
 
     } else if ( // outside bar short
-        cdl_2.close > cdl_2.open
+        cdl_3.close > cdl_3.open
+        && cdl_2.close > cdl_2.open
         && cdl_1.close < cdl_1.open
+        && cdl_1.high > cdl_2.high
         && cdl_1.close < cdl_2.low
         && lastPrice < cdl_1.low
     ) {
         short(cdl_1.high);
         console.log(symbol, 'outside bar short');
 
-    } else if ( // pinbar long
-        cdl_1_Split.lowTail > cdl_1_Split.body * 3
+    } else if ( // inside bar long
+        cdl_2.high > cdl_1.high
+        && cdl_2.low < cdl_1.low
+        && lastPrice > cdl_1.high
+    ) {
+        long(cdl_1.low);
+        console.log(symbol, 'inside bar long');
+
+    } else if ( // inside bar short
+        cdl_2.high > cdl_1.high
+        && cdl_2.low < cdl_1.low
+        && lastPrice < cdl_1.low
+    ) {
+        short(cdl_1.high);
+        console.log(symbol, 'inside bar short');
+
+    } else */
+
+    if ( // pinbar long
+        cdl_2.close < cdl_2.open
+        && cdl_1_Split.lowTail > cdl_1_Split.body * 3
         && cdl_1_Split.highTail <= cdl_1_Split.body
         && lastPrice > cdl_1.high
     ) {
-        long(cdl_1.low + (cdl_1.high - cdl_1.low) / 2);
+        long(cdl_1.low + ((cdl_1.high - cdl_1.low) / 2));
         console.log(symbol, 'pinbar long');
 
     } else if ( // pinbar short
-        cdl_1_Split.highTail > cdl_1_Split.body * 3
+        cdl_2.close > cdl_2.open
+        && cdl_1_Split.highTail > cdl_1_Split.body * 3
         && cdl_1_Split.lowTail <= cdl_1_Split.body
         && lastPrice < cdl_1.low
     ) {
-        short(cdl_1.low + (cdl_1.high - cdl_1.low) / 2);
+        short(cdl_1.high - ((cdl_1.high - cdl_1.low) / 2));
         console.log(symbol, 'pinbar short');
 
     } else if ( // hanging man
         cdl_2.close > cdl_2.open
         && cdl_1_Split.highTail <= cdl_1_Split.body
         && cdl_1_Split.lowTail > cdl_1_Split.body * 2
-        && lastPrice < cdl_1.low
+        && lastPrice < cdl_1.high - ((cdl_1.high - cdl_1.low) / 2)
     ) {
         short(cdl_1.high);
         console.log(symbol, 'hanging man');
@@ -108,7 +152,7 @@ export function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt
         cdl_2.close < cdl_2.open
         && cdl_1_Split.lowTail <= cdl_1_Split.body
         && cdl_1_Split.highTail > cdl_1_Split.body * 2
-        && lastPrice > cdl_1.high
+        && lastPrice > cdl_1.low + ((cdl_1.high - cdl_1.low) / 2)
     ) {
         long(cdl_1.low);
         console.log(symbol, 'inverted hummer');
@@ -117,6 +161,8 @@ export function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt
         cdl_2.close < cdl_2.open
         && cdl_1_Split.lowTail > cdl_1_Split.body * 2
         && cdl_1_Split.highTail > cdl_1_Split.body * 2
+        && cdl_1_Split.highTail / cdl_1_Split.lowTail < 2
+        && cdl_1_Split.highTail / cdl_1_Split.lowTail > .5
         && lastPrice > cdl_1.high
     ) {
         long(cdl_1.low);
@@ -126,6 +172,8 @@ export function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt
         cdl_2.close > cdl_2.open
         && cdl_1_Split.lowTail > cdl_1_Split.body * 2
         && cdl_1_Split.highTail > cdl_1_Split.body * 2
+        && cdl_1_Split.highTail / cdl_1_Split.lowTail < 2
+        && cdl_1_Split.highTail / cdl_1_Split.lowTail > .5
         && lastPrice < cdl_1.low
     ) {
         short(cdl_1.high);

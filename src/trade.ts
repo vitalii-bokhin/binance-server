@@ -15,6 +15,7 @@ export const openedPositions: {
 } = {};
 
 let excludedPositions: string[] = [];
+let onPausedPositions: string[] = [];
 let botPositions = 0;
 
 export let _symbols: string[];
@@ -47,10 +48,19 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
     // console.log('s.percentLoss', s.percentLoss);
     // console.log('******************************************************');
 
+    if (s.newCandleHasBeenOpened) {
+        const ind = onPausedPositions.indexOf(pKey);
+
+        if (ind !== -1) {
+            onPausedPositions.splice(ind, 1);
+        }
+    }
+
     if (
         openedPositions[pKey]
         || !s.resolvePosition
         || excludedPositions.includes(pKey)
+        || onPausedPositions.includes(pKey)
         || (initiator == 'bot' && botPositions >= maxBotPositions)
         || s.percentLoss < fee
     ) {
@@ -88,6 +98,9 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
     if (s.strategy == 'patterns') {
         setTakeProfit = true;
         takeProfitPerc = s.percentLoss;
+        useTrailingStop = true;
+        trailingStopStartTriggerPricePerc = (s.percentLoss / 100) * 80;
+        trailingStopStartOrderPerc = fee;
     }
 
     if (s.strategy == 'levels') {
@@ -156,6 +169,8 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
         }
 
         console.log('DELETE =' + this.positionKey + '= POSITION OBJECT');
+
+        onPausedPositions.push(this.positionKey);
 
         delete openedPositions[this.positionKey];
     }

@@ -35,7 +35,7 @@ async function Bot() {
                 tradeLines: exports.tradeLinesCache
             }).then(res => {
                 if (exports.controls.resolvePositionMaking) {
-                    res.forEach(sym => (0, trade_1.OpenPosition)(sym, 'bot'));
+                    res.forEach(singnal => (0, trade_1.OpenPosition)(singnal, 'bot'));
                 }
                 // ev.emit('bot', { strategy: res });
             });

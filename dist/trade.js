@@ -11,6 +11,7 @@ const symbols_1 = __importDefault(require("./binance_api/symbols"));
 const fee = .08, interval = '5m', limit = 100, leverage = 20, maxBotPositions = 2;
 exports.openedPositions = {};
 let excludedPositions = [];
+let onPausedPositions = [];
 let botPositions = 0;
 let _symbolsObj;
 (async function () {
@@ -32,9 +33,16 @@ function OpenPosition(s, initiator) {
     // console.log('botPositions', botPositions);
     // console.log('s.percentLoss', s.percentLoss);
     // console.log('******************************************************');
+    if (s.newCandleHasBeenOpened) {
+        const ind = onPausedPositions.indexOf(pKey);
+        if (ind !== -1) {
+            onPausedPositions.splice(ind, 1);
+        }
+    }
     if (exports.openedPositions[pKey]
         || !s.resolvePosition
         || excludedPositions.includes(pKey)
+        || onPausedPositions.includes(pKey)
         || (initiator == 'bot' && botPositions >= maxBotPositions)
         || s.percentLoss < fee) {
         return;
@@ -65,6 +73,9 @@ function OpenPosition(s, initiator) {
     if (s.strategy == 'patterns') {
         setTakeProfit = true;
         takeProfitPerc = s.percentLoss;
+        useTrailingStop = true;
+        trailingStopStartTriggerPricePerc = (s.percentLoss / 100) * 80;
+        trailingStopStartOrderPerc = fee;
     }
     if (s.strategy == 'levels') {
         useTrailingStop = true;
@@ -123,6 +134,7 @@ function OpenPosition(s, initiator) {
             botPositions--;
         }
         console.log('DELETE =' + this.positionKey + '= POSITION OBJECT');
+        onPausedPositions.push(this.positionKey);
         delete exports.openedPositions[this.positionKey];
     };
     console.log('trade.ts -> OpenPosition -> openedPositions');
