@@ -228,6 +228,10 @@ export class Position {
 
                     stopPrice = +stopPrice.toFixed(this.symbolInfo.pricePrecision);
 
+                    console.log('Position -> watchOrder() -> take profit params');
+                    console.log(profitSide, this.symbol, this.quantity, stopPrice);
+                    console.log(profitParams);
+
                     binanceAuth.futuresOrder(profitSide, this.symbol, this.quantity, stopPrice, profitParams)
                         .then(arg => {
                             console.log('Position -> watchOrder() -> take profit order');

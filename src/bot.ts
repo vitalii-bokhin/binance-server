@@ -47,7 +47,9 @@ export async function Bot(): Promise<events> {
                 tradeLines: tradeLinesCache
             }).then(res => {
                 if (controls.resolvePositionMaking) {
-                    res.forEach(singnal => OpenPosition(singnal, 'bot'));
+                    for (const signal of res) {
+                        OpenPosition(signal, 'bot');
+                    }
                 }
 
                 // ev.emit('bot', { strategy: res });

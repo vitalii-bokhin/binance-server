@@ -169,14 +169,16 @@ export async function Strategy({ data, symbols, tradingSymbols, tradeLines }: { 
         if (Object.prototype.hasOwnProperty.call(data, symbol) && !openedPositions[symbol]) {
             const candlesData = data[symbol];
 
-            // if (purpose.levels.includes(symbol)) {
-            //     const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
-            //     const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
+            if (purpose.levels.includes(symbol)) {
+                const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
+                const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
 
-            //     signals.push(Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }));
-            // }
+                signals.push(Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }));
+            }
 
-            signals.push(Patterns({ symbol, candlesData, tiSettings }));
+            if (!purpose.levels.includes(symbol)) {
+                signals.push(Patterns({ symbol, candlesData, tiSettings }));
+            }
 
             // signals.push(FollowCandle({ symbol, candlesData, tiSettings }));
 
