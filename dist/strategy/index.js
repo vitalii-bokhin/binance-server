@@ -4,6 +4,7 @@ exports.ReuseStrategy = exports.Strategy = void 0;
 const levels_1 = require("./levels");
 const trade_1 = require("../trade");
 const patterns_1 = require("./patterns");
+const cache = {};
 let analizedSymbols = {};
 let analizedSymbolsCount = 0;
 const purpose = {
@@ -113,15 +114,41 @@ async function Strategy({ data, symbols, tradingSymbols, tradeLines }) {
     // };
     const signals = [];
     for (const symbol in data) {
-        if (Object.prototype.hasOwnProperty.call(data, symbol) && !trade_1.openedPositions[symbol]) {
+        if (Object.prototype.hasOwnProperty.call(data, symbol)) {
             const candlesData = data[symbol];
+            const lastCandle = candlesData.slice(-1)[0];
+            if (!cache[symbol]) {
+                cache[symbol] = {
+                    lastCandleOpenTime: lastCandle.openTime,
+                    symbolSignalHasBeenPassed: true
+                };
+            }
+            if (lastCandle.openTime !== cache[symbol].lastCandleOpenTime) {
+                cache[symbol].lastCandleOpenTime = lastCandle.openTime;
+                cache[symbol].symbolSignalHasBeenPassed = false;
+            }
+            if (trade_1.openedPositions[symbol]) {
+                cache[symbol].symbolSignalHasBeenPassed = true;
+                continue;
+            }
+            if (cache[symbol].symbolSignalHasBeenPassed) {
+                continue;
+            }
             if (purpose.levels.includes(symbol)) {
                 const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
                 const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
-                signals.push((0, levels_1.Levels)({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }));
+                const lvlSignal = (0, levels_1.Levels)({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt });
+                if (lvlSignal.resolvePosition) {
+                    signals.push(lvlSignal);
+                    cache[symbol].symbolSignalHasBeenPassed = true;
+                }
             }
             if (!purpose.levels.includes(symbol)) {
-                signals.push((0, patterns_1.Patterns)({ symbol, candlesData, tiSettings }));
+                const ptrSignal = (0, patterns_1.Patterns)({ symbol, candlesData, tiSettings });
+                if (ptrSignal.resolvePosition) {
+                    signals.push(ptrSignal);
+                    cache[symbol].symbolSignalHasBeenPassed = true;
+                }
             }
             // signals.push(FollowCandle({ symbol, candlesData, tiSettings }));
             // signals.push(TradersForce({ symbol, candlesData, tiSettings }));

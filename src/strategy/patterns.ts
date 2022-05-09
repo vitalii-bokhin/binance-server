@@ -1,3 +1,4 @@
+import { ATR } from '../indicators';
 import { Candle, SymbolResult, Entry } from './types';
 
 const splitCdl = function (cdl: Candle): { highTail: number; body: number; lowTail: number; } {
@@ -19,32 +20,15 @@ const splitCdl = function (cdl: Candle): { highTail: number; body: number; lowTa
     return { highTail, body, lowTail };
 }
 
-const cache: {
-    [symbol: string]: {
-        lastCandleOpenTime: number;
-    };
-} = {};
-
 export function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }: Entry): SymbolResult {
     const _candles = candlesData;
+
+    const atr = ATR({ data: _candles, period: tiSettings.atrPeriod }).last;
 
     const cdl_3: Candle = _candles.slice(-4)[0];
     const cdl_2: Candle = _candles.slice(-3)[0];
     const cdl_1: Candle = _candles.slice(-2)[0];
     const cdl_0: Candle = _candles.slice(-1)[0];
-
-    if (!cache[symbol]) {
-        cache[symbol] = {
-            lastCandleOpenTime: cdl_0.openTime
-        };
-    }
-
-    let newCandleHasBeenOpened: boolean = false;
-
-    if (cdl_0.openTime !== cache[symbol].lastCandleOpenTime) {
-        newCandleHasBeenOpened = true;
-        cache[symbol].lastCandleOpenTime = cdl_0.openTime;
-    }
 
     const lastPrice = cdl_0.close;
 
@@ -56,8 +40,7 @@ export function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt
         strategy: 'patterns',
         preferIndex: null,
         rsiPeriod: tiSettings.rsiPeriod,
-        resolvePosition: false,
-        newCandleHasBeenOpened
+        resolvePosition: false
     };
 
     const long = function (stopLoss) {
@@ -82,16 +65,26 @@ export function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt
     const cdl_1_Split = splitCdl(cdl_1);
 
     if (
-        lastPrice > cdl_1.high
+        cdl_2_Split.highTail <= cdl_2_Split.body
+        && cdl_2.high - cdl_2.low < atr * 1.5
+        && cdl_1_Split.highTail <= cdl_1_Split.body
+        && cdl_1.high - cdl_1.low < atr * 1.5
+        && lastPrice > cdl_1.high
     ) {
-        long(cdl_1.low + ((cdl_1.high - cdl_1.low) / 2));
+        long(cdl_1.low);
 
-    } else if ( // outside bar short
-        lastPrice < cdl_1.low
+    } else if (
+        cdl_2_Split.lowTail <= cdl_2_Split.body
+        && cdl_2.high - cdl_2.low < atr * 1.5
+        && cdl_1_Split.lowTail <= cdl_1_Split.body
+        && cdl_1.high - cdl_1.low < atr * 1.5
+        && lastPrice < cdl_1.low
     ) {
-        short(cdl_1.high - ((cdl_1.high - cdl_1.low) / 2));
-
+        short(cdl_1.high);
     }
+
+
+
 
     /* if ( // outside bar long
         cdl_3.close < cdl_3.open
@@ -298,9 +291,9 @@ export function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt
 
 
 
-    if (symbolResult.resolvePosition) {
-        console.log(symbolResult);
-    }
+    // if (symbolResult.resolvePosition) {
+    //     console.log(symbolResult);
+    // }
 
     return symbolResult;
 }

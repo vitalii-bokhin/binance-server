@@ -195,7 +195,7 @@ export class Position {
 
         this.quantity = +entryOrd.origQty;
 
-        if (entryOrd.code == -4164) {
+        if (entryOrd.code == -4164 || entryOrd.code == -2019) {
             this.deletePositionInner({ excludeKey: this.positionKey });
         }
     }
@@ -303,7 +303,7 @@ export class Position {
 
         positionUpdateStream(this.symbol, (pos: any) => {
             if (pos.positionAmount == '0') {
-                this.deletePositionInner({ excludeKey: null });
+                this.deletePositionInner({ clearExcludedSymbols: true });
             }
         });
     }

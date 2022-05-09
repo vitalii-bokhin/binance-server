@@ -10,14 +10,13 @@ const position_1 = require("./position");
 const symbols_1 = __importDefault(require("./binance_api/symbols"));
 const fee = .08, interval = '5m', limit = 100, leverage = 20, maxBotPositions = 2;
 exports.openedPositions = {};
-let excludedPositions;
+let excludedSymbols = new Set();
 let botPositions = 0;
 let _symbolsObj;
 (async function () {
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
-    exports._symbols = ['GMTUSDT', 'TRXUSDT', 'WAVESUSDT', 'ZILUSDT', 'APEUSDT']; //symbols, ,'LUNAUSDT','FTMUSDT' 'WAVESUSDT', 'MATICUSDT';
+    exports._symbols = ['GMTUSDT', 'TRXUSDT', 'NEARUSDT', 'ZILUSDT', 'APEUSDT', 'WAVESUSDT']; //symbols, ,'LUNAUSDT','FTMUSDT' , 'MATICUSDT';
     _symbolsObj = symbolsObj;
-    excludedPositions = new Set(exports._symbols);
     (0, CandlesTicksStream_1.CandlesTicksStream)({ symbols: exports._symbols, interval, limit }, null);
     (0, binanceApi_1.ordersUpdateStream)();
     console.log(`Trade has been run. Candles (${limit}) with interval: ${interval}. Leverage: ${leverage}.`);
@@ -28,21 +27,13 @@ function OpenPosition(s, initiator) {
     // console.log('s.symbol', s.symbol);
     // console.log('open positions', Object.keys(openedPositions));
     // console.log('s.resolvePosition', s.resolvePosition);
-    // console.log('excludedPositions', excludedPositions);
+    // console.log('excludedSymbols', excludedSymbols);
     // console.log('initiator', initiator);
     // console.log('botPositions', botPositions);
     // console.log('s.percentLoss', s.percentLoss);
     // console.log('******************************************************');
-    if (s.newCandleHasBeenOpened) {
-        excludedPositions.delete(pKey);
-    }
-    if (excludedPositions.has(pKey)) {
-        return;
-    }
-    if (s.resolvePosition) {
-        excludedPositions.add(pKey);
-    }
     if (exports.openedPositions[pKey]
+        || excludedSymbols.has(pKey)
         || !s.resolvePosition
         || (initiator == 'bot' && botPositions >= maxBotPositions)
         || s.percentLoss < fee) {
@@ -122,14 +113,15 @@ function OpenPosition(s, initiator) {
     //     // });
     // }
     exports.openedPositions[pKey].deletePosition = function (opt) {
-        // if (opt) {
-        //     if (opt.excludeKey) {
-        //         excludedPositions.push(opt.excludeKey);
-        //         console.log('EXCLUDED =' + this.positionKey);
-        //     } else if (opt.excludeKey === null) {
-        //         excludedPositions = [];
-        //     }
-        // }
+        if (opt) {
+            if (opt.excludeKey) {
+                excludedSymbols.add(opt.excludeKey);
+                console.log('EXCLUDED =' + opt.excludeKey);
+            }
+            else if (opt.clearExcludedSymbols) {
+                excludedSymbols.clear();
+            }
+        }
         if (this.initiator == 'bot') {
             botPositions--;
         }

@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Patterns = void 0;
+const indicators_1 = require("../indicators");
 const splitCdl = function (cdl) {
     let highTail, body, lowTail;
     if (cdl.close > cdl.open) {
@@ -15,23 +16,13 @@ const splitCdl = function (cdl) {
     }
     return { highTail, body, lowTail };
 };
-const cache = {};
 function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }) {
     const _candles = candlesData;
+    const atr = (0, indicators_1.ATR)({ data: _candles, period: tiSettings.atrPeriod }).last;
     const cdl_3 = _candles.slice(-4)[0];
     const cdl_2 = _candles.slice(-3)[0];
     const cdl_1 = _candles.slice(-2)[0];
     const cdl_0 = _candles.slice(-1)[0];
-    if (!cache[symbol]) {
-        cache[symbol] = {
-            lastCandleOpenTime: cdl_0.openTime
-        };
-    }
-    let newCandleHasBeenOpened = false;
-    if (cdl_0.openTime !== cache[symbol].lastCandleOpenTime) {
-        newCandleHasBeenOpened = true;
-        cache[symbol].lastCandleOpenTime = cdl_0.openTime;
-    }
     const lastPrice = cdl_0.close;
     const symbolResult = {
         symbol,
@@ -41,8 +32,7 @@ function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }) {
         strategy: 'patterns',
         preferIndex: null,
         rsiPeriod: tiSettings.rsiPeriod,
-        resolvePosition: false,
-        newCandleHasBeenOpened
+        resolvePosition: false
     };
     const long = function (stopLoss) {
         const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
@@ -60,12 +50,19 @@ function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }) {
     };
     const cdl_2_Split = splitCdl(cdl_2);
     const cdl_1_Split = splitCdl(cdl_1);
-    if (lastPrice > cdl_1.high) {
-        long(cdl_1.low + ((cdl_1.high - cdl_1.low) / 2));
+    if (cdl_2_Split.highTail <= cdl_2_Split.body
+        && cdl_2.high - cdl_2.low < atr * 1.5
+        && cdl_1_Split.highTail <= cdl_1_Split.body
+        && cdl_1.high - cdl_1.low < atr * 1.5
+        && lastPrice > cdl_1.high) {
+        long(cdl_1.low);
     }
-    else if ( // outside bar short
-    lastPrice < cdl_1.low) {
-        short(cdl_1.high - ((cdl_1.high - cdl_1.low) / 2));
+    else if (cdl_2_Split.lowTail <= cdl_2_Split.body
+        && cdl_2.high - cdl_2.low < atr * 1.5
+        && cdl_1_Split.lowTail <= cdl_1_Split.body
+        && cdl_1.high - cdl_1.low < atr * 1.5
+        && lastPrice < cdl_1.low) {
+        short(cdl_1.high);
     }
     /* if ( // outside bar long
         cdl_3.close < cdl_3.open
@@ -257,9 +254,9 @@ function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }) {
     //     long(prevCandle.low < lastCandle.low ? prevCandle.low : lastCandle.low);
     //     console.log(symbol, 'tweezer bottom');
     // }
-    if (symbolResult.resolvePosition) {
-        console.log(symbolResult);
-    }
+    // if (symbolResult.resolvePosition) {
+    //     console.log(symbolResult);
+    // }
     return symbolResult;
 }
 exports.Patterns = Patterns;

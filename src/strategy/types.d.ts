@@ -15,7 +15,6 @@ export type SymbolResult = {
     rsiPeriod?: number;
     atr?: number;
     resolvePosition: boolean;
-    newCandleHasBeenOpened?: boolean;
 };
 
 export type Result = SymbolResult[];

@@ -108,7 +108,7 @@ class Position {
         console.log('Position -> setOrders() -> entryOrd');
         console.log(entryOrd);
         this.quantity = +entryOrd.origQty;
-        if (entryOrd.code == -4164) {
+        if (entryOrd.code == -4164 || entryOrd.code == -2019) {
             this.deletePositionInner({ excludeKey: this.positionKey });
         }
     }
@@ -194,7 +194,7 @@ class Position {
         });
         (0, binanceApi_1.positionUpdateStream)(this.symbol, (pos) => {
             if (pos.positionAmount == '0') {
-                this.deletePositionInner({ excludeKey: null });
+                this.deletePositionInner({ clearExcludedSymbols: true });
             }
         });
     }

@@ -14,7 +14,7 @@ export const openedPositions: {
     [key: string]: Position;
 } = {};
 
-let excludedPositions: Set<string>;
+let excludedSymbols: Set<string> = new Set();
 let botPositions = 0;
 
 export let _symbols: string[];
@@ -24,10 +24,8 @@ let _symbolsObj: { [key: string]: any };
 (async function () {
     const { symbols, symbolsObj } = await getSymbols();
 
-    _symbols = ['GMTUSDT', 'TRXUSDT', 'WAVESUSDT', 'ZILUSDT', 'APEUSDT']; //symbols, ,'LUNAUSDT','FTMUSDT' 'WAVESUSDT', 'MATICUSDT';
+    _symbols = ['GMTUSDT', 'TRXUSDT', 'NEARUSDT', 'ZILUSDT', 'APEUSDT', 'WAVESUSDT']; //symbols, ,'LUNAUSDT','FTMUSDT' , 'MATICUSDT';
     _symbolsObj = symbolsObj;
-
-    excludedPositions = new Set(_symbols);
 
     CandlesTicksStream({ symbols: _symbols, interval, limit }, null);
 
@@ -43,26 +41,15 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
     // console.log('s.symbol', s.symbol);
     // console.log('open positions', Object.keys(openedPositions));
     // console.log('s.resolvePosition', s.resolvePosition);
-    // console.log('excludedPositions', excludedPositions);
+    // console.log('excludedSymbols', excludedSymbols);
     // console.log('initiator', initiator);
     // console.log('botPositions', botPositions);
     // console.log('s.percentLoss', s.percentLoss);
     // console.log('******************************************************');
 
-    if (s.newCandleHasBeenOpened) {
-        excludedPositions.delete(pKey);
-    }
-
-    if (excludedPositions.has(pKey)) {
-        return;
-    }
-
-    if (s.resolvePosition) {
-        excludedPositions.add(pKey);
-    }
-
     if (
         openedPositions[pKey]
+        || excludedSymbols.has(pKey)
         || !s.resolvePosition
         || (initiator == 'bot' && botPositions >= maxBotPositions)
         || s.percentLoss < fee
@@ -156,16 +143,16 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
     // }
 
     openedPositions[pKey].deletePosition = function (opt?: any) {
-        // if (opt) {
-        //     if (opt.excludeKey) {
-        //         excludedPositions.push(opt.excludeKey);
+        if (opt) {
+            if (opt.excludeKey) {
+                excludedSymbols.add(opt.excludeKey);
 
-        //         console.log('EXCLUDED =' + this.positionKey);
+                console.log('EXCLUDED =' + opt.excludeKey);
 
-        //     } else if (opt.excludeKey === null) {
-        //         excludedPositions = [];
-        //     }
-        // }
+            } else if (opt.clearExcludedSymbols) {
+                excludedSymbols.clear();
+            }
+        }
 
         if (this.initiator == 'bot') {
             botPositions--;
