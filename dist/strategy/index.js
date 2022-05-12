@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReuseStrategy = exports.Strategy = void 0;
-const levels_1 = require("./levels");
 const trade_1 = require("../trade");
 const patterns_1 = require("./patterns");
 const cache = {};
@@ -13,7 +12,8 @@ const purpose = {
     // aisle: [],
     // aisleMax: 1,
     levels: [],
-    levelsMax: 2
+    levelsMax: 2,
+    excludeForPatterns: []
 };
 const tiSettings = {
     smaPeriod: 69,
@@ -134,16 +134,16 @@ async function Strategy({ data, symbols, tradingSymbols, tradeLines }) {
             if (cache[symbol].symbolSignalHasBeenPassed) {
                 continue;
             }
-            if (purpose.levels.includes(symbol)) {
-                const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
-                const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
-                const lvlSignal = (0, levels_1.Levels)({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt });
-                if (lvlSignal.resolvePosition) {
-                    signals.push(lvlSignal);
-                    cache[symbol].symbolSignalHasBeenPassed = true;
-                }
-            }
-            if (!purpose.levels.includes(symbol)) {
+            // if (purpose.levels.includes(symbol)) {
+            //     const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
+            //     const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
+            //     const lvlSignal = Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt });
+            //     if (lvlSignal.resolvePosition) {
+            //         signals.push(lvlSignal);
+            //         cache[symbol].symbolSignalHasBeenPassed = true;
+            //     }
+            // }
+            if (!purpose.levels.includes(symbol) && !purpose.excludeForPatterns.includes(symbol)) {
                 const ptrSignal = (0, patterns_1.Patterns)({ symbol, candlesData, tiSettings });
                 if (ptrSignal.resolvePosition) {
                     signals.push(ptrSignal);

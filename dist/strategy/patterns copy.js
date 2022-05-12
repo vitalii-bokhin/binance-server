@@ -50,59 +50,22 @@ function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }) {
     };
     const cdl_2_Split = splitCdl(cdl_2);
     const cdl_1_Split = splitCdl(cdl_1);
-    const cdl_0_Split = splitCdl(cdl_0);
-    if (cdl_0.high - cdl_0.low > atr / 5
-        && lastPrice > cdl_1.high) {
-        long(cdl_0.low < cdl_1.low ? cdl_0.low : cdl_1.low);
-    }
-    else if (cdl_0.high - cdl_0.low > atr / 5
-        && lastPrice < cdl_1.low) {
-        short(cdl_0.high > cdl_1.high ? cdl_0.high : cdl_1.high);
-    }
-    // if (
-    //     (cdl_3.close > cdl_3.open || cdl_2.close > cdl_2.open)
-    //     && cdl_1.close < cdl_1.open
-    //     && cdl_0.low < cdl_1.low
-    //     && cdl_0.high < cdl_1.open
-    //     && cdl_0.close > cdl_0.open
-    //     && cdl_0_Split.highTail < cdl_0_Split.lowTail
-    //     && cdl_0_Split.highTail < cdl_0_Split.body
-    //     && lastPrice > cdl_1.close + atr / 5
-    //     && lastPrice >= cdl_0.high
-    // ) {
-    //     long(cdl_0.low);
-    // } else if (
-    //     (cdl_3.close < cdl_3.open || cdl_2.close < cdl_2.open)
-    //     && cdl_1.close > cdl_1.open
-    //     && cdl_0.high > cdl_1.high
-    //     && cdl_0.low > cdl_1.open
-    //     && cdl_0.close < cdl_0.open
-    //     && cdl_0_Split.lowTail < cdl_0_Split.highTail
-    //     && cdl_0_Split.lowTail < cdl_0_Split.body
-    //     && lastPrice < cdl_1.close - atr / 5
-    //     && lastPrice <= cdl_0.low
-    // ) {
-    //     short(cdl_0.high);
-    // }
-    /* if ( // inside bar
-        cdl_2_Split.highTail * 2 < cdl_2_Split.body
+    if ( // inside bar
+    cdl_2_Split.highTail * 2 < cdl_2_Split.body
         && cdl_2_Split.lowTail * 2 < cdl_2_Split.body
         && cdl_1_Split.highTail * 2 < cdl_1_Split.body
         && cdl_1_Split.lowTail * 2 < cdl_1_Split.body
         && cdl_2.high > cdl_1.high
-        && cdl_2.low < cdl_1.low
-    ) {
+        && cdl_2.low < cdl_1.low) {
         if ( // long
-            lastPrice > cdl_2.high
-        ) {
+        lastPrice > cdl_2.high) {
             long(cdl_2.low);
-
-        } else if ( // short
-            lastPrice < cdl_2.low
-        ) {
+        }
+        else if ( // short
+        lastPrice < cdl_2.low) {
             short(cdl_2.high);
         }
-    } */
+    }
     /* if (
         cdl_2_Split.highTail <= cdl_2_Split.body
         && cdl_2.high - cdl_2.low < atr * 1.5
@@ -130,6 +93,7 @@ function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }) {
         && lastPrice > cdl_1.high
     ) {
         long(cdl_1.low);
+        console.log(symbol, 'outside bar long');
 
     } else if ( // outside bar short
         cdl_3.close > cdl_3.open
@@ -140,8 +104,9 @@ function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }) {
         && lastPrice < cdl_1.low
     ) {
         short(cdl_1.high);
+        console.log(symbol, 'outside bar short');
 
-    } */ /* else if ( // inside bar long
+    } else if ( // inside bar long
         cdl_2.high > cdl_1.high
         && cdl_2.low < cdl_1.low
         && lastPrice > cdl_1.high
@@ -309,10 +274,10 @@ function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }) {
     //     long(prevCandle.low < lastCandle.low ? prevCandle.low : lastCandle.low);
     //     console.log(symbol, 'tweezer bottom');
     // }
-    if (symbolResult.resolvePosition) {
-        console.log(symbolResult);
-    }
+    // if (symbolResult.resolvePosition) {
+    //     console.log(symbolResult);
+    // }
     return symbolResult;
 }
 exports.Patterns = Patterns;
-//# sourceMappingURL=patterns.js.map
+//# sourceMappingURL=patterns%20copy.js.map

@@ -167,7 +167,7 @@ export async function ManageTradeLines(saveReq?: {
             }
 
             tradeLines = survivors;
-        
+
         } else if (removeAll) {
             const survivors = [];
 

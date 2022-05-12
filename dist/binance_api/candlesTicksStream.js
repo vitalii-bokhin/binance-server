@@ -10,6 +10,7 @@ const CandlesTicks_1 = require("./CandlesTicks");
 const binanceApi_1 = require("./binanceApi");
 let candlesTicksStreamExecuted = false;
 const candlesTicksStreamSubscribers = [];
+const testCandlesTicksStreamSubscribers = [];
 function CandlesTicksStream(opt, callback) {
     if (callback) {
         candlesTicksStreamSubscribers.push(callback);

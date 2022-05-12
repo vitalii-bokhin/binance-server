@@ -4,18 +4,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OpenPosition = exports._symbols = exports.openedPositions = void 0;
+const symbols_1 = __importDefault(require("./binance_api/symbols"));
 const binanceApi_1 = require("./binance_api/binanceApi");
 const CandlesTicksStream_1 = require("./binance_api/CandlesTicksStream");
 const position_1 = require("./position");
-const symbols_1 = __importDefault(require("./binance_api/symbols"));
-const fee = .08, interval = '5m', limit = 100, leverage = 20, maxBotPositions = 2;
+const fee = .08, interval = '5m', limit = 100, leverage = 20, maxBotPositions = 2, lossAmount = .5;
 exports.openedPositions = {};
 let excludedSymbols = new Set();
 let botPositions = 0;
 let _symbolsObj;
 (async function () {
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
-    exports._symbols = ['GMTUSDT', 'TRXUSDT', 'NEARUSDT', 'ZILUSDT', 'APEUSDT', 'WAVESUSDT']; //symbols, ,'LUNAUSDT','FTMUSDT' , 'MATICUSDT';
+    exports._symbols = ['GMTUSDT', 'TRXUSDT', 'NEARUSDT', 'ZILUSDT', 'APEUSDT', 'WAVESUSDT', 'ADAUSDT']; //symbols, ,'LUNAUSDT','FTMUSDT' , 'MATICUSDT';
     _symbolsObj = symbolsObj;
     (0, CandlesTicksStream_1.CandlesTicksStream)({ symbols: exports._symbols, interval, limit }, null);
     (0, binanceApi_1.ordersUpdateStream)();
@@ -66,8 +66,17 @@ function OpenPosition(s, initiator) {
         setTakeProfit = true;
         takeProfitPerc = s.percentLoss;
         useTrailingStop = true;
-        trailingStopStartTriggerPricePerc = (s.percentLoss / 100) * 80;
+        trailingStopStartTriggerPricePerc = s.percentLoss / 2;
         trailingStopStartOrderPerc = fee;
+    }
+    if (s.strategy == 'manual') {
+        // setTakeProfit = true;
+        // takeProfitPerc = s.percentLoss;
+        useTrailingStop = true;
+        trailingStopStartTriggerPricePerc = s.percentLoss / 2;
+        trailingStopStartOrderPerc = fee;
+        trailingStopTriggerPriceStepPerc = s.percentLoss / 2;
+        trailingStopOrderDistancePerc = s.percentLoss / 2;
     }
     if (s.strategy == 'levels') {
         useTrailingStop = true;
@@ -100,18 +109,10 @@ function OpenPosition(s, initiator) {
         initiator,
         useTrailingStop,
         setTakeProfit,
-        takeProfitPerc
+        takeProfitPerc,
+        lossAmount
     });
     exports.openedPositions[pKey].setOrders();
-    // if (s.signal == 'scalping') {
-    // } else {
-    //     // botPositions[pKey].setEntryOrder().then((res) => {
-    //     //     console.log(res);
-    //     //     if (res.error) {
-    //     //         positions--;
-    //     //     }
-    //     // });
-    // }
     exports.openedPositions[pKey].deletePosition = function (opt) {
         if (opt) {
             if (opt.excludeKey) {

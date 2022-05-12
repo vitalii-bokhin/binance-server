@@ -35,13 +35,15 @@ const purpose: {
     // aisleMax: number;
     levels: string[];
     levelsMax: number;
+    excludeForPatterns: string[];
 } = {
     // scalping: [],
     // scalpingMax: 15,
     // aisle: [],
     // aisleMax: 1,
     levels: [],
-    levelsMax: 2
+    levelsMax: 2,
+    excludeForPatterns: []
 };
 
 const tiSettings: TiSettings = {
@@ -198,19 +200,19 @@ export async function Strategy({ data, symbols, tradingSymbols, tradeLines }: { 
                 continue;
             }
 
-            if (purpose.levels.includes(symbol)) {
-                const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
-                const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
+            // if (purpose.levels.includes(symbol)) {
+            //     const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
+            //     const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
 
-                const lvlSignal = Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt });
+            //     const lvlSignal = Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt });
 
-                if (lvlSignal.resolvePosition) {
-                    signals.push(lvlSignal);
-                    cache[symbol].symbolSignalHasBeenPassed = true;
-                }
-            }
+            //     if (lvlSignal.resolvePosition) {
+            //         signals.push(lvlSignal);
+            //         cache[symbol].symbolSignalHasBeenPassed = true;
+            //     }
+            // }
 
-            if (!purpose.levels.includes(symbol)) {
+            if (!purpose.levels.includes(symbol) && !purpose.excludeForPatterns.includes(symbol)) {
                 const ptrSignal = Patterns({ symbol, candlesData, tiSettings });
 
                 if (ptrSignal.resolvePosition) {

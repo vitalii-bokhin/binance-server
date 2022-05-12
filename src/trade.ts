@@ -1,14 +1,15 @@
+import { SymbolResult } from './strategy/types';
+import getSymbols from './binance_api/symbols';
 import { ordersUpdateStream } from './binance_api/binanceApi';
 import { CandlesTicksStream } from "./binance_api/CandlesTicksStream";
 import { Position } from './position';
-import { SymbolResult } from './strategy/types';
-import getSymbols from './binance_api/symbols';
 
 const fee: number = .08,
     interval: string = '5m',
     limit: number = 100,
     leverage: number = 20,
-    maxBotPositions: number = 2;
+    maxBotPositions: number = 2,
+    lossAmount: number = .5;
 
 export const openedPositions: {
     [key: string]: Position;
@@ -24,7 +25,7 @@ let _symbolsObj: { [key: string]: any };
 (async function () {
     const { symbols, symbolsObj } = await getSymbols();
 
-    _symbols = ['GMTUSDT', 'TRXUSDT', 'NEARUSDT', 'ZILUSDT', 'APEUSDT', 'WAVESUSDT']; //symbols, ,'LUNAUSDT','FTMUSDT' , 'MATICUSDT';
+    _symbols = ['GMTUSDT', 'TRXUSDT', 'NEARUSDT', 'ZILUSDT', 'APEUSDT', 'WAVESUSDT', 'ADAUSDT']; //symbols, ,'LUNAUSDT','FTMUSDT' , 'MATICUSDT';
     _symbolsObj = symbolsObj;
 
     CandlesTicksStream({ symbols: _symbols, interval, limit }, null);
@@ -89,8 +90,18 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
         setTakeProfit = true;
         takeProfitPerc = s.percentLoss;
         useTrailingStop = true;
-        trailingStopStartTriggerPricePerc = (s.percentLoss / 100) * 80;
+        trailingStopStartTriggerPricePerc = s.percentLoss / 2;
         trailingStopStartOrderPerc = fee;
+    }
+
+    if (s.strategy == 'manual') {
+        // setTakeProfit = true;
+        // takeProfitPerc = s.percentLoss;
+        useTrailingStop = true;
+        trailingStopStartTriggerPricePerc = s.percentLoss / 2;
+        trailingStopStartOrderPerc = fee;
+        trailingStopTriggerPriceStepPerc = s.percentLoss / 2;
+        trailingStopOrderDistancePerc = s.percentLoss / 2;
     }
 
     if (s.strategy == 'levels') {
@@ -125,22 +136,11 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
         initiator,
         useTrailingStop,
         setTakeProfit,
-        takeProfitPerc
+        takeProfitPerc,
+        lossAmount
     });
 
     openedPositions[pKey].setOrders();
-
-    // if (s.signal == 'scalping') {
-
-    // } else {
-    //     // botPositions[pKey].setEntryOrder().then((res) => {
-    //     //     console.log(res);
-
-    //     //     if (res.error) {
-    //     //         positions--;
-    //     //     }
-    //     // });
-    // }
 
     openedPositions[pKey].deletePosition = function (opt?: any) {
         if (opt) {

@@ -47,7 +47,7 @@ export class Position {
     takeProfitPerc: number;
     useTrailingStop: boolean;
     initiator: 'bot' | 'user';
-    lossAmount: number = .5;
+    lossAmount: number;
 
     constructor(opt: {
         positionKey: string;
@@ -78,6 +78,7 @@ export class Position {
         takeProfitPerc?: number;
         useTrailingStop?: boolean;
         initiator: 'bot' | 'user';
+        lossAmount: number;
     }) {
         this.positionKey = opt.positionKey;
         this.position = opt.position;
@@ -103,6 +104,7 @@ export class Position {
         this.takeProfitPerc = opt.takeProfitPerc !== undefined ? opt.takeProfitPerc : null;
         this.useTrailingStop = opt.useTrailingStop !== undefined ? opt.useTrailingStop : false;
         this.initiator = opt.initiator;
+        this.lossAmount = opt.lossAmount;
     }
 
     // async setEntryOrder(): Promise<{
@@ -205,6 +207,7 @@ export class Position {
             if (order.clientOrderId == this.entryClientOrderId && order.orderStatus == 'FILLED') {
 
                 this.realEntryPrice = +order.averagePrice;
+                this.quantity = +order.originalQuantity;
 
                 // take profit
                 if (this.setTakeProfit) {

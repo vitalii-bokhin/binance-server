@@ -18,46 +18,46 @@ const cache: {
 } = {};
 
 export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }: Entry): SymbolResult {
-    runDepthStream();
+    // runDepthStream();
     
-    if (!cache[symbol]) {
-        cache[symbol] = {
-            levelsByDepth: {
-                asks: [],
-                bids: []
-            }
-        };
-    }
+    // if (!cache[symbol]) {
+    //     cache[symbol] = {
+    //         levelsByDepth: {
+    //             asks: [],
+    //             bids: []
+    //         }
+    //     };
+    // }
 
-    const depth = depthCache[symbol];
+    // const depth = depthCache[symbol];
 
-    if (depth) {
-        if (
-            !cache[symbol].levelsByDepth.asks.length
-            || cache[symbol].levelsByDepth.asks.slice(-1)[0].price !== depth.maxAsk.price
-        ) {
-            cache[symbol].levelsByDepth.asks.push({
-                price: depth.maxAsk.price,
-                volume: depth.maxAsk.volume
-            });
-        }
+    // if (depth) {
+    //     if (
+    //         !cache[symbol].levelsByDepth.asks.length
+    //         || cache[symbol].levelsByDepth.asks.slice(-1)[0].price !== depth.maxAsk.price
+    //     ) {
+    //         cache[symbol].levelsByDepth.asks.push({
+    //             price: depth.maxAsk.price,
+    //             volume: depth.maxAsk.volume
+    //         });
+    //     }
 
-        if (
-            !cache[symbol].levelsByDepth.bids.length
-            || cache[symbol].levelsByDepth.bids.slice(-1)[0].price !== depth.maxBid.price
-        ) {
-            cache[symbol].levelsByDepth.bids.push({
-                price: depth.maxBid.price,
-                volume: depth.maxBid.volume
-            });
-        }
-    }
+    //     if (
+    //         !cache[symbol].levelsByDepth.bids.length
+    //         || cache[symbol].levelsByDepth.bids.slice(-1)[0].price !== depth.maxBid.price
+    //     ) {
+    //         cache[symbol].levelsByDepth.bids.push({
+    //             price: depth.maxBid.price,
+    //             volume: depth.maxBid.volume
+    //         });
+    //     }
+    // }
 
-    const askLevels = cache[symbol].levelsByDepth.asks.slice(-3);
-    const bidLevels = cache[symbol].levelsByDepth.bids.slice(-3);
+    // const askLevels = cache[symbol].levelsByDepth.asks.slice(-3);
+    // const bidLevels = cache[symbol].levelsByDepth.bids.slice(-3);
 
-    askLevels.sort((a, b) => a.price - b.price);
-    bidLevels.sort((a, b) => b.price - a.price);
+    // askLevels.sort((a, b) => a.price - b.price);
+    // bidLevels.sort((a, b) => b.price - a.price);
 
     // console.log(symbol);
     // console.log('askLevels');
@@ -109,11 +109,11 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
     const long = function (stopLoss) {
         if (true/* moveDir == 'up' */) {
 
-            stopLoss -= atr;
+            // stopLoss -= atr;
 
-            if (lastPrice - stopLoss < atr * 2) {
-                stopLoss = lastPrice - atr * 2;
-            }
+            // if (lastPrice - stopLoss < atr * 2) {
+            //     stopLoss = lastPrice - atr * 2;
+            // }
 
             const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
 
@@ -129,11 +129,11 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
     const short = function (stopLoss) {
         if (true/* moveDir == 'down' */) {
 
-            stopLoss += atr;
+            // stopLoss += atr;
 
-            if (stopLoss - lastPrice < atr * 2) {
-                stopLoss = lastPrice + atr * 2;
-            }
+            // if (stopLoss - lastPrice < atr * 2) {
+            //     stopLoss = lastPrice + atr * 2;
+            // }
 
             const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);
 
@@ -240,9 +240,9 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
         // }
     }
 
-    // if (symbolResult.resolvePosition) {
-    //     console.log(symbolResult);
-    // }
+    if (symbolResult.resolvePosition) {
+        console.log(symbolResult);
+    }
 
     return symbolResult;
 }

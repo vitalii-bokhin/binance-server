@@ -1,15 +1,5 @@
-let a = {
-    ab: 'dasd',
-    cd: 'dadasd',
-    ef: 'asdasd'
-};
-for (const key in a) {
-    if (Object.prototype.hasOwnProperty.call(a, key)) {
-        const e = a[key];
-        if (key == 'cd') {
-            continue;
-        }
-        console.log(e);
-    }
-}
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const testPatterns_1 = require("./strategy/testPatterns");
+(0, testPatterns_1.TestPatterns)();
 //# sourceMappingURL=test.js.map

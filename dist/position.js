@@ -18,7 +18,6 @@ class Position {
         this.stopLossHasBeenMoved = false;
         this.marketCloseOrderHasBeenCalled = false;
         this.trailingSteps = 0;
-        this.lossAmount = .5;
         this.positionKey = opt.positionKey;
         this.position = opt.position;
         this.symbol = opt.symbol;
@@ -43,6 +42,7 @@ class Position {
         this.takeProfitPerc = opt.takeProfitPerc !== undefined ? opt.takeProfitPerc : null;
         this.useTrailingStop = opt.useTrailingStop !== undefined ? opt.useTrailingStop : false;
         this.initiator = opt.initiator;
+        this.lossAmount = opt.lossAmount;
     }
     // async setEntryOrder(): Promise<{
     //     entryOrder?: any;
@@ -116,6 +116,7 @@ class Position {
         (0, binanceApi_1.ordersUpdateStream)(this.symbol, order => {
             if (order.clientOrderId == this.entryClientOrderId && order.orderStatus == 'FILLED') {
                 this.realEntryPrice = +order.averagePrice;
+                this.quantity = +order.originalQuantity;
                 // take profit
                 if (this.setTakeProfit) {
                     const profitSide = this.position === 'long' ? 'SELL' : 'BUY';

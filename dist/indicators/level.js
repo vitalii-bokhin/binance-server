@@ -13,8 +13,7 @@ function LVL({ candles, levelsOpt }) {
     //     price: null,
     //     dist: 99999
     // };
-    const nearLvl = levelsOpt
-        .reduce((p, c) => p.concat(c.price), [])
+    const nearLvl = levelsOpt.reduce((p, c) => p.concat(c.price), [])
         .sort((a, b) => Math.abs(lastPrice - a) - Math.abs(lastPrice - b))[0];
     // for (const level of levelsOpt) {
     //     for (const price of level.price) {
