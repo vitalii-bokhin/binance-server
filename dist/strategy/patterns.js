@@ -51,14 +51,54 @@ function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }) {
     const cdl_2_Split = splitCdl(cdl_2);
     const cdl_1_Split = splitCdl(cdl_1);
     const cdl_0_Split = splitCdl(cdl_0);
-    if (cdl_0.high - cdl_0.low > atr / 5
-        && lastPrice > cdl_1.high) {
-        long(cdl_0.low < cdl_1.low ? cdl_0.low : cdl_1.low);
+    if (cdl_1.close > cdl_1.open
+        && cdl_1_Split.body > cdl_1_Split.highTail
+        && cdl_1_Split.body > cdl_1_Split.lowTail
+        && cdl_0.close > cdl_0.open
+        && cdl_0.close - cdl_0.open > atr * .33
+        && cdl_0.high - cdl_0.low < atr * .66) {
+        long(cdl_0.low);
     }
-    else if (cdl_0.high - cdl_0.low > atr / 5
-        && lastPrice < cdl_1.low) {
-        short(cdl_0.high > cdl_1.high ? cdl_0.high : cdl_1.high);
+    else if (cdl_1.close < cdl_1.open
+        && cdl_1_Split.body > cdl_1_Split.highTail
+        && cdl_1_Split.body > cdl_1_Split.lowTail
+        && cdl_0.close < cdl_0.open
+        && cdl_0.open - cdl_0.close > atr * .33
+        && cdl_0.high - cdl_0.low < atr * .66) {
+        short(cdl_0.high);
     }
+    // if (
+    //     cdl_3.high > cdl_2.high
+    //     && cdl_3.high > cdl_1.high
+    //     && cdl_3.low < cdl_2.low
+    //     && cdl_3.low < cdl_1.low
+    // ) {
+    //     if (lastPrice > cdl_3.high) {
+    //         long(cdl_3.low);
+    //     } else if (lastPrice < cdl_3.low) {
+    //         short(cdl_3.high);
+    //     }
+    // } else if (
+    //     cdl_2.high > cdl_1.high
+    //     && cdl_2.low < cdl_1.low
+    // ) {
+    //     if (lastPrice > cdl_2.high) {
+    //         long(cdl_2.low);
+    //     } else if (lastPrice < cdl_2.low) {
+    //         short(cdl_2.high);
+    //     }
+    // }
+    // if (
+    //     cdl_0.high - cdl_0.low > atr / 5
+    //     && lastPrice > cdl_1.high
+    // ) {
+    //     long(cdl_0.low < cdl_1.low ? cdl_0.low : cdl_1.low);
+    // } else if (
+    //     cdl_0.high - cdl_0.low > atr / 5
+    //     && lastPrice < cdl_1.low
+    // ) {
+    //     short(cdl_0.high > cdl_1.high ? cdl_0.high : cdl_1.high);
+    // }
     // if (
     //     (cdl_3.close > cdl_3.open || cdl_2.close > cdl_2.open)
     //     && cdl_1.close < cdl_1.open

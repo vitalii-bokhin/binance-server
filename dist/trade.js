@@ -8,14 +8,14 @@ const symbols_1 = __importDefault(require("./binance_api/symbols"));
 const binanceApi_1 = require("./binance_api/binanceApi");
 const CandlesTicksStream_1 = require("./binance_api/CandlesTicksStream");
 const position_1 = require("./position");
-const fee = .08, interval = '5m', limit = 100, leverage = 20, maxBotPositions = 2, lossAmount = .5;
+const fee = .08, interval = '5m', limit = 100, leverage = 20, maxBotPositions = 2, lossAmount = 1;
 exports.openedPositions = {};
 let excludedSymbols = new Set();
 let botPositions = 0;
 let _symbolsObj;
 (async function () {
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
-    exports._symbols = ['GMTUSDT', 'TRXUSDT', 'NEARUSDT', 'ZILUSDT', 'APEUSDT', 'WAVESUSDT', 'ADAUSDT']; //symbols, ,'LUNAUSDT','FTMUSDT' , 'MATICUSDT';
+    exports._symbols = ['GALUSDT', 'MANAUSDT', 'GMTUSDT', 'TRXUSDT', 'NEARUSDT', 'ZILUSDT', 'APEUSDT', 'WAVESUSDT', 'ADAUSDT', 'LUNAUSDT', 'FTMUSDT', 'MATICUSDT'];
     _symbolsObj = symbolsObj;
     (0, CandlesTicksStream_1.CandlesTicksStream)({ symbols: exports._symbols, interval, limit }, null);
     (0, binanceApi_1.ordersUpdateStream)();
@@ -65,26 +65,20 @@ function OpenPosition(s, initiator) {
     if (s.strategy == 'patterns') {
         setTakeProfit = true;
         takeProfitPerc = s.percentLoss;
-        useTrailingStop = true;
-        trailingStopStartTriggerPricePerc = s.percentLoss / 2;
-        trailingStopStartOrderPerc = fee;
     }
-    if (s.strategy == 'manual') {
-        // setTakeProfit = true;
-        // takeProfitPerc = s.percentLoss;
-        useTrailingStop = true;
-        trailingStopStartTriggerPricePerc = s.percentLoss / 2;
-        trailingStopStartOrderPerc = fee;
-        trailingStopTriggerPriceStepPerc = s.percentLoss / 2;
-        trailingStopOrderDistancePerc = s.percentLoss / 2;
+    if (s.strategy == 'manual' || s.strategy == 'levels') {
+        setTakeProfit = true;
+        takeProfitPerc = s.percentLoss;
     }
-    if (s.strategy == 'levels') {
-        useTrailingStop = true;
-        trailingStopStartTriggerPricePerc = s.percentLoss + fee;
-        trailingStopStartOrderPerc = fee;
-        trailingStopTriggerPriceStepPerc = s.percentLoss;
-        trailingStopOrderDistancePerc = s.percentLoss;
-    }
+    // if (s.strategy == 'levels') {
+    //     setTakeProfit = true;
+    //     takeProfitPerc = s.percentLoss;
+    //     useTrailingStop = true;
+    //     trailingStopStartTriggerPricePerc = s.percentLoss * .5;
+    //     trailingStopStartOrderPerc = s.percentLoss * -0.5;
+    //     trailingStopTriggerPriceStepPerc = s.percentLoss * .4;
+    //     trailingStopOrderDistancePerc = s.percentLoss * .9;
+    // }
     exports.openedPositions[pKey] = new position_1.Position({
         positionKey: pKey,
         position: s.position,
@@ -115,7 +109,7 @@ function OpenPosition(s, initiator) {
     exports.openedPositions[pKey].setOrders();
     exports.openedPositions[pKey].deletePosition = function (opt) {
         if (opt) {
-            if (opt.excludeKey) {
+            if (opt.excludeKey && this.initiator == 'bot') {
                 excludedSymbols.add(opt.excludeKey);
                 console.log('EXCLUDED =' + opt.excludeKey);
             }

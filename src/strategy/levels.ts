@@ -122,7 +122,7 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             symbolResult.preferIndex = 100 - percentLoss;
             symbolResult.resolvePosition = true;
 
-            cache[symbol].levelsByDepth.bids = [];
+            // cache[symbol].levelsByDepth.bids = [];
         }
     }
 
@@ -142,7 +142,7 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             symbolResult.preferIndex = 100 - percentLoss;
             symbolResult.resolvePosition = true;
 
-            cache[symbol].levelsByDepth.asks = [];
+            // cache[symbol].levelsByDepth.asks = [];
         }
     }
 

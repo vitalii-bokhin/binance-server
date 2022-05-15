@@ -9,7 +9,7 @@ const fee: number = .08,
     limit: number = 100,
     leverage: number = 20,
     maxBotPositions: number = 2,
-    lossAmount: number = .5;
+    lossAmount: number = 1;
 
 export const openedPositions: {
     [key: string]: Position;
@@ -25,7 +25,7 @@ let _symbolsObj: { [key: string]: any };
 (async function () {
     const { symbols, symbolsObj } = await getSymbols();
 
-    _symbols = ['GMTUSDT', 'TRXUSDT', 'NEARUSDT', 'ZILUSDT', 'APEUSDT', 'WAVESUSDT', 'ADAUSDT']; //symbols, ,'LUNAUSDT','FTMUSDT' , 'MATICUSDT';
+    _symbols = ['GALUSDT', 'MANAUSDT', 'GMTUSDT', 'TRXUSDT', 'NEARUSDT', 'ZILUSDT', 'APEUSDT', 'WAVESUSDT', 'ADAUSDT', 'LUNAUSDT', 'FTMUSDT', 'MATICUSDT'];
     _symbolsObj = symbolsObj;
 
     CandlesTicksStream({ symbols: _symbols, interval, limit }, null);
@@ -89,28 +89,22 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
     if (s.strategy == 'patterns') {
         setTakeProfit = true;
         takeProfitPerc = s.percentLoss;
-        useTrailingStop = true;
-        trailingStopStartTriggerPricePerc = s.percentLoss / 2;
-        trailingStopStartOrderPerc = fee;
     }
 
-    if (s.strategy == 'manual') {
-        // setTakeProfit = true;
-        // takeProfitPerc = s.percentLoss;
-        useTrailingStop = true;
-        trailingStopStartTriggerPricePerc = s.percentLoss / 2;
-        trailingStopStartOrderPerc = fee;
-        trailingStopTriggerPriceStepPerc = s.percentLoss / 2;
-        trailingStopOrderDistancePerc = s.percentLoss / 2;
+    if (s.strategy == 'manual' || s.strategy == 'levels') {
+        setTakeProfit = true;
+        takeProfitPerc = s.percentLoss;
     }
 
-    if (s.strategy == 'levels') {
-        useTrailingStop = true;
-        trailingStopStartTriggerPricePerc = s.percentLoss + fee;
-        trailingStopStartOrderPerc = fee;
-        trailingStopTriggerPriceStepPerc = s.percentLoss;
-        trailingStopOrderDistancePerc = s.percentLoss;
-    }
+    // if (s.strategy == 'levels') {
+    //     setTakeProfit = true;
+    //     takeProfitPerc = s.percentLoss;
+    //     useTrailingStop = true;
+    //     trailingStopStartTriggerPricePerc = s.percentLoss * .5;
+    //     trailingStopStartOrderPerc = s.percentLoss * -0.5;
+    //     trailingStopTriggerPriceStepPerc = s.percentLoss * .4;
+    //     trailingStopOrderDistancePerc = s.percentLoss * .9;
+    // }
 
     openedPositions[pKey] = new Position({
         positionKey: pKey,
@@ -144,7 +138,7 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
 
     openedPositions[pKey].deletePosition = function (opt?: any) {
         if (opt) {
-            if (opt.excludeKey) {
+            if (opt.excludeKey && this.initiator == 'bot') {
                 excludedSymbols.add(opt.excludeKey);
 
                 console.log('EXCLUDED =' + opt.excludeKey);

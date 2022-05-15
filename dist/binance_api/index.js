@@ -12,7 +12,7 @@ Object.defineProperty(exports, "TradesListStream", { enumerable: true, get: func
 const binance = new node_binance_api_1.default().options({
     APIKEY: config_1.BINANCE_KEY,
     APISECRET: config_1.BINANCE_SECRET,
-    useServerTime: true
+    // useServerTime: true
 });
 exports.binance = binance;
 const streamApi = 'wss://fstream.binance.com/stream?streams=';

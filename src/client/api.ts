@@ -67,10 +67,7 @@ export default function (api: ws.Router) {
     });
 
     api.get('/trade', (req, res) => {
-        getSymbols().then(({ symbols, symbolsObj }) => {
-            res.json({ symbols });
-        });
-
+        res.json({ symbols: _symbols });
     });
 
     api.post('/trade', (req, res) => {

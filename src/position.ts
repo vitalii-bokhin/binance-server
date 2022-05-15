@@ -217,19 +217,32 @@ export class Position {
                         timeInForce: 'GTC',
                         reduceOnly: true
                     };
+                    
+                    // const profitParams2 = {
+                    //     type: 'LIMIT',
+                    //     timeInForce: 'GTC',
+                    //     reduceOnly: true
+                    // };
 
+                    let prevStopPrice: number;
                     let stopPrice: number;
 
                     const profitPercent = (this.takeProfitPerc || this.percentLoss) + this.fee;
                     const multiplier = this.realEntryPrice / 100;
 
                     if (this.position === 'long') {
+                        // prevStopPrice = this.realEntryPrice + ((profitPercent / 2) * multiplier);
                         stopPrice = this.realEntryPrice + (profitPercent * multiplier);
                     } else {
+                        // prevStopPrice = this.realEntryPrice - ((profitPercent / 2) * multiplier);
                         stopPrice = this.realEntryPrice - (profitPercent * multiplier);
                     }
 
+                    // prevStopPrice = +prevStopPrice.toFixed(this.symbolInfo.pricePrecision);
                     stopPrice = +stopPrice.toFixed(this.symbolInfo.pricePrecision);
+
+                    // const prevQty = +(this.quantity / 2).toFixed(this.symbolInfo.quantityPrecision);
+                    // const qty = this.quantity - prevQty;
 
                     console.log('Position -> watchOrder() -> take profit params');
                     console.log(profitSide, this.symbol, this.quantity, stopPrice);
@@ -240,6 +253,16 @@ export class Position {
                             console.log('Position -> watchOrder() -> take profit order');
                             console.log(arg);
                         });
+
+                    // console.log('Position -> watchOrder() -> take profit 2 params');
+                    // console.log(profitSide, this.symbol, qty, stopPrice);
+                    // console.log(profitParams2);
+
+                    // binanceAuth.futuresOrder(profitSide, this.symbol, qty, stopPrice, profitParams2)
+                    //     .then(arg => {
+                    //         console.log('Position -> watchOrder() -> take profit order');
+                    //         console.log(arg);
+                    //     });
                 }
 
                 // stop loss

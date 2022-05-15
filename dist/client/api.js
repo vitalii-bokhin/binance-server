@@ -1,13 +1,9 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const CandlesTicksStream_1 = require("../binance_api/CandlesTicksStream");
 const bot_1 = require("../bot");
 const manual_1 = require("../manual");
 const strategy_1 = require("../strategy");
-const symbols_1 = __importDefault(require("../binance_api/symbols"));
 const trade_1 = require("../trade");
 function default_1(api) {
     api.get('/bot', async (req, res) => {
@@ -57,9 +53,7 @@ function default_1(api) {
         });
     });
     api.get('/trade', (req, res) => {
-        (0, symbols_1.default)().then(({ symbols, symbolsObj }) => {
-            res.json({ symbols });
-        });
+        res.json({ symbols: trade_1._symbols });
     });
     api.post('/trade', (req, res) => {
         (0, manual_1.ImmediatelyPosition)(req.body);

@@ -5,7 +5,7 @@ import { TradesList, TradesListStream } from './TradesList'
 const binance: Binance = new Binance().options({
     APIKEY: BINANCE_KEY,
     APISECRET: BINANCE_SECRET,
-    useServerTime: true
+    // useServerTime: true
 });
 
 const streamApi = 'wss://fstream.binance.com/stream?streams=';

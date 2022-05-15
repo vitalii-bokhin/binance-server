@@ -84,7 +84,7 @@ function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }) {
             symbolResult.percentLoss = percentLoss;
             symbolResult.preferIndex = 100 - percentLoss;
             symbolResult.resolvePosition = true;
-            cache[symbol].levelsByDepth.bids = [];
+            // cache[symbol].levelsByDepth.bids = [];
         }
     };
     const short = function (stopLoss) {
@@ -98,7 +98,7 @@ function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }) {
             symbolResult.percentLoss = percentLoss;
             symbolResult.preferIndex = 100 - percentLoss;
             symbolResult.resolvePosition = true;
-            cache[symbol].levelsByDepth.asks = [];
+            // cache[symbol].levelsByDepth.asks = [];
         }
     };
     if (lvl.signal == 'onLevel') {
