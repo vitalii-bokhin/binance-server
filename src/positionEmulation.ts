@@ -186,10 +186,10 @@ export class PositionEmulation {
         }
 
         if (type === 'profit') {
-                wallet.usdt += amount;
-            } else {
-                wallet.usdt -= amount;
-            }
+            wallet.usdt += amount;
+        } else {
+            wallet.usdt -= amount;
+        }
 
         await SaveData('wallet', wallet);
     }

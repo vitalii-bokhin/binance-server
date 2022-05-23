@@ -7,7 +7,7 @@ exports.OpenPosition = exports._symbols = exports.openedPositions = void 0;
 const symbols_1 = __importDefault(require("./binance_api/symbols"));
 const binanceApi_1 = require("./binance_api/binanceApi");
 const CandlesTicksStream_1 = require("./binance_api/CandlesTicksStream");
-const position_1 = require("./position");
+const positionEmulation_1 = require("./positionEmulation");
 const fee = .08, interval = '5m', limit = 100, leverage = 20, maxBotPositions = 2, lossAmount = 1;
 exports.openedPositions = {};
 let excludedSymbols = new Set();
@@ -79,7 +79,34 @@ function OpenPosition(s, initiator) {
     //     trailingStopTriggerPriceStepPerc = s.percentLoss * .4;
     //     trailingStopOrderDistancePerc = s.percentLoss * .9;
     // }
-    exports.openedPositions[pKey] = new position_1.Position({
+    // openedPositions[pKey] = new Position({
+    //     positionKey: pKey,
+    //     position: s.position,
+    //     symbol: s.symbol,
+    //     expectedProfit: s.expectedProfit,
+    //     entryPrice: s.entryPrice,
+    //     takeProfit: s.takeProfit,
+    //     percentLoss: s.percentLoss,
+    //     fee,
+    //     leverage,
+    //     symbols: _symbols,
+    //     symbolInfo: _symbolsObj[s.symbol],
+    //     trailingStopStartTriggerPricePerc,
+    //     trailingStopStartOrderPerc,
+    //     trailingStopTriggerPriceStepPerc,
+    //     trailingStopOrderDistancePerc,
+    //     signal: s.signal,
+    //     interval,
+    //     limit,
+    //     rsiPeriod: s.rsiPeriod,
+    //     signalDetails: s.signalDetails,
+    //     initiator,
+    //     useTrailingStop,
+    //     setTakeProfit,
+    //     takeProfitPerc,
+    //     lossAmount
+    // });
+    exports.openedPositions[pKey] = new positionEmulation_1.PositionEmulation({
         positionKey: pKey,
         position: s.position,
         symbol: s.symbol,

@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReuseStrategy = exports.Strategy = void 0;
-const levels_1 = require("./levels");
 const trade_1 = require("../trade");
+const patterns_1 = require("./patterns");
 const cache = {};
 let analizedSymbols = {};
 let analizedSymbolsCount = 0;
@@ -134,22 +134,22 @@ async function Strategy({ data, symbols, tradingSymbols, tradeLines }) {
             if (cache[symbol].symbolSignalHasBeenPassed) {
                 continue;
             }
-            if (purpose.levels.includes(symbol)) {
-                const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
-                const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
-                const lvlSignal = (0, levels_1.Levels)({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt });
-                if (lvlSignal.resolvePosition) {
-                    signals.push(lvlSignal);
-                    cache[symbol].symbolSignalHasBeenPassed = true;
-                }
-            }
-            // if (!purpose.levels.includes(symbol) && !purpose.excludeForPatterns.includes(symbol)) {
-            //     const ptrSignal = Patterns({ symbol, candlesData, tiSettings });
-            //     if (ptrSignal.resolvePosition) {
-            //         signals.push(ptrSignal);
+            // if (purpose.levels.includes(symbol)) {
+            //     const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
+            //     const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
+            //     const lvlSignal = Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt });
+            //     if (lvlSignal.resolvePosition) {
+            //         signals.push(lvlSignal);
             //         cache[symbol].symbolSignalHasBeenPassed = true;
             //     }
             // }
+            if (!purpose.levels.includes(symbol) && !purpose.excludeForPatterns.includes(symbol)) {
+                const ptrSignal = (0, patterns_1.Patterns)({ symbol, candlesData, tiSettings });
+                if (ptrSignal.resolvePosition) {
+                    signals.push(ptrSignal);
+                    cache[symbol].symbolSignalHasBeenPassed = true;
+                }
+            }
             // signals.push(FollowCandle({ symbol, candlesData, tiSettings }));
             // signals.push(TradersForce({ symbol, candlesData, tiSettings }));
             // signals.push(Trend({ symbol, candlesData, tiSettings }));

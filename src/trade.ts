@@ -3,6 +3,7 @@ import getSymbols from './binance_api/symbols';
 import { ordersUpdateStream } from './binance_api/binanceApi';
 import { CandlesTicksStream } from "./binance_api/CandlesTicksStream";
 import { Position } from './position';
+import { PositionEmulation } from './positionEmulation';
 
 const fee: number = .08,
     interval: string = '5m',
@@ -12,7 +13,8 @@ const fee: number = .08,
     lossAmount: number = 1;
 
 export const openedPositions: {
-    [key: string]: Position;
+    // [key: string]: Position;
+    [key: string]: PositionEmulation;
 } = {};
 
 let excludedSymbols: Set<string> = new Set();
@@ -106,7 +108,35 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
     //     trailingStopOrderDistancePerc = s.percentLoss * .9;
     // }
 
-    openedPositions[pKey] = new Position({
+    // openedPositions[pKey] = new Position({
+    //     positionKey: pKey,
+    //     position: s.position,
+    //     symbol: s.symbol,
+    //     expectedProfit: s.expectedProfit,
+    //     entryPrice: s.entryPrice,
+    //     takeProfit: s.takeProfit,
+    //     percentLoss: s.percentLoss,
+    //     fee,
+    //     leverage,
+    //     symbols: _symbols,
+    //     symbolInfo: _symbolsObj[s.symbol],
+    //     trailingStopStartTriggerPricePerc,
+    //     trailingStopStartOrderPerc,
+    //     trailingStopTriggerPriceStepPerc,
+    //     trailingStopOrderDistancePerc,
+    //     signal: s.signal,
+    //     interval,
+    //     limit,
+    //     rsiPeriod: s.rsiPeriod,
+    //     signalDetails: s.signalDetails,
+    //     initiator,
+    //     useTrailingStop,
+    //     setTakeProfit,
+    //     takeProfitPerc,
+    //     lossAmount
+    // });
+
+    openedPositions[pKey] = new PositionEmulation({
         positionKey: pKey,
         position: s.position,
         symbol: s.symbol,
