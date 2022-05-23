@@ -65,26 +65,41 @@ export function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt
     const cdl_1_Split = splitCdl(cdl_1);
     const cdl_0_Split = splitCdl(cdl_0);
 
-    if (
-        cdl_1.close > cdl_1.open
-        && cdl_1_Split.body > cdl_1_Split.highTail
-        && cdl_1_Split.body > cdl_1_Split.lowTail
-        && cdl_0.close > cdl_0.open
-        && cdl_0.close - cdl_0.open > atr * .33
-        && cdl_0.high - cdl_0.low < atr * .66
+    if ( // pinbar long
+        cdl_1_Split.lowTail > cdl_1_Split.body * 2
+        && cdl_1_Split.highTail <= cdl_1_Split.body
+        && lastPrice > cdl_1.high
     ) {
-        long(cdl_0.low)
+        long(cdl_1.low);
 
-    } else if (
-        cdl_1.close < cdl_1.open
-        && cdl_1_Split.body > cdl_1_Split.highTail
-        && cdl_1_Split.body > cdl_1_Split.lowTail
-        && cdl_0.close < cdl_0.open
-        && cdl_0.open - cdl_0.close > atr * .33
-        && cdl_0.high - cdl_0.low < atr * .66
+    } else if ( // pinbar short
+        cdl_1_Split.highTail > cdl_1_Split.body * 2
+        && cdl_1_Split.lowTail <= cdl_1_Split.body
+        && lastPrice < cdl_1.low
     ) {
-        short(cdl_0.high)
+        short(cdl_1.high);
     }
+
+    // if (
+    //     cdl_1.close > cdl_1.open
+    //     && cdl_1_Split.body > cdl_1_Split.highTail
+    //     && cdl_1_Split.body > cdl_1_Split.lowTail
+    //     && cdl_0.close > cdl_0.open
+    //     && cdl_0.close - cdl_0.open > atr * .33
+    //     && cdl_0.high - cdl_0.low < atr * .66
+    // ) {
+    //     long(cdl_0.low)
+
+    // } else if (
+    //     cdl_1.close < cdl_1.open
+    //     && cdl_1_Split.body > cdl_1_Split.highTail
+    //     && cdl_1_Split.body > cdl_1_Split.lowTail
+    //     && cdl_0.close < cdl_0.open
+    //     && cdl_0.open - cdl_0.close > atr * .33
+    //     && cdl_0.high - cdl_0.low < atr * .66
+    // ) {
+    //     short(cdl_0.high)
+    // }
 
     // if (
     //     cdl_3.high > cdl_2.high

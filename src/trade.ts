@@ -9,7 +9,7 @@ const fee: number = .08,
     interval: string = '5m',
     limit: number = 100,
     leverage: number = 20,
-    maxBotPositions: number = 2,
+    maxBotPositions: number = 7,
     lossAmount: number = 1;
 
 export const openedPositions: {
@@ -27,7 +27,7 @@ let _symbolsObj: { [key: string]: any };
 (async function () {
     const { symbols, symbolsObj } = await getSymbols();
 
-    _symbols = ['GALUSDT', 'MANAUSDT', 'GMTUSDT', 'TRXUSDT', 'NEARUSDT', 'ZILUSDT', 'APEUSDT', 'WAVESUSDT', 'ADAUSDT', 'LUNAUSDT', 'FTMUSDT', 'MATICUSDT'];
+    _symbols = ['GALUSDT', 'MANAUSDT', 'GMTUSDT', 'TRXUSDT', 'NEARUSDT', 'ZILUSDT', 'APEUSDT', 'WAVESUSDT', 'ADAUSDT', 'FTMUSDT', 'MATICUSDT'];
     _symbolsObj = symbolsObj;
 
     CandlesTicksStream({ symbols: _symbols, interval, limit }, null);

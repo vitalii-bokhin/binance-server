@@ -8,14 +8,14 @@ const symbols_1 = __importDefault(require("./binance_api/symbols"));
 const binanceApi_1 = require("./binance_api/binanceApi");
 const CandlesTicksStream_1 = require("./binance_api/CandlesTicksStream");
 const positionEmulation_1 = require("./positionEmulation");
-const fee = .08, interval = '5m', limit = 100, leverage = 20, maxBotPositions = 2, lossAmount = 1;
+const fee = .08, interval = '5m', limit = 100, leverage = 20, maxBotPositions = 7, lossAmount = 1;
 exports.openedPositions = {};
 let excludedSymbols = new Set();
 let botPositions = 0;
 let _symbolsObj;
 (async function () {
     const { symbols, symbolsObj } = await (0, symbols_1.default)();
-    exports._symbols = ['GALUSDT', 'MANAUSDT', 'GMTUSDT', 'TRXUSDT', 'NEARUSDT', 'ZILUSDT', 'APEUSDT', 'WAVESUSDT', 'ADAUSDT', 'LUNAUSDT', 'FTMUSDT', 'MATICUSDT'];
+    exports._symbols = ['GALUSDT', 'MANAUSDT', 'GMTUSDT', 'TRXUSDT', 'NEARUSDT', 'ZILUSDT', 'APEUSDT', 'WAVESUSDT', 'ADAUSDT', 'FTMUSDT', 'MATICUSDT'];
     _symbolsObj = symbolsObj;
     (0, CandlesTicksStream_1.CandlesTicksStream)({ symbols: exports._symbols, interval, limit }, null);
     (0, binanceApi_1.ordersUpdateStream)();
