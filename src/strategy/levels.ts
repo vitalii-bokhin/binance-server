@@ -4,72 +4,39 @@ import { Candle, SymbolResult, Entry } from './types';
 
 const cache: {
     [symbol: string]: {
-        levelsByDepth: {
-            asks: {
-                price: number;
-                volume: number;
-            }[];
-            bids: {
-                price: number;
-                volume: number;
-            }[];
-        };
+        levelsByDepth: Set<number>;
     };
 } = {};
 
 export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }: Entry): SymbolResult {
-    // runDepthStream();
-    
-    // if (!cache[symbol]) {
-    //     cache[symbol] = {
-    //         levelsByDepth: {
-    //             asks: [],
-    //             bids: []
-    //         }
-    //     };
-    // }
+    runDepthStream();
 
-    // const depth = depthCache[symbol];
+    if (!cache[symbol]) {
+        cache[symbol] = {
+            levelsByDepth: new Set()
+        };
+    }
 
-    // if (depth) {
-    //     if (
-    //         !cache[symbol].levelsByDepth.asks.length
-    //         || cache[symbol].levelsByDepth.asks.slice(-1)[0].price !== depth.maxAsk.price
-    //     ) {
-    //         cache[symbol].levelsByDepth.asks.push({
-    //             price: depth.maxAsk.price,
-    //             volume: depth.maxAsk.volume
-    //         });
-    //     }
+    const depth = depthCache[symbol];
 
-    //     if (
-    //         !cache[symbol].levelsByDepth.bids.length
-    //         || cache[symbol].levelsByDepth.bids.slice(-1)[0].price !== depth.maxBid.price
-    //     ) {
-    //         cache[symbol].levelsByDepth.bids.push({
-    //             price: depth.maxBid.price,
-    //             volume: depth.maxBid.volume
-    //         });
-    //     }
-    // }
+    if (depth) {
+        if (depthCache[symbol].prevMaxAsk.price) {
+            cache[symbol].levelsByDepth.add(depthCache[symbol].prevMaxAsk.price);
+        }
 
-    // const askLevels = cache[symbol].levelsByDepth.asks.slice(-3);
-    // const bidLevels = cache[symbol].levelsByDepth.bids.slice(-3);
+        if (depthCache[symbol].prevMaxBid.price) {
+            cache[symbol].levelsByDepth.add(depthCache[symbol].prevMaxBid.price);
+        }
 
-    // askLevels.sort((a, b) => a.price - b.price);
-    // bidLevels.sort((a, b) => b.price - a.price);
-
-    // console.log(symbol);
-    // console.log('askLevels');
-    // console.log(askLevels);
-    // console.log('bidLevels');
-    // console.log(bidLevels);
+        cache[symbol].levelsByDepth.add(depthCache[symbol].maxAsk.price);
+        cache[symbol].levelsByDepth.add(depthCache[symbol].maxBid.price);
+    }
 
     const _candles = candlesData;
 
     // const smaLast = SMA({ data: _candles, period: tiSettings.smaPeriod }).last;
     // const smaStack = SMA({ data: _candles, period: tiSettings.smaPeriod }).stack;
-    
+
     const atr = ATR({ data: _candles, period: tiSettings.atrPeriod }).last;
 
     // let moveDir: 'up' | 'down';
@@ -85,8 +52,8 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
     // console.log(symbol);
     // console.log(moveDir);
 
-    const tdl = TDL({ candles: _candles, trendsOpt });
-    const lvl = LVL({ candles: _candles, levelsOpt });
+    // const tdl = TDL({ candles: _candles, trendsOpt });
+    // const lvl = LVL({ candles: _candles, levelsOpt });
 
     const prePrevCandle: Candle = _candles.slice(-3)[0];
     const prevCandle: Candle = _candles.slice(-2)[0];
@@ -100,6 +67,7 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
         entryPrice: lastPrice,
         percentLoss: null,
         strategy: 'levels',
+        signal: 'depthLevels',
         preferIndex: null,
         rsiPeriod: tiSettings.rsiPeriod,
         resolvePosition: false,
@@ -122,7 +90,7 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             symbolResult.preferIndex = 100 - percentLoss;
             symbolResult.resolvePosition = true;
 
-            // cache[symbol].levelsByDepth.bids = [];
+            cache[symbol].levelsByDepth.clear();
         }
     }
 
@@ -142,11 +110,11 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             symbolResult.preferIndex = 100 - percentLoss;
             symbolResult.resolvePosition = true;
 
-            // cache[symbol].levelsByDepth.asks = [];
+            cache[symbol].levelsByDepth.clear();
         }
     }
 
-    if (lvl.signal == 'onLevel') {
+    /* if (lvl.signal == 'onLevel') {
         console.log('=====================================================================');
         console.log('symbol lvl', symbol, lvl);
         console.log('=====================================================================');
@@ -198,47 +166,40 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             short(tdl.topPrice);
         }
 
-    } else {
-        // for (const askLvl of askLevels) {
-        //     if (
-        //         (
-        //             prePrevCandle.low <= askLvl.price
-        //             && prePrevCandle.high >= askLvl.price
-        //             || prevCandle.low <= askLvl.price
-        //             && prevCandle.high >= askLvl.price
-        //         )
-        //         && lastCandle.close < lastCandle.open
-        //         && lastPrice < askLvl.price
-        //         && lastCandle.open - lastCandle.close > atr / 3
-        //         && askLvl.price - lastPrice < atr
-        //         && lastPrice < prevCandle.open
-        //         // && depth.bidsSum < depth.asksSum
-        //     ) {
-        //         short(askLevels.slice(-1)[0].price);
-        //         break;
-        //     }
-        // }
+    } else { */
+    for (const lvl of cache[symbol].levelsByDepth) {
+        let nearLvl = null;
+        let dt = 99999;
 
-        // for (const bidLvl of bidLevels) {
-        //     if (
-        //         (
-        //             prePrevCandle.low <= bidLvl.price
-        //             && prePrevCandle.high >= bidLvl.price
-        //             || prevCandle.low <= bidLvl.price
-        //             && prevCandle.high >= bidLvl.price
-        //         )
-        //         && lastCandle.close > lastCandle.open
-        //         && lastPrice > bidLvl.price
-        //         && lastCandle.close - lastCandle.open > atr / 3
-        //         && lastPrice - bidLvl.price < atr
-        //         && lastPrice > prevCandle.open
-        //         // && depth.bidsSum > depth.asksSum
-        //     ) {
-        //         long(bidLevels.slice(-1)[0].price);
-        //         break;
-        //     }
-        // }
+        if (Math.abs(lastPrice - lvl) < dt) {
+            nearLvl = lvl;
+            dt = Math.abs(lastPrice - lvl);
+        }
+
+        if (
+            prePrevCandle.close < prePrevCandle.open
+            && prevCandle.low <= nearLvl
+            && prePrevCandle.high > nearLvl
+            && lastCandle.close > lastCandle.open
+            && lastCandle.close - lastCandle.open > atr / 3
+            && lastPrice > nearLvl
+            && lastPrice - nearLvl < atr
+        ) {
+            long(lastCandle.low < prevCandle.low ? lastCandle.low : prevCandle.low);
+
+        } else if (
+            prePrevCandle.close > prePrevCandle.open
+            && prevCandle.high >= nearLvl
+            && prePrevCandle.low < nearLvl
+            && lastCandle.close < lastCandle.open
+            && lastCandle.open - lastCandle.close > atr / 3
+            && lastPrice < nearLvl
+            && nearLvl - lastPrice < atr
+        ) {
+            short(lastCandle.high > prevCandle.high ? lastCandle.high : prevCandle.high);
+        }
     }
+    /*}  */
 
     if (symbolResult.resolvePosition) {
         console.log(symbolResult);

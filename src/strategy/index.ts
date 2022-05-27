@@ -200,26 +200,26 @@ export async function Strategy({ data, symbols, tradingSymbols, tradeLines }: { 
                 continue;
             }
 
-            // if (purpose.levels.includes(symbol)) {
-            //     const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
-            //     const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
+            if (true/* purpose.levels.includes(symbol) */) {
+                const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
+                const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
 
-            //     const lvlSignal = Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt });
+                const lvlSignal = Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt });
 
-            //     if (lvlSignal.resolvePosition) {
-            //         signals.push(lvlSignal);
-            //         cache[symbol].symbolSignalHasBeenPassed = true;
-            //     }
-            // }
-
-            if (!purpose.levels.includes(symbol) && !purpose.excludeForPatterns.includes(symbol)) {
-                const ptrSignal = Patterns({ symbol, candlesData, tiSettings });
-
-                if (ptrSignal.resolvePosition) {
-                    signals.push(ptrSignal);
+                if (lvlSignal.resolvePosition) {
+                    signals.push(lvlSignal);
                     cache[symbol].symbolSignalHasBeenPassed = true;
                 }
             }
+
+            // if (!purpose.levels.includes(symbol) && !purpose.excludeForPatterns.includes(symbol)) {
+            //     const ptrSignal = Patterns({ symbol, candlesData, tiSettings });
+
+            //     if (ptrSignal.resolvePosition) {
+            //         signals.push(ptrSignal);
+            //         cache[symbol].symbolSignalHasBeenPassed = true;
+            //     }
+            // }
 
             // signals.push(FollowCandle({ symbol, candlesData, tiSettings }));
 

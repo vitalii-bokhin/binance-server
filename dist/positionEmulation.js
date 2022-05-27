@@ -98,16 +98,17 @@ class PositionEmulation {
     }
     async logPosition(type, amount) {
         let wallet = await (0, db_1.GetData)('wallet');
-        if (!wallet || !wallet.usdt) {
-            wallet = {
-                usdt: 100
-            };
+        if (!wallet) {
+            wallet = {};
+        }
+        if (!wallet[this.signal]) {
+            wallet[this.signal] = 100;
         }
         if (type === 'profit') {
-            wallet.usdt += amount;
+            wallet[this.signal] += amount;
         }
         else {
-            wallet.usdt -= amount;
+            wallet[this.signal] -= amount;
         }
         await (0, db_1.SaveData)('wallet', wallet);
     }

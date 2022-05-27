@@ -177,18 +177,20 @@ export class PositionEmulation {
     }
 
     async logPosition(type: 'profit' | 'loss', amount: number) {
-        let wallet = await GetData<{ usdt: number }>('wallet');
+        let wallet = await GetData<any>('wallet');
 
-        if (!wallet || !wallet.usdt) {
-            wallet = {
-                usdt: 100
-            };
+        if (!wallet) {
+            wallet = {};
+        }
+
+        if (!wallet[this.signal]) {
+            wallet[this.signal] = 100;
         }
 
         if (type === 'profit') {
-            wallet.usdt += amount;
+            wallet[this.signal] += amount;
         } else {
-            wallet.usdt -= amount;
+            wallet[this.signal] -= amount;
         }
 
         await SaveData('wallet', wallet);

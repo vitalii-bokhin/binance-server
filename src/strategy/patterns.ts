@@ -43,41 +43,59 @@ export function Patterns({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt
         resolvePosition: false
     };
 
-    const long = function (stopLoss) {
+    const long = function (stopLoss, signal) {
         const percentLoss = (lastPrice - stopLoss) / (lastPrice / 100);
 
         symbolResult.position = 'long';
         symbolResult.percentLoss = percentLoss;
         symbolResult.preferIndex = 100 - percentLoss;
         symbolResult.resolvePosition = true;
+        symbolResult.signal = signal;
     }
 
-    const short = function (stopLoss) {
+    const short = function (stopLoss, signal) {
         const percentLoss = (stopLoss - lastPrice) / (lastPrice / 100);
 
         symbolResult.position = 'short';
         symbolResult.percentLoss = percentLoss;
         symbolResult.preferIndex = 100 - percentLoss;
         symbolResult.resolvePosition = true;
+        symbolResult.signal = signal;
     }
 
     const cdl_2_Split = splitCdl(cdl_2);
     const cdl_1_Split = splitCdl(cdl_1);
     const cdl_0_Split = splitCdl(cdl_0);
 
-    if ( // pinbar long
+    if ( // ppr long
+        cdl_2.close < cdl_2.open
+        && cdl_1.close > cdl_1.open
+        && cdl_1.close > cdl_2.high
+        && lastPrice > cdl_1.close
+    ) {
+        long(cdl_2.low < cdl_1.low ? cdl_2.low : cdl_1.low, 'pprLong');
+
+    } else if ( // ppr short
+        cdl_2.close > cdl_2.open
+        && cdl_1.close < cdl_1.open
+        && cdl_1.close < cdl_2.low
+        && lastPrice < cdl_1.close
+    ) {
+        short(cdl_2.high > cdl_1.high ? cdl_2.high : cdl_1.high, 'pprShort');
+
+    } else if ( // pinbar long
         cdl_1_Split.lowTail > cdl_1_Split.body * 2
         && cdl_1_Split.highTail <= cdl_1_Split.body
         && lastPrice > cdl_1.high
     ) {
-        long(cdl_1.low);
+        long(cdl_1.low, 'pinbarLong');
 
     } else if ( // pinbar short
         cdl_1_Split.highTail > cdl_1_Split.body * 2
         && cdl_1_Split.lowTail <= cdl_1_Split.body
         && lastPrice < cdl_1.low
     ) {
-        short(cdl_1.high);
+        short(cdl_1.high, 'pinbarShort');
     }
 
     // if (
