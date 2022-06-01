@@ -4,6 +4,7 @@ type Signal = 'onLevel' | 'nextToTop' | 'nextToBottom' | 'cuddleTop' | 'cuddleBo
 type Result = {
     topPrice: number;
     bottomPrice: number;
+    mainPrice: number;
     signal: Signal;
     direction: 'up' | 'down';
 };
@@ -14,6 +15,7 @@ export function LVL({ candles, levelsOpt }: LevelInput): Result {
     let signal: Signal,
         topPrice: number,
         bottomPrice: number,
+        mainPrice: number,
         direction: 'up' | 'down';
 
     // const _candles = candles.slice(-3);
@@ -27,7 +29,8 @@ export function LVL({ candles, levelsOpt }: LevelInput): Result {
     //     dist: 99999
     // };
 
-    const nearLvl = levelsOpt.reduce((p, c) => p.concat(c.price), [])
+    const nearLvl = levelsOpt
+        .map(it => it.price[0])
         .sort((a, b) => Math.abs(lastPrice - a) - Math.abs(lastPrice - b))[0];
 
     // for (const level of levelsOpt) {
@@ -46,14 +49,18 @@ export function LVL({ candles, levelsOpt }: LevelInput): Result {
         topPrice = null;
         bottomPrice = null;
         direction = null;
+        mainPrice = level.price[0];
 
-        const lvlPrice = [...level.price];
+        const lvlPrice = [
+            level.price[1],
+            level.price[0] + (level.price[0] - level.price[1])
+        ];
 
-        if (lvlPrice[0] > lvlPrice[1]) {
-            direction = 'up';
-        } else {
-            direction = 'down';
-        }
+        // if (lvlPrice[0] > lvlPrice[1]) {
+        //     direction = 'up';
+        // } else {
+        //     direction = 'down';
+        // }
 
         lvlPrice.sort((a, b) => b - a);
 
@@ -72,8 +79,8 @@ export function LVL({ candles, levelsOpt }: LevelInput): Result {
 
         for (const cdl of _candles) {
             if (
-                cdl.high >= btmLvl
-                && cdl.low <= topLvl
+                cdl.high >= mainPrice
+                && cdl.low <= mainPrice
             ) {
                 signal = 'onLevel';
             }
@@ -113,7 +120,7 @@ export function LVL({ candles, levelsOpt }: LevelInput): Result {
         //     signal = 'nextToTop';
         // }
 
-        if (signal && level.price.includes(nearLvl)) {
+        if (signal && mainPrice === nearLvl) {
             // const cdlsStack = candles.slice(-24, -2);
 
             // cdlsStack.reverse();
@@ -201,5 +208,5 @@ export function LVL({ candles, levelsOpt }: LevelInput): Result {
     //     signal = null;
     // }
 
-    return { signal, topPrice, bottomPrice, direction };
+    return { signal, topPrice, mainPrice, bottomPrice, direction };
 }

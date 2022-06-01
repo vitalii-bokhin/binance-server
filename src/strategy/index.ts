@@ -200,7 +200,7 @@ export async function Strategy({ data, symbols, tradingSymbols, tradeLines }: { 
                 continue;
             }
 
-            if (true/* purpose.levels.includes(symbol) */) {
+            if (purpose.levels.includes(symbol)) {
                 const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
                 const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
 

@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.LVL = void 0;
 let i = 0;
 function LVL({ candles, levelsOpt }) {
-    let signal, topPrice, bottomPrice, direction;
+    let signal, topPrice, bottomPrice, mainPrice, direction;
     // const _candles = candles.slice(-3);
     const _candles = candles.slice(-3, -1);
     const lastPrice = candles.slice(-1)[0].close;
@@ -13,7 +13,8 @@ function LVL({ candles, levelsOpt }) {
     //     price: null,
     //     dist: 99999
     // };
-    const nearLvl = levelsOpt.reduce((p, c) => p.concat(c.price), [])
+    const nearLvl = levelsOpt
+        .map(it => it.price[0])
         .sort((a, b) => Math.abs(lastPrice - a) - Math.abs(lastPrice - b))[0];
     // for (const level of levelsOpt) {
     //     for (const price of level.price) {
@@ -29,13 +30,16 @@ function LVL({ candles, levelsOpt }) {
         topPrice = null;
         bottomPrice = null;
         direction = null;
-        const lvlPrice = [...level.price];
-        if (lvlPrice[0] > lvlPrice[1]) {
-            direction = 'up';
-        }
-        else {
-            direction = 'down';
-        }
+        mainPrice = level.price[0];
+        const lvlPrice = [
+            level.price[1],
+            level.price[0] + (level.price[0] - level.price[1])
+        ];
+        // if (lvlPrice[0] > lvlPrice[1]) {
+        //     direction = 'up';
+        // } else {
+        //     direction = 'down';
+        // }
         lvlPrice.sort((a, b) => b - a);
         const topLvl = lvlPrice[0];
         const btmLvl = lvlPrice[1];
@@ -48,8 +52,8 @@ function LVL({ candles, levelsOpt }) {
         //     signal = 'onLevel';
         // }
         for (const cdl of _candles) {
-            if (cdl.high >= btmLvl
-                && cdl.low <= topLvl) {
+            if (cdl.high >= mainPrice
+                && cdl.low <= mainPrice) {
                 signal = 'onLevel';
             }
         }
@@ -83,7 +87,7 @@ function LVL({ candles, levelsOpt }) {
         // ) {
         //     signal = 'nextToTop';
         // }
-        if (signal && level.price.includes(nearLvl)) {
+        if (signal && mainPrice === nearLvl) {
             // const cdlsStack = candles.slice(-24, -2);
             // cdlsStack.reverse();
             // let cuddle = null;
@@ -151,7 +155,7 @@ function LVL({ candles, levelsOpt }) {
     // } else {
     //     signal = null;
     // }
-    return { signal, topPrice, bottomPrice, direction };
+    return { signal, topPrice, mainPrice, bottomPrice, direction };
 }
 exports.LVL = LVL;
 //# sourceMappingURL=level.js.map

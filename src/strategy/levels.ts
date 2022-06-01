@@ -9,28 +9,30 @@ const cache: {
 } = {};
 
 export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }: Entry): SymbolResult {
-    runDepthStream();
+    // runDepthStream();
 
-    if (!cache[symbol]) {
-        cache[symbol] = {
-            levelsByDepth: new Set()
-        };
-    }
+    // if (!cache[symbol]) {
+    //     cache[symbol] = {
+    //         levelsByDepth: new Set()
+    //     };
+    // }
 
-    const depth = depthCache[symbol];
+    // const depth = depthCache[symbol];
 
-    if (depth) {
-        if (depthCache[symbol].prevMaxAsk.price) {
-            cache[symbol].levelsByDepth.add(depthCache[symbol].prevMaxAsk.price);
-        }
+    // if (depth) {
+    //     if (depthCache[symbol].prevMaxAsk.price) {
+    //         cache[symbol].levelsByDepth.add(depthCache[symbol].prevMaxAsk.price);
+    //     }
 
-        if (depthCache[symbol].prevMaxBid.price) {
-            cache[symbol].levelsByDepth.add(depthCache[symbol].prevMaxBid.price);
-        }
+    //     if (depthCache[symbol].prevMaxBid.price) {
+    //         cache[symbol].levelsByDepth.add(depthCache[symbol].prevMaxBid.price);
+    //     }
 
-        cache[symbol].levelsByDepth.add(depthCache[symbol].maxAsk.price);
-        cache[symbol].levelsByDepth.add(depthCache[symbol].maxBid.price);
-    }
+    //     cache[symbol].levelsByDepth.add(depthCache[symbol].maxAsk.price);
+    //     cache[symbol].levelsByDepth.add(depthCache[symbol].maxBid.price);
+    // }
+
+    // console.log(cache[symbol].levelsByDepth);
 
     const _candles = candlesData;
 
@@ -52,8 +54,8 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
     // console.log(symbol);
     // console.log(moveDir);
 
-    // const tdl = TDL({ candles: _candles, trendsOpt });
-    // const lvl = LVL({ candles: _candles, levelsOpt });
+    const tdl = TDL({ candles: _candles, trendsOpt });
+    const lvl = LVL({ candles: _candles, levelsOpt });
 
     const prePrevCandle: Candle = _candles.slice(-3)[0];
     const prevCandle: Candle = _candles.slice(-2)[0];
@@ -67,7 +69,7 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
         entryPrice: lastPrice,
         percentLoss: null,
         strategy: 'levels',
-        signal: 'depthLevels',
+        signal: 'levels_' + symbol,
         preferIndex: null,
         rsiPeriod: tiSettings.rsiPeriod,
         resolvePosition: false,
@@ -90,7 +92,7 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             symbolResult.preferIndex = 100 - percentLoss;
             symbolResult.resolvePosition = true;
 
-            cache[symbol].levelsByDepth.clear();
+            // cache[symbol].levelsByDepth.clear();
         }
     }
 
@@ -110,40 +112,34 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             symbolResult.preferIndex = 100 - percentLoss;
             symbolResult.resolvePosition = true;
 
-            cache[symbol].levelsByDepth.clear();
+            // cache[symbol].levelsByDepth.clear();
         }
     }
 
-    /* if (lvl.signal == 'onLevel') {
-        console.log('=====================================================================');
-        console.log('symbol lvl', symbol, lvl);
-        console.log('=====================================================================');
+    if (lvl.signal == 'onLevel') {
+        // console.log('=====================================================================');
+        // console.log('symbol lvl', symbol, lvl);
+        // console.log('=====================================================================');
 
         if (
-            lvl.direction == 'up'
-            && lastPrice > lvl.topPrice
+            lastPrice > lvl.topPrice
             && lastCandle.close > lastCandle.open
-            && lastCandle.close - lastCandle.open > atr / 3
             && lastPrice - lvl.topPrice < atr
-            // && lastPrice > prevCandle.open
         ) {
             long(lvl.bottomPrice);
 
         } else if (
-            lvl.direction == 'down'
-            && lastPrice < lvl.bottomPrice
+            lastPrice < lvl.bottomPrice
             && lastCandle.close < lastCandle.open
-            && lastCandle.open - lastCandle.close > atr / 3
             && lvl.bottomPrice - lastPrice < atr
-            // && lastPrice < prevCandle.open
         ) {
             short(lvl.topPrice);
         }
 
     } else if (tdl.signal == 'onTrend') {
-        console.log('=====================================================================');
-        console.log('symbol tld', symbol, tdl);
-        console.log('=====================================================================');
+        // console.log('=====================================================================');
+        // console.log('symbol tld', symbol, tdl);
+        // console.log('=====================================================================');
 
         if (
             tdl.direction == 'up'
@@ -166,16 +162,22 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             short(tdl.topPrice);
         }
 
-    } else { */
-    for (const lvl of cache[symbol].levelsByDepth) {
-        let nearLvl = null;
-        let dt = 99999;
+    }
 
+    /* else { */
+    /* let nearLvl = null;
+    let dt = 99999;
+
+    for (const lvl of cache[symbol].levelsByDepth) {
         if (Math.abs(lastPrice - lvl) < dt) {
             nearLvl = lvl;
             dt = Math.abs(lastPrice - lvl);
         }
+    }
 
+    // console.log('NEAR LVL', nearLvl);
+
+    if (nearLvl !== null) {
         if (
             prePrevCandle.close < prePrevCandle.open
             && prevCandle.low <= nearLvl
@@ -185,7 +187,9 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             && lastPrice > nearLvl
             && lastPrice - nearLvl < atr
         ) {
-            long(lastCandle.low < prevCandle.low ? lastCandle.low : prevCandle.low);
+            // long(lastCandle.low < prevCandle.low ? lastCandle.low : prevCandle.low);
+            const sl = lastCandle.low < prevCandle.low ? lastCandle.low : prevCandle.low;
+            short(lastPrice + (lastPrice - sl));
 
         } else if (
             prePrevCandle.close > prePrevCandle.open
@@ -196,9 +200,12 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             && lastPrice < nearLvl
             && nearLvl - lastPrice < atr
         ) {
-            short(lastCandle.high > prevCandle.high ? lastCandle.high : prevCandle.high);
+            // short(lastCandle.high > prevCandle.high ? lastCandle.high : prevCandle.high);
+            const sl = lastCandle.high > prevCandle.high ? lastCandle.high : prevCandle.high;
+            long(lastPrice - (sl - lastPrice));
         }
-    }
+    } */
+
     /*}  */
 
     if (symbolResult.resolvePosition) {

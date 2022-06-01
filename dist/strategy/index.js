@@ -134,7 +134,7 @@ async function Strategy({ data, symbols, tradingSymbols, tradeLines }) {
             if (cache[symbol].symbolSignalHasBeenPassed) {
                 continue;
             }
-            if (true /* purpose.levels.includes(symbol) */) {
+            if (purpose.levels.includes(symbol)) {
                 const levelsOpt = tradeLines[symbol] && tradeLines[symbol].levels || [];
                 const trendsOpt = tradeLines[symbol] && tradeLines[symbol].trends || [];
                 const lvlSignal = (0, levels_1.Levels)({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt });
