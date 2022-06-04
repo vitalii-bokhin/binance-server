@@ -6,8 +6,8 @@ import { Position } from './position';
 import { PositionEmulation } from './positionEmulation';
 
 const fee: number = .08,
-    interval: string = '5m',
-    limit: number = 100,
+    interval: string = '1h',
+    limit: number = 99, // candles ticks limit
     leverage: number = 20,
     maxBotPositions: number = 7,
     lossAmount: number = 1;

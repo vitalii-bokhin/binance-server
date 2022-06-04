@@ -31,18 +31,19 @@ function LVL({ candles, levelsOpt }) {
         bottomPrice = null;
         direction = null;
         mainPrice = level.price[0];
-        const lvlPrice = [
+        const lvlEdges = [
             level.price[1],
             level.price[0] + (level.price[0] - level.price[1])
         ];
-        // if (lvlPrice[0] > lvlPrice[1]) {
-        //     direction = 'up';
-        // } else {
-        //     direction = 'down';
-        // }
-        lvlPrice.sort((a, b) => b - a);
-        const topLvl = lvlPrice[0];
-        const btmLvl = lvlPrice[1];
+        if (level.price[0] > level.price[1]) {
+            direction = 'up';
+        }
+        else {
+            direction = 'down';
+        }
+        lvlEdges.sort((a, b) => b - a);
+        const topLvl = lvlEdges[0];
+        const btmLvl = lvlEdges[1];
         topPrice = topLvl;
         bottomPrice = btmLvl;
         // if (

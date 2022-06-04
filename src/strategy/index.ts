@@ -182,7 +182,7 @@ export async function Strategy({ data, symbols, tradingSymbols, tradeLines }: { 
             if (!cache[symbol]) {
                 cache[symbol] = {
                     lastCandleOpenTime: lastCandle.openTime,
-                    symbolSignalHasBeenPassed: true
+                    symbolSignalHasBeenPassed: false
                 };
             }
 

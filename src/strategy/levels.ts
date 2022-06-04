@@ -69,7 +69,7 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
         entryPrice: lastPrice,
         percentLoss: null,
         strategy: 'levels',
-        signal: 'levels_' + symbol,
+        signal: null,
         preferIndex: null,
         rsiPeriod: tiSettings.rsiPeriod,
         resolvePosition: false,
@@ -122,18 +122,24 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
         // console.log('=====================================================================');
 
         if (
-            lastPrice > lvl.topPrice
+            lvl.direction == 'up'
+            && lastPrice > lvl.topPrice
             && lastCandle.close > lastCandle.open
             && lastPrice - lvl.topPrice < atr
         ) {
             long(lvl.bottomPrice);
 
+            symbolResult.signal = 'levels_up_' + symbol;
+
         } else if (
-            lastPrice < lvl.bottomPrice
+            lvl.direction == 'down'
+            && lastPrice < lvl.bottomPrice
             && lastCandle.close < lastCandle.open
             && lvl.bottomPrice - lastPrice < atr
         ) {
             short(lvl.topPrice);
+
+            symbolResult.signal = 'levels_down_' + symbol;
         }
 
     } else if (tdl.signal == 'onTrend') {
@@ -147,9 +153,10 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             && lastCandle.close > lastCandle.open
             && lastCandle.close - lastCandle.open > atr / 3
             && lastPrice - tdl.topPrice < atr
-            // && lastPrice > prevCandle.open
         ) {
             long(tdl.bottomPrice);
+
+            symbolResult.signal = 'trend_up_' + symbol;
 
         } else if (
             tdl.direction == 'down'
@@ -157,11 +164,11 @@ export function Levels({ symbol, candlesData, tiSettings, levelsOpt, trendsOpt }
             && lastCandle.close < lastCandle.open
             && lastCandle.open - lastCandle.close > atr / 3
             && tdl.bottomPrice - lastPrice < atr
-            // && lastPrice < prevCandle.open
         ) {
             short(tdl.topPrice);
-        }
 
+            symbolResult.signal = 'trend_down_' + symbol;
+        }
     }
 
     /* else { */

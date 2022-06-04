@@ -8,7 +8,8 @@ const symbols_1 = __importDefault(require("./binance_api/symbols"));
 const binanceApi_1 = require("./binance_api/binanceApi");
 const CandlesTicksStream_1 = require("./binance_api/CandlesTicksStream");
 const positionEmulation_1 = require("./positionEmulation");
-const fee = .08, interval = '5m', limit = 100, leverage = 20, maxBotPositions = 7, lossAmount = 1;
+const fee = .08, interval = '1h', limit = 99, // candles ticks limit
+leverage = 20, maxBotPositions = 7, lossAmount = 1;
 exports.openedPositions = {};
 let excludedSymbols = new Set();
 let botPositions = 0;
