@@ -4,7 +4,7 @@ import { Strategy } from './strategy';
 import events from 'events';
 import { OpenPosition, _symbols } from './trade';
 import { LevelOpt, TrendOpt } from './indicators/types';
-import { GetData, SaveData, Tradelines } from './db/db';
+import { GetData, SaveData, Tradelines } from './db';
 import { TradesListStream } from './binance_api';
 
 const ev = new events.EventEmitter();

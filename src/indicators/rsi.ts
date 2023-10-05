@@ -2,7 +2,10 @@ import { IndicatorEntry, Result } from './types';
 import { RSI as tiRsi } from 'technicalindicators';
 
 const cache: {
-    [symbol: string]: { stack: number[]; lastCandleOpenTime: number; };
+    [symbol: string]: {
+        stack: number[];
+        lastCandleOpenTime: number;
+    };
 } = {};
 
 export function RSI({ data, period, symbol }: { symbol: string } & IndicatorEntry): Result {

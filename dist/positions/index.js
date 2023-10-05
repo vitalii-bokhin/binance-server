@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OpenPosition = exports._symbols = exports.openedPositions = void 0;
-const positionEmulation_1 = require("./positionEmulation");
+exports.openPosition = exports._symbols = exports.openedPositions = void 0;
+const PositionEmulation_1 = require("./PositionEmulation");
 const fee = .08, interval = '1h', limit = 99, // candles ticks limit
 leverage = 20, maxBotPositions = 7, lossAmount = 1;
 exports.openedPositions = {};
@@ -16,7 +16,7 @@ let _symbolsObj;
 //     ordersUpdateStream();
 //     console.log(`Trade has been run. Candles (${limit}) with interval: ${interval}. Leverage: ${leverage}.`);
 // })();
-function OpenPosition(s, initiator) {
+function openPosition(s, initiator) {
     const pKey = s.symbol;
     // console.log('******************************************************');
     // console.log('s.symbol', s.symbol);
@@ -104,7 +104,7 @@ function OpenPosition(s, initiator) {
     //     takeProfitPerc,
     //     lossAmount
     // });
-    exports.openedPositions[pKey] = new positionEmulation_1.PositionEmulation({
+    exports.openedPositions[pKey] = new PositionEmulation_1.PositionEmulation({
         positionKey: pKey,
         position: s.position,
         symbol: s.symbol,
@@ -151,5 +151,5 @@ function OpenPosition(s, initiator) {
     console.log('trade.ts -> OpenPosition -> openedPositions');
     console.log(exports.openedPositions);
 }
-exports.OpenPosition = OpenPosition;
-//# sourceMappingURL=trade.js.map
+exports.openPosition = openPosition;
+//# sourceMappingURL=index.js.map

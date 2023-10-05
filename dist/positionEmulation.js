@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PositionEmulation = void 0;
 const CandlesTicksStream_1 = require("./binance_api/CandlesTicksStream");
-const db_1 = require("./db/db");
+const db_1 = require("./db");
 class PositionEmulation {
     constructor(opt) {
         this.stopLossHasBeenMoved = false;
@@ -80,7 +80,12 @@ class PositionEmulation {
                     this.deletePositionInner({ clearExcludedSymbols: true });
                 }
                 else if (lastPrice <= this.stopLossPrice) {
-                    this.logPosition('loss', this.lossAmount);
+                    if (this.trailingSteps > 0) {
+                        this.logPosition('breakEven');
+                    }
+                    else {
+                        this.logPosition('loss', this.lossAmount);
+                    }
                     this.deletePositionInner({ clearExcludedSymbols: true });
                 }
             }
@@ -90,11 +95,57 @@ class PositionEmulation {
                     this.deletePositionInner({ clearExcludedSymbols: true });
                 }
                 else if (lastPrice >= this.stopLossPrice) {
-                    this.logPosition('loss', this.lossAmount);
+                    if (this.trailingSteps > 0) {
+                        this.logPosition('breakEven');
+                    }
+                    else {
+                        this.logPosition('loss', this.lossAmount);
+                    }
                     this.deletePositionInner({ clearExcludedSymbols: true });
                 }
             }
+            if (!this.stopLossHasBeenMoved && this.useTrailingStop) {
+                if (this.trailingSteps > 0 && !this.trailingStopTriggerPriceStepPerc) {
+                    return;
+                }
+                let changePerc;
+                const triggerPerc = this.trailingSteps === 0 ? this.trailingStopStartTriggerPricePerc : this.trailingStopStartTriggerPricePerc + this.trailingStopTriggerPriceStepPerc * this.trailingSteps;
+                if (this.position === 'long') {
+                    changePerc = (lastPrice - this.realEntryPrice) / (this.realEntryPrice / 100);
+                }
+                else {
+                    changePerc = (this.realEntryPrice - lastPrice) / (this.realEntryPrice / 100);
+                }
+                if (changePerc >= triggerPerc) {
+                    this.stopLossHasBeenMoved = true;
+                    this.moveStopLoss();
+                }
+            }
         });
+    }
+    moveStopLoss() {
+        const exitParams = {
+            stopPrice: null
+        };
+        let percentLoss;
+        if (this.trailingSteps === 0) {
+            percentLoss = this.trailingStopStartOrderPerc;
+        }
+        else {
+            percentLoss = this.trailingStopStartTriggerPricePerc + (this.trailingStopTriggerPriceStepPerc * this.trailingSteps) - this.trailingStopOrderDistancePerc;
+            if (percentLoss <= this.trailingStopStartOrderPerc) {
+                percentLoss = this.trailingStopStartOrderPerc;
+            }
+        }
+        if (this.position === 'long') {
+            exitParams.stopPrice = this.realEntryPrice + ((percentLoss + this.fee) * (this.realEntryPrice / 100));
+        }
+        else {
+            exitParams.stopPrice = this.realEntryPrice - ((percentLoss + this.fee) * (this.realEntryPrice / 100));
+        }
+        this.stopLossPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
+        this.trailingSteps++;
+        this.stopLossHasBeenMoved = false;
     }
     async logPosition(type, amount) {
         let wallet = await (0, db_1.GetData)('wallet');
@@ -107,7 +158,7 @@ class PositionEmulation {
         if (type === 'profit') {
             wallet[this.signal] += amount;
         }
-        else {
+        else if (type === 'loss') {
             wallet[this.signal] -= amount;
         }
         await (0, db_1.SaveData)('wallet', wallet);

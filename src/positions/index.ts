@@ -1,9 +1,5 @@
-import { SymbolResult } from './strategy/types';
-import getSymbols from './binance_api/symbols';
-import { ordersUpdateStream } from './binance_api/binanceApi';
-import { CandlesTicksStream } from './binance_api/CandlesTicksStream';
-import { Position } from './position';
-import { PositionEmulation } from './positionEmulation';
+import PositionEmulation from './PositionEmulation';
+import { Position, PositionOptions } from './types';
 
 const fee: number = .08,
     interval: string = '1h',
@@ -37,32 +33,10 @@ let _symbolsObj: { [key: string]: any };
 //     console.log(`Trade has been run. Candles (${limit}) with interval: ${interval}. Leverage: ${leverage}.`);
 // })();
 
-export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
-    const pKey = s.symbol;
+export function openPosition(props: Position) {
+    const pKey = props.symbol;
 
-    // console.log('******************************************************');
-    // console.log('s.symbol', s.symbol);
-    // console.log('open positions', Object.keys(openedPositions));
-    // console.log('s.resolvePosition', s.resolvePosition);
-    // console.log('excludedSymbols', excludedSymbols);
-    // console.log('initiator', initiator);
-    // console.log('botPositions', botPositions);
-    // console.log('s.percentLoss', s.percentLoss);
-    // console.log('******************************************************');
-
-    if (
-        openedPositions[pKey]
-        || excludedSymbols.has(pKey)
-        || !s.resolvePosition
-        || (initiator == 'bot' && botPositions >= maxBotPositions)
-        || s.percentLoss < fee
-    ) {
-        return;
-    }
-
-    if (initiator == 'bot') {
-        botPositions++;
-    }
+    if (openedPositions[pKey]) return;
 
     let trailingStopStartTriggerPricePerc: number;
     let trailingStopStartOrderPerc: number;
@@ -72,53 +46,53 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
     let setTakeProfit: boolean;
     let useTrailingStop: boolean;
 
-    const atrPerc = s.atr / (s.entryPrice / 100);
+    const atrPerc = props.atr / (s.entryPrice / 100);
 
     if (s.strategy == 'follow_candle') {
         setTakeProfit = true;
         // takeProfitPerc = atrPerc / 5;
-        takeProfitPerc = s.percentLoss / 10;
+        takeProfitPerc = props.percentLoss / 10;
     }
 
     if (s.strategy == 'traders_force') {
         setTakeProfit = true;
         useTrailingStop = true;
-        trailingStopStartTriggerPricePerc = s.percentLoss / 2;
+        trailingStopStartTriggerPricePerc = props.percentLoss / 2;
         trailingStopStartOrderPerc = fee;
-        // takeProfitPerc = s.percentLoss / 2;
+        // takeProfitPerc = props.percentLoss / 2;
     }
 
     if (s.strategy == 'patterns') {
         setTakeProfit = true;
-        takeProfitPerc = s.percentLoss;
+        takeProfitPerc = props.percentLoss;
     }
 
-    if (s.strategy == 'manual' || s.strategy == 'levels') {
+    if (s.strategy == 'manual' || props.strategy == 'levels') {
         setTakeProfit = true;
-        takeProfitPerc = s.percentLoss;
+        takeProfitPerc = props.percentLoss;
         useTrailingStop = true;
-        trailingStopStartTriggerPricePerc = s.percentLoss / 2;
+        trailingStopStartTriggerPricePerc = props.percentLoss / 2;
         trailingStopStartOrderPerc = fee;
     }
 
     // if (s.strategy == 'levels') {
     //     setTakeProfit = true;
-    //     takeProfitPerc = s.percentLoss;
+    //     takeProfitPerc = props.percentLoss;
     //     useTrailingStop = true;
-    //     trailingStopStartTriggerPricePerc = s.percentLoss * .5;
-    //     trailingStopStartOrderPerc = s.percentLoss * -0.5;
-    //     trailingStopTriggerPriceStepPerc = s.percentLoss * .4;
-    //     trailingStopOrderDistancePerc = s.percentLoss * .9;
+    //     trailingStopStartTriggerPricePerc = props.percentLoss * .5;
+    //     trailingStopStartOrderPerc = props.percentLoss * -0.5;
+    //     trailingStopTriggerPriceStepPerc = props.percentLoss * .4;
+    //     trailingStopOrderDistancePerc = props.percentLoss * .9;
     // }
 
     // openedPositions[pKey] = new Position({
     //     positionKey: pKey,
-    //     position: s.position,
-    //     symbol: s.symbol,
-    //     expectedProfit: s.expectedProfit,
-    //     entryPrice: s.entryPrice,
-    //     takeProfit: s.takeProfit,
-    //     percentLoss: s.percentLoss,
+    //     position: props.position,
+    //     symbol: props.symbol,
+    //     expectedProfit: props.expectedProfit,
+    //     entryPrice: props.entryPrice,
+    //     takeProfit: props.takeProfit,
+    //     percentLoss: props.percentLoss,
     //     fee,
     //     leverage,
     //     symbols: _symbols,
@@ -127,11 +101,11 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
     //     trailingStopStartOrderPerc,
     //     trailingStopTriggerPriceStepPerc,
     //     trailingStopOrderDistancePerc,
-    //     signal: s.signal,
+    //     signal: props.signal,
     //     interval,
     //     limit,
-    //     rsiPeriod: s.rsiPeriod,
-    //     signalDetails: s.signalDetails,
+    //     rsiPeriod: props.rsiPeriod,
+    //     signalDetails: props.signalDetails,
     //     initiator,
     //     useTrailingStop,
     //     setTakeProfit,
@@ -140,31 +114,8 @@ export function OpenPosition(s: SymbolResult, initiator: 'bot' | 'user') {
     // });
 
     openedPositions[pKey] = new PositionEmulation({
-        positionKey: pKey,
-        position: s.position,
-        symbol: s.symbol,
-        expectedProfit: s.expectedProfit,
-        entryPrice: s.entryPrice,
-        takeProfit: s.takeProfit,
-        percentLoss: s.percentLoss,
         fee,
-        leverage,
-        symbols: _symbols,
-        symbolInfo: _symbolsObj[s.symbol],
-        trailingStopStartTriggerPricePerc,
-        trailingStopStartOrderPerc,
-        trailingStopTriggerPriceStepPerc,
-        trailingStopOrderDistancePerc,
-        signal: s.signal,
-        interval,
-        limit,
-        rsiPeriod: s.rsiPeriod,
-        signalDetails: s.signalDetails,
-        initiator,
-        useTrailingStop,
-        setTakeProfit,
-        takeProfitPerc,
-        lossAmount
+        entryPrice: props.entryPrice,
     });
 
     openedPositions[pKey].setOrders();

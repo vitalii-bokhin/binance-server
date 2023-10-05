@@ -1,5 +1,5 @@
-import './client';
-import './trade';
+// import './server';
+import './observer';
 // import { Bot } from './bot';
 // import { ordersUpdateStream, positionUpdateStream, priceStream } from './binanceApi';
 // import getSymbols from './binance_api/symbols';

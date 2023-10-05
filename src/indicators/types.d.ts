@@ -17,7 +17,7 @@ export type Candle = {
 
 export type IndicatorEntry = {
     data: Candle[];
-    period: number;
+    period?: number;
 };
 
 export type InputTime = { d: number; h: number; m: number; };

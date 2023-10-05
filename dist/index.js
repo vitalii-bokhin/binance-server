@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-require("./client");
-require("./trade");
+// import './server';
+require("./observer");
 // import { Bot } from './bot';
 // import { ordersUpdateStream, positionUpdateStream, priceStream } from './binanceApi';
 // import getSymbols from './binance_api/symbols';

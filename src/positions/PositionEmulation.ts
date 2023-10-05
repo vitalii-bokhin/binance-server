@@ -1,10 +1,10 @@
-import { symbolCandlesTicksStream } from "./binance_api/CandlesTicksStream";
-import { GetData, SaveData } from './db';
+import { symbolCandlesTicksStream } from '../binance_api/CandlesTicksStream';
+import { GetData, SaveData } from '../db';
+import { Position } from './types';
 
-export class PositionEmulation {
-    positionKey: string;
-    position: 'long' | 'short';
+export default class PositionEmulation implements Position {
     symbol: string;
+    position: 'long' | 'short';
     entryPrice: number;
     realEntryPrice: number;
     quantity: number;
@@ -12,21 +12,17 @@ export class PositionEmulation {
     fee: number;
     usdtAmount: number;
     leverage: number;
-    stopLossHasBeenMoved: boolean = false;
-    marketCloseOrderHasBeenCalled: boolean = false;
+    stopLossHasBeenMoved: boolean;
+    marketCloseOrderHasBeenCalled: boolean;
     stopLossClientOrderId: string;
     entryClientOrderId: string;
     symbols: string[];
-    symbolInfo: {
-        quantityPrecision: number;
-        pricePrecision: number;
-        minMarketLotSize: number;
-    };
+    symbolInfo: { quantityPrecision: number; pricePrecision: number; minMarketLotSize: number; };
     trailingStopStartTriggerPricePerc: number;
     trailingStopStartOrderPerc: number;
     trailingStopTriggerPriceStepPerc: number;
     trailingStopOrderDistancePerc: number;
-    trailingSteps: number = 0;
+    trailingSteps: number;
     signal?: string;
     expectedProfit?: number;
     interval: string;
@@ -43,37 +39,7 @@ export class PositionEmulation {
     stopLossPrice: number;
     takeProfitPrice: number;
 
-    constructor(opt: {
-        positionKey: string;
-        position: 'long' | 'short';
-        symbol: string;
-        entryPrice: number;
-        takeProfit: number;
-        fee: number;
-        leverage: number;
-        symbols: string[];
-        symbolInfo: {
-            quantityPrecision: number;
-            pricePrecision: number;
-            minMarketLotSize: number;
-        };
-        trailingStopStartTriggerPricePerc: number;
-        trailingStopStartOrderPerc: number;
-        trailingStopTriggerPriceStepPerc: number;
-        trailingStopOrderDistancePerc: number;
-        signal?: string;
-        expectedProfit?: number;
-        interval: string;
-        limit: number;
-        rsiPeriod?: number;
-        percentLoss: number;
-        signalDetails?: any;
-        setTakeProfit?: boolean;
-        takeProfitPerc?: number;
-        useTrailingStop?: boolean;
-        initiator: 'bot' | 'user';
-        lossAmount: number;
-    }) {
+    constructor(opt) {
         this.positionKey = opt.positionKey;
         this.position = opt.position;
         this.symbol = opt.symbol;
@@ -167,7 +133,7 @@ export class PositionEmulation {
                     } else {
                         this.logPosition('loss', this.lossAmount);
                     }
-                    
+
                     this.deletePositionInner({ clearExcludedSymbols: true });
 
                 }

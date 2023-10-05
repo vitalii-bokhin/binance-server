@@ -149,7 +149,6 @@ export class Position {
     //     return { entryOrder: entryOrd, stopLossOrder: stopOrd };
     // }
 
-    // SCALPING Orders
     async setOrders(): Promise<void> {
         this.entryClientOrderId = 'luf21_scalp_' + this.symbol;
 
@@ -302,7 +301,7 @@ export class Position {
 
                 let changePerc: number;
 
-                const triggerPerc = this.trailingSteps === 0 ? this.trailingStopStartTriggerPricePerc : this.trailingStopStartTriggerPricePerc + this.trailingStopTriggerPriceStepPerc * this.trailingSteps;
+                const triggerPerc = this.trailingSteps === 0 ? this.trailingStopStartTriggerPricePerc : this.trailingStopStartTriggerPricePerc + (this.trailingStopTriggerPriceStepPerc * this.trailingSteps);
 
                 if (this.position === 'long') {
                     changePerc = (lastPrice - this.realEntryPrice) / (this.realEntryPrice / 100);
@@ -349,7 +348,7 @@ export class Position {
         if (this.trailingSteps === 0) {
             percentLoss = this.trailingStopStartOrderPerc;
         } else {
-            percentLoss = this.trailingStopStartTriggerPricePerc + this.trailingStopTriggerPriceStepPerc * this.trailingSteps - this.trailingStopOrderDistancePerc;
+            percentLoss = this.trailingStopStartTriggerPricePerc + (this.trailingStopTriggerPriceStepPerc * this.trailingSteps) - this.trailingStopOrderDistancePerc;
 
             if (percentLoss <= this.trailingStopStartOrderPerc) {
                 percentLoss = this.trailingStopStartOrderPerc;

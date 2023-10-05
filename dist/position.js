@@ -77,7 +77,6 @@ class Position {
     //     this.watchPosition();
     //     return { entryOrder: entryOrd, stopLossOrder: stopOrd };
     // }
-    // SCALPING Orders
     async setOrders() {
         this.entryClientOrderId = 'luf21_scalp_' + this.symbol;
         // watch
@@ -193,7 +192,7 @@ class Position {
                     return;
                 }
                 let changePerc;
-                const triggerPerc = this.trailingSteps === 0 ? this.trailingStopStartTriggerPricePerc : this.trailingStopStartTriggerPricePerc + this.trailingStopTriggerPriceStepPerc * this.trailingSteps;
+                const triggerPerc = this.trailingSteps === 0 ? this.trailingStopStartTriggerPricePerc : this.trailingStopStartTriggerPricePerc + (this.trailingStopTriggerPriceStepPerc * this.trailingSteps);
                 if (this.position === 'long') {
                     changePerc = (lastPrice - this.realEntryPrice) / (this.realEntryPrice / 100);
                 }
@@ -231,7 +230,7 @@ class Position {
             percentLoss = this.trailingStopStartOrderPerc;
         }
         else {
-            percentLoss = this.trailingStopStartTriggerPricePerc + this.trailingStopTriggerPriceStepPerc * this.trailingSteps - this.trailingStopOrderDistancePerc;
+            percentLoss = this.trailingStopStartTriggerPricePerc + (this.trailingStopTriggerPriceStepPerc * this.trailingSteps) - this.trailingStopOrderDistancePerc;
             if (percentLoss <= this.trailingStopStartOrderPerc) {
                 percentLoss = this.trailingStopStartOrderPerc;
             }
