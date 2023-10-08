@@ -1,9 +1,12 @@
-// import './server';
+import './server';
+import './server/wss';
 import './observer';
 // import { Bot } from './bot';
 // import { ordersUpdateStream, positionUpdateStream, priceStream } from './binanceApi';
 // import getSymbols from './binance_api/symbols';
 // import getSymbols from './symbols';
+
+// import { openPosition } from './positions';
 
 
 // Bot();
@@ -35,3 +38,10 @@ import './observer';
 // const chart = require('./chart');
 
 // chart.wsSymbolsChange24();
+
+// openPosition({
+//     symbol: 'BTCUSDT',
+//     direction: 'long',
+//     entryPrice: 25000,
+//     stopLoss: 24000,
+// });

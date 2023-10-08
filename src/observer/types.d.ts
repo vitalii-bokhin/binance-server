@@ -1,2 +1,2 @@
 export type Signal = 'long' | 'short';
-export type StopSignal = 'StopLong' | 'StopShort';
+export type StopSignal = 'stopLong' | 'stopShort';

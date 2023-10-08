@@ -29,8 +29,8 @@ export function RSI({ data, period, symbol }: { symbol: string } & IndicatorEntr
         avgRsiBelow: 0
     };
 
-    let rsiAbove = [];
-    let rsiBelow = [];
+    let rsiAbove: number[] = [];
+    let rsiBelow: number[] = [];
 
     result.stack.forEach(el => {
         if (el > 60) {

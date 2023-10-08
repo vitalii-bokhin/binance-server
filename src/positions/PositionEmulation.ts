@@ -1,238 +1,214 @@
-import { symbolCandlesTicksStream } from '../binance_api/CandlesTicksStream';
+import { candlesTicksEvent } from '../binance_api/CandlesTicksStream';
+import { Candle } from '../binance_api/types';
 import { GetData, SaveData } from '../db';
+import { wsEvent } from '../server/wss';
 import { Position } from './types';
 
 export default class PositionEmulation implements Position {
     symbol: string;
-    position: 'long' | 'short';
-    entryPrice: number;
-    realEntryPrice: number;
-    quantity: number;
-    takeProfit: number;
+    direction: 'long' | 'short';
     fee: number;
+    entryPrice: number;
+    quantity: number;
     usdtAmount: number;
-    leverage: number;
-    stopLossHasBeenMoved: boolean;
-    marketCloseOrderHasBeenCalled: boolean;
-    stopLossClientOrderId: string;
-    entryClientOrderId: string;
-    symbols: string[];
-    symbolInfo: { quantityPrecision: number; pricePrecision: number; minMarketLotSize: number; };
-    trailingStopStartTriggerPricePerc: number;
-    trailingStopStartOrderPerc: number;
-    trailingStopTriggerPriceStepPerc: number;
-    trailingStopOrderDistancePerc: number;
-    trailingSteps: number;
-    signal?: string;
-    expectedProfit?: number;
-    interval: string;
-    limit: number;
-    rsiPeriod?: number;
+    takeProfit: number;
+    stopLoss: number;
+    lossUSDT: number;
     percentLoss: number;
-    signalDetails?: any;
-    deletePosition: (opt?: any) => void;
-    setTakeProfit: boolean;
-    takeProfitPerc: number;
-    useTrailingStop: boolean;
-    initiator: 'bot' | 'user';
-    lossAmount: number;
-    stopLossPrice: number;
-    takeProfitPrice: number;
+    averaged: boolean;
+    lostUsdtAmount: number;
+    profitUsdtAmount: number;
+    candleTick: (data: Candle[]) => Promise<void>;
 
-    constructor(opt) {
-        this.positionKey = opt.positionKey;
-        this.position = opt.position;
+    constructor(opt: { symbol: string; direction: 'long' | 'short'; entryPrice: number; stopLoss: number; }) {
         this.symbol = opt.symbol;
-        this.expectedProfit = opt.expectedProfit;
+        this.direction = opt.direction;
         this.entryPrice = opt.entryPrice;
-        this.takeProfit = opt.takeProfit;
-        this.fee = opt.fee;
-        this.leverage = opt.leverage;
-        this.symbols = opt.symbols;
-        this.symbolInfo = opt.symbolInfo;
-        this.trailingStopStartTriggerPricePerc = opt.trailingStopStartTriggerPricePerc;
-        this.trailingStopStartOrderPerc = opt.trailingStopStartOrderPerc;
-        this.trailingStopTriggerPriceStepPerc = opt.trailingStopTriggerPriceStepPerc;
-        this.trailingStopOrderDistancePerc = opt.trailingStopOrderDistancePerc;
-        this.signal = opt.signal;
-        this.interval = opt.interval;
-        this.limit = opt.limit;
-        this.rsiPeriod = opt.rsiPeriod;
-        this.percentLoss = opt.percentLoss;
-        this.signalDetails = opt.signalDetails;
-        this.setTakeProfit = opt.setTakeProfit !== undefined ? opt.setTakeProfit : false;
-        this.takeProfitPerc = opt.takeProfitPerc !== undefined ? opt.takeProfitPerc : null;
-        this.useTrailingStop = opt.useTrailingStop !== undefined ? opt.useTrailingStop : false;
-        this.initiator = opt.initiator;
-        this.lossAmount = opt.lossAmount;
+        this.stopLoss = opt.stopLoss;
+        this.fee = .08;
+        this.lossUSDT = 1;
+        this.averaged = false;
     }
 
-    async setOrders(): Promise<void> {
-        // watch
-        this.watchPosition();
+    async open() {
+        await this.setEntryOrders();
+        this.setOutgoingOrders();
+        await this.watch();
+        return this.symbol;
+    }
+
+    async setEntryOrders(): Promise<void> {
+        let percentLoss: number;
+
+        if (this.direction == 'long') {
+            percentLoss = (this.entryPrice - this.stopLoss) / (this.entryPrice / 100);
+        } else if (this.direction == 'short') {
+            percentLoss = (this.stopLoss - this.entryPrice) / (this.entryPrice / 100);
+        }
 
         // entry
-        let usdtAmount = this.lossAmount * (100 / this.percentLoss - this.fee);
+        const usdtAmount = this.lossUSDT * (100 / (percentLoss + this.fee));
+        const quantity = usdtAmount / this.entryPrice;
 
-        const quantity = +(usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
-
-        console.log('Position -> setOrders -> ', { quantity, usdtAmount });
-
+        this.percentLoss = percentLoss;
+        this.usdtAmount = usdtAmount;
         this.quantity = quantity;
 
-        this.entryOrderOpened();
+        await this.logPosition('open', usdtAmount);
+
+        console.log('PositionEmulation -> setEntryOrders -> ', { entryPrice: this.entryPrice, percentLoss: percentLoss + this.fee, quantity, usdtAmount });
     }
 
-    entryOrderOpened(): void {
-        this.realEntryPrice = this.entryPrice;
-
+    setOutgoingOrders(): void {
         // take profit
-        if (this.setTakeProfit) {
-            let profitPrice: number;
+        let profitPrice: number;
+        let profitDistance: number;
 
-            const profitPercent = (this.takeProfitPerc || this.percentLoss) + this.fee;
-            const multiplier = this.realEntryPrice / 100;
-
-            if (this.position === 'long') {
-                profitPrice = this.realEntryPrice + (profitPercent * multiplier);
-            } else {
-                profitPrice = this.realEntryPrice - (profitPercent * multiplier);
-            }
-
-            profitPrice = +profitPrice.toFixed(this.symbolInfo.pricePrecision);
-
-            this.takeProfitPrice = profitPrice;
-        }
-
-        // stop loss
-        let stopPrice: number;
-
-        if (this.position === 'long') {
-            stopPrice = this.realEntryPrice - (this.percentLoss * (this.realEntryPrice / 100));
+        if (this.averaged) {
+            profitDistance = this.fee * (this.entryPrice / 100);
         } else {
-            stopPrice = this.realEntryPrice + (this.percentLoss * (this.realEntryPrice / 100));
+            profitDistance = (this.fee + this.percentLoss / 10) * (this.entryPrice / 100);
         }
 
-        stopPrice = +stopPrice.toFixed(this.symbolInfo.pricePrecision);
+        if (this.direction === 'long') {
+            profitPrice = this.entryPrice + profitDistance;
+        } else {
+            profitPrice = this.entryPrice - profitDistance;
+        }
 
-        this.stopLossPrice = stopPrice;
+        this.takeProfit = profitPrice;
+
+        console.log('take profit', this.takeProfit);
+        console.log('stop loss', this.stopLoss);
+
+        wsEvent.emit('send');
     }
 
-    watchPosition(): void {
-        symbolCandlesTicksStream(this.symbol, data => {
-            const lastPrice = data[data.length - 1].close;
+    watch(): Promise<void> {
+        return new Promise<void>((resolve) => {
 
-            if (this.position === 'long') {
-                if (lastPrice >= this.takeProfitPrice) {
-                    this.logPosition('profit', this.lossAmount);
-                    this.deletePositionInner({ clearExcludedSymbols: true });
-                } else if (lastPrice <= this.stopLossPrice) {
+            this.candleTick = async (data: Candle[]) => {
+                const lastPrice = data.slice(-1)[0].close;
 
-                    if (this.trailingSteps > 0) {
-                        this.logPosition('breakEven');
-                    } else {
-                        this.logPosition('loss', this.lossAmount);
+                if (this.direction === 'long') {
+                    if (lastPrice >= this.takeProfit) {
+                        await this.close('profit');
+                        resolve();
+
+                    } else if (lastPrice <= this.stopLoss) {
+                        if (this.averaged) {
+                            await this.close('loss');
+                            resolve();
+                        } else {
+                            await this.average();
+                        }
                     }
-
-                    this.deletePositionInner({ clearExcludedSymbols: true });
-
-                }
-            } else {
-                if (lastPrice <= this.takeProfitPrice) {
-                    this.logPosition('profit', this.lossAmount);
-                    this.deletePositionInner({ clearExcludedSymbols: true });
-                } else if (lastPrice >= this.stopLossPrice) {
-
-                    if (this.trailingSteps > 0) {
-                        this.logPosition('breakEven');
-                    } else {
-                        this.logPosition('loss', this.lossAmount);
-                    }
-
-                    this.deletePositionInner({ clearExcludedSymbols: true });
-
-                }
-            }
-
-            if (!this.stopLossHasBeenMoved && this.useTrailingStop) {
-                if (this.trailingSteps > 0 && !this.trailingStopTriggerPriceStepPerc) {
-                    return;
-                }
-
-                let changePerc: number;
-
-                const triggerPerc = this.trailingSteps === 0 ? this.trailingStopStartTriggerPricePerc : this.trailingStopStartTriggerPricePerc + this.trailingStopTriggerPriceStepPerc * this.trailingSteps;
-
-                if (this.position === 'long') {
-                    changePerc = (lastPrice - this.realEntryPrice) / (this.realEntryPrice / 100);
                 } else {
-                    changePerc = (this.realEntryPrice - lastPrice) / (this.realEntryPrice / 100);
-                }
+                    if (lastPrice <= this.takeProfit) {
+                        await this.close('profit');
+                        resolve();
 
-                if (changePerc >= triggerPerc) {
-                    this.stopLossHasBeenMoved = true;
+                    } else if (lastPrice >= this.stopLoss) {
+                        if (this.averaged) {
+                            await this.close('loss');
+                            resolve();
+                        } else {
+                            await this.average();
+                        }
 
-                    this.moveStopLoss();
+                    }
                 }
             }
+
+            candlesTicksEvent.on(this.symbol, this.candleTick);
         });
     }
 
-    moveStopLoss(): void {
-        const exitParams = {
-            stopPrice: null
-        };
-
+    async average() {
+        const prevStopLoss = this.stopLoss;
+        const newEntryPrice = this.stopLoss;
+        let newStopLoss: number;
         let percentLoss: number;
 
-        if (this.trailingSteps === 0) {
-            percentLoss = this.trailingStopStartOrderPerc;
-        } else {
-            percentLoss = this.trailingStopStartTriggerPricePerc + (this.trailingStopTriggerPriceStepPerc * this.trailingSteps) - this.trailingStopOrderDistancePerc;
-
-            if (percentLoss <= this.trailingStopStartOrderPerc) {
-                percentLoss = this.trailingStopStartOrderPerc;
-            }
+        if (this.direction == 'long') {
+            newStopLoss = prevStopLoss - (this.entryPrice - this.stopLoss);
+            percentLoss = (newEntryPrice - newStopLoss) / (newEntryPrice / 100);
+        } else if (this.direction == 'short') {
+            newStopLoss = prevStopLoss + (this.stopLoss - this.entryPrice);
+            percentLoss = (newStopLoss - newEntryPrice) / (newEntryPrice / 100);
         }
 
-        if (this.position === 'long') {
-            exitParams.stopPrice = this.realEntryPrice + ((percentLoss + this.fee) * (this.realEntryPrice / 100));
-        } else {
-            exitParams.stopPrice = this.realEntryPrice - ((percentLoss + this.fee) * (this.realEntryPrice / 100));
-        }
+        // avg entry
+        const usdtAmount = this.lossUSDT * (100 / (percentLoss + this.fee));
+        const quantity = usdtAmount / newEntryPrice;
+        const avgEntryPrice = (newEntryPrice + this.entryPrice) / 2;
 
-        this.stopLossPrice = +exitParams.stopPrice.toFixed(this.symbolInfo.pricePrecision);
+        this.percentLoss = percentLoss;
+        this.usdtAmount += usdtAmount;
+        this.quantity += quantity;
+        this.entryPrice = avgEntryPrice;
+        this.stopLoss = newStopLoss;
 
-        this.trailingSteps++;
+        await this.logPosition('open', usdtAmount);
 
-        this.stopLossHasBeenMoved = false;
+        console.log('PositionEmulation -> average -> ', { entryPrice: this.entryPrice, percentLoss: percentLoss + this.fee, quantity, usdtAmount });
+
+        this.averaged = true;
+
+        this.setOutgoingOrders();
     }
 
-    async logPosition(type: 'profit' | 'loss' | 'breakEven', amount?: number) {
+    async close(result: 'profit' | 'loss') {
+        candlesTicksEvent.off(this.symbol, this.candleTick);
+
+        if (this.direction === 'long') {
+            if (result == 'profit') {
+                const profitPercent = (this.takeProfit - this.entryPrice) / (this.entryPrice / 100) - this.fee;
+                const profitUsdt = profitPercent * (this.usdtAmount / 100);
+
+                await this.logPosition('profit', profitUsdt);
+
+            } else {
+                const lossPercent = (this.entryPrice - this.stopLoss) / (this.entryPrice / 100) + this.fee;
+                const lostUsdt = lossPercent * (this.usdtAmount / 100);
+
+                await this.logPosition('loss', lostUsdt);
+            }
+        } else {
+            if (result == 'profit') {
+                const profitPercent = (this.entryPrice - this.takeProfit) / (this.entryPrice / 100) - this.fee;
+                const profitUsdt = profitPercent * (this.usdtAmount / 100);
+
+                await this.logPosition('profit', profitUsdt);
+
+            } else {
+                const lossPercent = (this.stopLoss - this.entryPrice) / (this.entryPrice / 100) + this.fee;
+                const lostUsdt = lossPercent * (this.usdtAmount / 100);
+
+                await this.logPosition('loss', lostUsdt);
+            }
+        }
+    }
+
+    async logPosition(type: 'profit' | 'loss' | 'open', amount?: number) {
         let wallet = await GetData<any>('wallet');
 
         if (!wallet) {
             wallet = {};
         }
 
-        if (!wallet[this.signal]) {
-            wallet[this.signal] = 100;
+        if (wallet[this.symbol] === undefined) {
+            wallet[this.symbol] = 0;
         }
 
-        if (type === 'profit') {
-            wallet[this.signal] += amount;
+        if (type === 'open') {
+            wallet[this.symbol] -= amount;
+        } else if (type === 'profit') {
+            wallet[this.symbol] += (this.usdtAmount + amount);
         } else if (type === 'loss') {
-            wallet[this.signal] -= amount;
+            wallet[this.symbol] += (this.usdtAmount - amount);
         }
 
         await SaveData('wallet', wallet);
-    }
-
-    deletePositionInner(opt?: any) {
-        symbolCandlesTicksStream(this.symbol, null, true);
-
-        if (this.deletePosition !== undefined) {
-            this.deletePosition(opt);
-        }
     }
 }

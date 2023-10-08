@@ -1,3 +1,5 @@
+import { Candle } from '../binance_api/types';
+
 export type Result = {
     last: number;
     stack?: number[];
@@ -5,14 +7,6 @@ export type Result = {
     avgRsiBelow?: number;
     stackHigh?: number[];
     stackLow?: number[];
-};
-
-export type Candle = {
-    openTime: number;
-    high: number;
-    open: number;
-    close: number;
-    low: number;
 };
 
 export type IndicatorEntry = {

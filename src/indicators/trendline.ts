@@ -1,6 +1,6 @@
 import { TrendlineInput, TrendlineResult } from './types';
 
-const getPriceOnLine = function (line, time: number): number {
+const getPriceOnLine = function (line: { start: any; end: any; }, time: number): number {
     return ((time - line.start.time) / (line.start.time - line.end.time)) * (line.start.price - line.end.price) + line.start.price;
 }
 

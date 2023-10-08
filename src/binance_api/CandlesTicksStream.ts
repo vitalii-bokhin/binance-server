@@ -1,18 +1,20 @@
+import events from 'events';
 import WebSocket from 'ws';
 import { streamApi } from '.';
 import { CandlesTicks } from './CandlesTicks';
 import { wsStreams } from './binanceApi';
 import { Candle, CandlesTicksCallback, CandlesTicksEntry, SymbolCandlesTicksCallback } from './types';
 
+export const candlesTicksEvent = new events.EventEmitter();
+
 let candlesTicksStreamExecuted = false;
 
-const candlesTicksStreamSubscribers: ((arg0: any) => void)[] = [];
-const testCandlesTicksStreamSubscribers: ((arg0: any) => void)[] = [];
+// const candlesTicksStreamSubscribers: ((arg0: any) => void)[] = [];
 
 export function CandlesTicksStream(opt: CandlesTicksEntry, callback: CandlesTicksCallback): void {
-    if (callback) {
-        candlesTicksStreamSubscribers.push(callback);
-    }
+    // if (callback) {
+    //     candlesTicksStreamSubscribers.push(callback);
+    // }
 
     if (!candlesTicksStreamExecuted && opt) {
         const { symbols, interval, limit } = opt;
@@ -41,40 +43,45 @@ export function CandlesTicksStream(opt: CandlesTicksEntry, callback: CandlesTick
                     high: +high,
                     low: +low,
                     close: +close,
-                    volume: +volume
+                    volume: +volume,
+                    new: null,
                 };
 
                 if (result[symbol][result[symbol].length - 1].openTime !== openTime) {
+                    candle.new = true;
                     result[symbol].push(candle);
                     result[symbol].shift();
                 } else {
+                    candle.new = false;
                     result[symbol][result[symbol].length - 1] = candle;
                 }
 
-                candlesTicksStreamSubscribers.forEach(cb => cb(result));
+                candlesTicksEvent.emit(symbol, result[symbol]);
 
-                if (symbolCandlesTicksStreamSubscribers[symbol]) {
-                    symbolCandlesTicksStreamSubscribers[symbol].forEach(cb => cb(result[symbol]));
-                }
+                // candlesTicksStreamSubscribers.forEach(cb => cb(result));
+
+                // if (symbolCandlesTicksStreamSubscribers[symbol]) {
+                //     symbolCandlesTicksStreamSubscribers[symbol].forEach(cb => cb(result[symbol]));
+                // }
             });
         });
     }
 }
 
-const symbolCandlesTicksStreamSubscribers: {
-    [key: string]: ((arg0: any) => void)[];
-} = {};
+// const symbolCandlesTicksStreamSubscribers: {
+//     [key: string]: ((arg0: any) => void)[];
+// } = {};
 
-export function symbolCandlesTicksStream(symbol: string, callback: SymbolCandlesTicksCallback, clearSymbolCallback?: boolean) {
-    if (symbol && callback) {
-        if (!symbolCandlesTicksStreamSubscribers[symbol]) {
-            symbolCandlesTicksStreamSubscribers[symbol] = [];
-        }
+// export function symbolCandlesTicksStream(symbol: string, callback: SymbolCandlesTicksCallback, clearSymbolCallback?: boolean) {
+//     if (symbol && callback) {
+//         if (!symbolCandlesTicksStreamSubscribers[symbol]) {
+//             symbolCandlesTicksStreamSubscribers[symbol] = [];
+//         }
 
-        symbolCandlesTicksStreamSubscribers[symbol].push(callback);
-    }
+//         symbolCandlesTicksStreamSubscribers[symbol].push(callback);
+//     }
 
-    if (clearSymbolCallback && symbolCandlesTicksStreamSubscribers[symbol]) {
-        delete symbolCandlesTicksStreamSubscribers[symbol];
-    }
-}
+//     if (clearSymbolCallback && symbolCandlesTicksStreamSubscribers[symbol]) {
+//         delete symbolCandlesTicksStreamSubscribers[symbol];
+//     }
+// }

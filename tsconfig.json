@@ -1,16 +1,17 @@
 {
-    "compilerOptions": {
-      "module": "commonjs",
-      "lib": ["es2020"],
-      "target": "es2019",
-      "esModuleInterop": true,
-      "moduleResolution": "node",
-      "resolveJsonModule": true,
-      "outDir": "dist",
-      "allowJs": true,
-      "sourceMap": true
-    },
-    "include": [
-        "src/**/*"
-    ]
+  "compilerOptions": {
+    "allowJs": true,
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES6",
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "skipLibCheck": true,
+  },
+  "include": [
+    "src/**/*",
+  ],
 }

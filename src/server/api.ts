@@ -1,11 +1,13 @@
 import ws from 'express-ws';
 import { CandlesTicks } from "../binance_api/CandlesTicks";
-import { symbolCandlesTicksStream } from '../binance_api/CandlesTicksStream';
+import { candlesTicksEvent } from '../binance_api/CandlesTicksStream';
 import { Bot, BotControl, ManageTradeLines, tradeLinesCache } from '../bot';
 import { ImmediatelyPosition } from '../manual';
 import { ReuseStrategy } from '../strategy';
 import getSymbols from '../binance_api/symbols';
 import { _symbols } from '../trade';
+import { openedPositions } from '../positions';
+import { OpenedPosition } from '../positions/types';
 
 export default function (api: ws.Router) {
     api.get('/bot', async (req, res) => {
@@ -36,10 +38,14 @@ export default function (api: ws.Router) {
 
     api.ws('/bot', (ws, req) => {
         const botEvHandler = function (msg: { strategy: [], botPositions: { [x: string]: any; } }) {
-            const res = {
+            const res: {
+                status: string;
+                strategy: any;
+                positions: any[];
+            } = {
                 status: 'On run',
                 strategy: msg.strategy,
-                positions: []
+                positions: [],
             };
 
             // msg.strategy.forEach((arg: any) => {
@@ -85,7 +91,7 @@ export default function (api: ws.Router) {
     api.ws('/candlesticks', (ws, req: any) => {
         const symbol = req.query.symbol;
 
-        symbolCandlesTicksStream(symbol, data => {
+        candlesTicksEvent.on(symbol, data => {
             ws.send(JSON.stringify(data));
         });
     });
@@ -98,6 +104,21 @@ export default function (api: ws.Router) {
     api.post('/tradelines', async (req, res) => {
         await ManageTradeLines(req.body);
         res.json(tradeLinesCache);
+    });
+
+    api.get('/positions', async (req, res) => {
+        const positions: OpenedPosition[] = [];
+
+        openedPositions.forEach((item) => {
+            positions.push({
+                symbol: item.symbol,
+                entryPrice: item.entryPrice,
+                stopLoss: item.stopLoss,
+                takeProfit: item.takeProfit,
+            });
+        });
+
+        res.json(positions);
     });
 
     return api;

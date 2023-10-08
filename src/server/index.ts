@@ -3,7 +3,7 @@ import websocket from 'express-ws';
 import session from 'express-session';
 import bodyParser from 'body-parser';
 // import http from 'http';
-import lodashExpress from 'lodash-express';
+// import lodashExpress from 'lodash-express';
 import multer from 'multer';
 // import websocket from 'ws';
 import apiRouter from './api';
@@ -17,7 +17,7 @@ const db = require('../database'),
     order = require('../order');
 
 const upload = multer();
-const {app} = websocket(express());
+const { app } = websocket(express());
 
 declare module 'express-session' {
     interface SessionData {
@@ -53,18 +53,18 @@ app.use(sessionParser);
 
 // post  
 app.use(express.urlencoded({ extended: true }));
- 
+
 // create server
 // const server = http.createServer(app);
-    // wss = new websocket.Server({ noServer: true });
+// wss = new websocket.Server({ noServer: true });
 
 // ws
 // const expressWs = websocket(app);
 
-app.ws('/echo', function(ws, req) {
+app.ws('/echo', function (ws, req) {
     console.log('dsasdsad');
-    ws.on('message', function(msg) {
-      ws.send(msg);
+    ws.on('message', function (msg) {
+        ws.send(msg);
     });
 });
 
@@ -80,13 +80,13 @@ app.get('/', function (req, res) {
     // };
 
     // res.render('index', opt);
-    res.json({key: "Halllow worrldd"});
+    res.json({ key: "Halllow worrldd" });
 });
 
 app.get('/bot', async (req, res) => {
     await Bot();
 
-    const query = {};
+    const query: any = {};
 
     for (const key in req.query) {
         if (Object.prototype.hasOwnProperty.call(req.query, key)) {
@@ -96,11 +96,11 @@ app.get('/bot', async (req, res) => {
 
     const { resolvePositionMaking, tradingSymbols } = await BotControl(query);
 
-    res.json({status: 'Bot started!', resolvePositionMaking, tradingSymbols});
+    res.json({ status: 'Bot started!', resolvePositionMaking, tradingSymbols });
 });
 
 app.get('/test', function (req, res) {
-    res.json({key: "Halllow worrldd"});
+    res.json({ key: "Halllow worrldd" });
 });
 
 app.post('/auth', upload.none(), function (req, res) {
@@ -141,7 +141,7 @@ app.post('/symbols-change-24', function (req, res) {
 app.post('/balance', function (req, res) {
     if (req.session.userId) {
         (function f() {
-            user(req.session.userId).bin.balance((error, balances) => {
+            user(req.session.userId).bin.balance((error: any, balances: any) => {
                 if (error) {
                     f();
                     return;
@@ -163,7 +163,7 @@ app.post('/tasks', function (req, res) {
 
 app.post('/trades', function (req, res) {
     if (req.session.userId) {
-        user(req.session.userId).bin.trades(req.body.symbols, (error, trades, symbol) => {
+        user(req.session.userId).bin.trades(req.body.symbols, (error: any, trades: any, symbol: any) => {
             res.json(trades);
         });
     } else {
@@ -178,7 +178,7 @@ app.delete('/logout', function (request, response) {
 });
 
 app.get('/orders', function (req, res) {
-    user(1).bin.mgOpenOrders(req.query.symbol, (error, openOrders, symbol) => {
+    user(1).bin.mgOpenOrders(req.query.symbol, (error: any, openOrders: any, symbol: any) => {
         res.json(openOrders);
     });
 });
@@ -192,7 +192,7 @@ app.post('/order', function (req, res) {
         quantity: +req.body.quantity
     };
 
-    order(1, opt, function (data) {
+    order(1, opt, function (data: any) {
         res.json(data);
     });
 });
@@ -332,6 +332,6 @@ app.post('/order', function (req, res) {
 
 
 // start server
-app.listen(8080, () => {
-    console.log('Listening on port 8080');
+app.listen(3000, () => {
+    console.log('Listening on port 3000');
 });
