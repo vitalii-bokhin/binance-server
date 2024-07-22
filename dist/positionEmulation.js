@@ -1,22 +1,46 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PositionEmulation = void 0;
 const CandlesTicksStream_1 = require("./binance_api/CandlesTicksStream");
 const db_1 = require("./db");
 class PositionEmulation {
+    positionKey;
+    position;
+    symbol;
+    entryPrice;
+    realEntryPrice;
+    quantity;
+    takeProfit;
+    fee;
+    usdtAmount;
+    leverage;
+    stopLossHasBeenMoved = false;
+    marketCloseOrderHasBeenCalled = false;
+    stopLossClientOrderId;
+    entryClientOrderId;
+    symbols;
+    symbolInfo;
+    trailingStopStartTriggerPricePerc;
+    trailingStopStartOrderPerc;
+    trailingStopTriggerPriceStepPerc;
+    trailingStopOrderDistancePerc;
+    trailingSteps = 0;
+    signal;
+    expectedProfit;
+    interval;
+    limit;
+    rsiPeriod;
+    percentLoss;
+    signalDetails;
+    deletePosition;
+    setTakeProfit;
+    takeProfitPerc;
+    useTrailingStop;
+    initiator;
+    lossAmount;
+    stopLossPrice;
+    takeProfitPrice;
     constructor(opt) {
-        this.stopLossHasBeenMoved = false;
-        this.marketCloseOrderHasBeenCalled = false;
-        this.trailingSteps = 0;
         this.positionKey = opt.positionKey;
         this.position = opt.position;
         this.symbol = opt.symbol;
@@ -43,17 +67,15 @@ class PositionEmulation {
         this.initiator = opt.initiator;
         this.lossAmount = opt.lossAmount;
     }
-    setOrders() {
-        return __awaiter(this, void 0, void 0, function* () {
-            // watch
-            this.watchPosition();
-            // entry
-            let usdtAmount = this.lossAmount * (100 / this.percentLoss - this.fee);
-            const quantity = +(usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
-            console.log('Position -> setOrders -> ', { quantity, usdtAmount });
-            this.quantity = quantity;
-            this.entryOrderOpened();
-        });
+    async setOrders() {
+        // watch
+        this.watchPosition();
+        // entry
+        let usdtAmount = this.lossAmount * (100 / this.percentLoss - this.fee);
+        const quantity = +(usdtAmount / this.entryPrice).toFixed(this.symbolInfo.quantityPrecision);
+        console.log('Position -> setOrders -> ', { quantity, usdtAmount });
+        this.quantity = quantity;
+        this.entryOrderOpened();
     }
     entryOrderOpened() {
         this.realEntryPrice = this.entryPrice;
@@ -158,23 +180,21 @@ class PositionEmulation {
         this.trailingSteps++;
         this.stopLossHasBeenMoved = false;
     }
-    logPosition(type, amount) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let wallet = yield (0, db_1.GetData)('wallet');
-            if (!wallet) {
-                wallet = {};
-            }
-            if (!wallet[this.signal]) {
-                wallet[this.signal] = 100;
-            }
-            if (type === 'profit') {
-                wallet[this.signal] += amount;
-            }
-            else if (type === 'loss') {
-                wallet[this.signal] -= amount;
-            }
-            yield (0, db_1.SaveData)('wallet', wallet);
-        });
+    async logPosition(type, amount) {
+        let wallet = await (0, db_1.GetData)('wallet');
+        if (!wallet) {
+            wallet = {};
+        }
+        if (!wallet[this.signal]) {
+            wallet[this.signal] = 100;
+        }
+        if (type === 'profit') {
+            wallet[this.signal] += amount;
+        }
+        else if (type === 'loss') {
+            wallet[this.signal] -= amount;
+        }
+        await (0, db_1.SaveData)('wallet', wallet);
     }
     deletePositionInner(opt) {
         (0, CandlesTicksStream_1.symbolCandlesTicksStream)(this.symbol, null, true);

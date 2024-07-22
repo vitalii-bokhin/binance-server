@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -68,17 +59,17 @@ app.get('/', function (req, res) {
     // res.render('index', opt);
     res.json({ key: "Halllow worrldd" });
 });
-app.get('/bot', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    yield (0, bot_1.Bot)();
+app.get('/bot', async (req, res) => {
+    await (0, bot_1.Bot)();
     const query = {};
     for (const key in req.query) {
         if (Object.prototype.hasOwnProperty.call(req.query, key)) {
             query[key] = (req.query[key] === 'false') ? false : req.query[key];
         }
     }
-    const { resolvePositionMaking, tradingSymbols } = yield (0, bot_1.BotControl)(query);
+    const { resolvePositionMaking, tradingSymbols } = await (0, bot_1.BotControl)(query);
     res.json({ status: 'Bot started!', resolvePositionMaking, tradingSymbols });
-}));
+});
 app.get('/test', function (req, res) {
     res.json({ key: "Halllow worrldd" });
 });

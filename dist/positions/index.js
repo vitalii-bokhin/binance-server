@@ -11,13 +11,14 @@ function openPosition(props) {
     if (exports.openedPositions.has(props.symbol))
         return;
     exports.openedPositions.set(props.symbol, new PositionEmulation_1.default(props));
-    exports.openedPositions.get(props.symbol)
-        .open()
-        .then((symbol) => {
-        exports.openedPositions.delete(symbol);
-        console.log('Close position - ' + symbol);
-        wss_1.wsEvent.emit('send');
-    });
+    const instance = exports.openedPositions.get(props.symbol);
+    if (instance) {
+        instance.open().then(symbol => {
+            exports.openedPositions.delete(symbol);
+            console.log('Close position - ' + symbol);
+            wss_1.wsEvent.emit('send');
+        });
+    }
 }
 exports.openPosition = openPosition;
 //# sourceMappingURL=index.js.map

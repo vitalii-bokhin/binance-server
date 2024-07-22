@@ -1,15 +1,16 @@
 {
   "compilerOptions": {
     "allowJs": true,
-    "module": "commonjs",
-    "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "target": "ES6",
-    "noImplicitAny": true,
-    "moduleResolution": "node",
-    "sourceMap": true,
+    "esModuleInterop": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "outDir": "./dist",
+    "resolveJsonModule": true,
     "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
+    "target": "ES2022",
   },
   "include": [
     "src/**/*",

@@ -18,19 +18,15 @@ export type Tradelines = {
     price?: number[];
 }[];
 
-export async function GetData<ReturnT>(filename: string): Promise<ReturnT> {
+export async function GetData<ReturnT>(filename: string): Promise<ReturnT | undefined> {
     try {
-        let data = await fs.readFile(path.dirname(__dirname) + '/db/' + filename + '.json', 'utf-8');
+        const data = await fs.readFile(path.dirname(__dirname) + '/db/' + filename + '.json', 'utf-8');
         return JSON.parse(data);
     } catch (error) {
-        
+        /* empty */
     }
 }
 
 export function SaveData(filename: string, data: any) {
-    return fs.writeFile(
-        path.dirname(__dirname) + '/db/' + filename + '.json',
-        JSON.stringify(data),
-        { flag: 'w' }
-    );
+    return fs.writeFile(path.dirname(__dirname) + '/db/' + filename + '.json', JSON.stringify(data), { flag: 'w' });
 }

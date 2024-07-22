@@ -11,7 +11,7 @@ let candlesTicksStreamExecuted = false;
 
 // const candlesTicksStreamSubscribers: ((arg0: any) => void)[] = [];
 
-export function CandlesTicksStream(opt: CandlesTicksEntry, callback: CandlesTicksCallback): void {
+export function CandlesTicksStream(opt: CandlesTicksEntry, callback?: CandlesTicksCallback): void {
     // if (callback) {
     //     candlesTicksStreamSubscribers.push(callback);
     // }

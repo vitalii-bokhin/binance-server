@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -27,98 +18,73 @@ exports.controls = {
     tradingSymbols: []
 };
 exports.tradeLinesCache = {};
-function Bot() {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (botIsRun) {
-            console.log('Bot was run!');
-        }
-        else {
-            console.log('Bot has been run!');
-            botIsRun = true;
-            yield BotControl();
-            yield ManageTradeLines();
-            (0, CandlesTicksStream_1.CandlesTicksStream)(null, data => {
-                (0, strategy_1.Strategy)({
-                    data,
-                    symbols: trade_1._symbols,
-                    tradingSymbols: exports.controls.tradingSymbols,
-                    tradeLines: exports.tradeLinesCache
-                }).then(res => {
-                    if (exports.controls.resolvePositionMaking) {
-                        for (const signal of res) {
-                            (0, trade_1.OpenPosition)(signal, 'bot');
-                        }
+async function Bot() {
+    if (botIsRun) {
+        console.log('Bot was run!');
+    }
+    else {
+        console.log('Bot has been run!');
+        botIsRun = true;
+        await BotControl();
+        await ManageTradeLines();
+        (0, CandlesTicksStream_1.CandlesTicksStream)(null, data => {
+            (0, strategy_1.Strategy)({
+                data,
+                symbols: trade_1._symbols,
+                tradingSymbols: exports.controls.tradingSymbols,
+                tradeLines: exports.tradeLinesCache
+            }).then(res => {
+                if (exports.controls.resolvePositionMaking) {
+                    for (const signal of res) {
+                        (0, trade_1.OpenPosition)(signal, 'bot');
                     }
-                    // ev.emit('bot', { strategy: res });
-                });
+                }
+                // ev.emit('bot', { strategy: res });
             });
-        }
-        return ev;
-    });
+        });
+    }
+    return ev;
 }
 exports.Bot = Bot;
-function BotControl(req) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let botControls = yield (0, db_1.GetData)('botcontrols');
-        if (!botControls) {
-            botControls = exports.controls;
-        }
-        if (req) {
-            for (const key in req) {
-                if (Object.prototype.hasOwnProperty.call(req, key)) {
-                    botControls[key] = req[key];
-                }
+async function BotControl(req) {
+    let botControls = await (0, db_1.GetData)('botcontrols');
+    if (!botControls) {
+        botControls = exports.controls;
+    }
+    if (req) {
+        for (const key in req) {
+            if (Object.prototype.hasOwnProperty.call(req, key)) {
+                botControls[key] = req[key];
             }
-            yield (0, db_1.SaveData)('botcontrols', botControls);
         }
-        exports.controls = botControls;
-        return botControls;
-    });
+        await (0, db_1.SaveData)('botcontrols', botControls);
+    }
+    exports.controls = botControls;
+    return botControls;
 }
 exports.BotControl = BotControl;
-function ManageTradeLines(saveReq) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let tradeLines = yield (0, db_1.GetData)('tradelines');
-        if (saveReq) {
-            const { obj, removeId, removeAll } = saveReq;
-            if (obj) {
-                if (!obj.symbol) {
-                    return;
-                }
-                if (tradeLines && tradeLines.length) {
-                    let isNew = true;
-                    for (const tLine of tradeLines) {
-                        if (obj.id == tLine.id) {
-                            isNew = false;
-                            if (obj.type == 'levels') {
-                                tLine.price = obj.price;
-                            }
-                            else if (obj.type == 'trends') {
-                                tLine.lines = obj.lines;
-                            }
-                        }
-                    }
-                    if (isNew) {
+async function ManageTradeLines(saveReq) {
+    let tradeLines = await (0, db_1.GetData)('tradelines');
+    if (saveReq) {
+        const { obj, removeId, removeAll } = saveReq;
+        if (obj) {
+            if (!obj.symbol) {
+                return;
+            }
+            if (tradeLines && tradeLines.length) {
+                let isNew = true;
+                for (const tLine of tradeLines) {
+                    if (obj.id == tLine.id) {
+                        isNew = false;
                         if (obj.type == 'levels') {
-                            tradeLines.push({
-                                id: obj.id,
-                                symbol: obj.symbol,
-                                type: obj.type,
-                                price: obj.price
-                            });
+                            tLine.price = obj.price;
                         }
                         else if (obj.type == 'trends') {
-                            tradeLines.push({
-                                id: obj.id,
-                                symbol: obj.symbol,
-                                type: obj.type,
-                                lines: obj.lines
-                            });
+                            tLine.lines = obj.lines;
                         }
                     }
                 }
-                else {
-                    tradeLines = [];
+                if (isNew) {
                     if (obj.type == 'levels') {
                         tradeLines.push({
                             id: obj.id,
@@ -137,51 +103,70 @@ function ManageTradeLines(saveReq) {
                     }
                 }
             }
-            else if (removeId) {
-                const survivors = [];
-                for (const tLine of tradeLines) {
-                    if (removeId !== tLine.id) {
-                        survivors.push(tLine);
-                    }
+            else {
+                tradeLines = [];
+                if (obj.type == 'levels') {
+                    tradeLines.push({
+                        id: obj.id,
+                        symbol: obj.symbol,
+                        type: obj.type,
+                        price: obj.price
+                    });
                 }
-                tradeLines = survivors;
-            }
-            else if (removeAll) {
-                const survivors = [];
-                for (const tLine of tradeLines) {
-                    if (removeAll !== tLine.symbol) {
-                        survivors.push(tLine);
-                    }
+                else if (obj.type == 'trends') {
+                    tradeLines.push({
+                        id: obj.id,
+                        symbol: obj.symbol,
+                        type: obj.type,
+                        lines: obj.lines
+                    });
                 }
-                tradeLines = survivors;
             }
-            yield (0, db_1.SaveData)('tradelines', tradeLines);
         }
-        // get to cache
-        exports.tradeLinesCache = {};
-        if (tradeLines && tradeLines.length) {
+        else if (removeId) {
+            const survivors = [];
             for (const tLine of tradeLines) {
-                if (!exports.tradeLinesCache[tLine.symbol]) {
-                    exports.tradeLinesCache[tLine.symbol] = {
-                        levels: [],
-                        trends: []
-                    };
-                }
-                if (tLine.type == 'levels') {
-                    exports.tradeLinesCache[tLine.symbol].levels.push({
-                        price: tLine.price,
-                        id: tLine.id
-                    });
-                }
-                else if (tLine.type == 'trends') {
-                    exports.tradeLinesCache[tLine.symbol].trends.push({
-                        lines: tLine.lines,
-                        id: tLine.id
-                    });
+                if (removeId !== tLine.id) {
+                    survivors.push(tLine);
                 }
             }
+            tradeLines = survivors;
         }
-    });
+        else if (removeAll) {
+            const survivors = [];
+            for (const tLine of tradeLines) {
+                if (removeAll !== tLine.symbol) {
+                    survivors.push(tLine);
+                }
+            }
+            tradeLines = survivors;
+        }
+        await (0, db_1.SaveData)('tradelines', tradeLines);
+    }
+    // get to cache
+    exports.tradeLinesCache = {};
+    if (tradeLines && tradeLines.length) {
+        for (const tLine of tradeLines) {
+            if (!exports.tradeLinesCache[tLine.symbol]) {
+                exports.tradeLinesCache[tLine.symbol] = {
+                    levels: [],
+                    trends: []
+                };
+            }
+            if (tLine.type == 'levels') {
+                exports.tradeLinesCache[tLine.symbol].levels.push({
+                    price: tLine.price,
+                    id: tLine.id
+                });
+            }
+            else if (tLine.type == 'trends') {
+                exports.tradeLinesCache[tLine.symbol].trends.push({
+                    lines: tLine.lines,
+                    id: tLine.id
+                });
+            }
+        }
+    }
 }
 exports.ManageTradeLines = ManageTradeLines;
 let depthStreamHasBeenRun = false;

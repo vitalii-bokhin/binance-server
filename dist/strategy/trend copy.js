@@ -1,4 +1,6 @@
+"use strict";
 // import { Candle, CdlDir, SymbolResult, Entry, Result } from './types';
+Object.defineProperty(exports, "__esModule", { value: true });
 // const analyzeCandle = function (cdl: Candle, pos: 'long' | 'short'): 'stopLong' | 'stopShort' | 'stopBoth' {
 //     if (cdl.close >= cdl.open) {
 //         // UP CANDLE

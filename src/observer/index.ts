@@ -1,13 +1,17 @@
+import { TradesListStream } from '../binance_api';
 import { CandlesTicksStream } from '../binance_api/CandlesTicksStream';
 import Observer from './Observer';
 
-const symbols: string[] = ['BTCUSDT'/* , 'MANAUSDT', 'GMTUSDT', 'TRXUSDT', 'NEARUSDT', 'ZILUSDT', 'APEUSDT', 'WAVESUSDT', 'ADAUSDT', 'FTMUSDT', 'MATICUSDT' */];
+const symbols: string[] = [
+    'BTCUSDT' /*, 'MANAUSDT', 'GMTUSDT', 'TRXUSDT', 'NEARUSDT', 'ZILUSDT', 'APEUSDT', 'WAVESUSDT', 'ADAUSDT', 'FTMUSDT', 'MATICUSDT' */,
+];
 const interval: string = '1m';
 const limit: number = 99; // candles ticks limit
 
 // const { symbolsObj } = await getSymbols();
 
-CandlesTicksStream({ symbols, interval, limit }, null);
+CandlesTicksStream({ symbols, interval, limit });
+TradesListStream(symbols);
 
 // ordersUpdateStream();
 

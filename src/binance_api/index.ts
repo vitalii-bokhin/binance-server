@@ -5,6 +5,7 @@ import { TradesList, TradesListStream } from './TradesList'
 const binance: Binance = new Binance().options({
     APIKEY: BINANCE_KEY,
     APISECRET: BINANCE_SECRET,
+    family: 4,
     // useServerTime: true
 });
 

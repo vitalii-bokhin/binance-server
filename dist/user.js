@@ -1,4 +1,5 @@
 'use strict';
+Object.defineProperty(exports, "__esModule", { value: true });
 const events = require('events'), Binance = require('node-binance-api'), db = require('./database');
 const users = {};
 function User(user) {

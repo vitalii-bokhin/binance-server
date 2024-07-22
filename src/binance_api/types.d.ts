@@ -23,5 +23,13 @@ export type DepthCallback = (arg0: {
         bids: string[][];
         asks: string[][];
         lastUpdateId: number;
-    }
+    };
 }) => void;
+
+export type TradeListData = {
+    symbol: string;
+    price: number;
+    qty: number;
+    isBuyerMaker: boolean;
+    time: number;
+};

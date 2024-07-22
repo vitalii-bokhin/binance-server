@@ -1,4 +1,5 @@
 'use strict';
+Object.defineProperty(exports, "__esModule", { value: true });
 const user = require('./user'), chart = require('./chart');
 const Order = function (userId, opt, callback, isTask) {
     const priceN = (opt.price_step.includes('.')) ? opt.price_step.split('.')[1].length : 0;

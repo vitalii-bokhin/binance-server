@@ -1,4 +1,5 @@
 'use strict';
+Object.defineProperty(exports, "__esModule", { value: true });
 const user = require('./user'), chart = require('./chart'), order = require('./order');
 const userTasks = {};
 // traling task

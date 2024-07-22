@@ -1,4 +1,6 @@
+"use strict";
 // import { Candle, CdlDir, SymbolResult, Entry, Result } from './types';
+Object.defineProperty(exports, "__esModule", { value: true });
 // export function Aisle({ fee, limit, candlesData: data }: Entry) {
 //     return new Promise<Result>((resolve, reject) => {
 //         const result: Result = [];

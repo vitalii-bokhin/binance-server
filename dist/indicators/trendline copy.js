@@ -1,4 +1,6 @@
+"use strict";
 // import { Candle, InputTime, LineOpt, TrendlineInput } from './types';
+Object.defineProperty(exports, "__esModule", { value: true });
 // const getTime = function ({ d, h, m }: InputTime): number {
 //     return new Date(2022, 3, d, h, m).getTime();
 // }

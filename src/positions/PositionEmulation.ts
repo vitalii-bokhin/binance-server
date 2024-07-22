@@ -9,23 +9,23 @@ export default class PositionEmulation implements Position {
     direction: 'long' | 'short';
     fee: number;
     entryPrice: number;
-    quantity: number;
-    usdtAmount: number;
-    takeProfit: number;
+    quantity!: number;
+    usdtAmount!: number;
+    takeProfit!: number;
     stopLoss: number;
     lossUSDT: number;
-    percentLoss: number;
+    percentLoss!: number;
     averaged: boolean;
-    lostUsdtAmount: number;
-    profitUsdtAmount: number;
-    candleTick: (data: Candle[]) => Promise<void>;
+    lostUsdtAmount!: number;
+    profitUsdtAmount!: number;
+    candleTick!: (data: Candle[]) => Promise<void>;
 
-    constructor(opt: { symbol: string; direction: 'long' | 'short'; entryPrice: number; stopLoss: number; }) {
+    constructor(opt: { symbol: string; direction: 'long' | 'short'; entryPrice: number; stopLoss: number }) {
         this.symbol = opt.symbol;
         this.direction = opt.direction;
         this.entryPrice = opt.entryPrice;
         this.stopLoss = opt.stopLoss;
-        this.fee = .08;
+        this.fee = 0.08;
         this.lossUSDT = 1;
         this.averaged = false;
     }
@@ -38,7 +38,7 @@ export default class PositionEmulation implements Position {
     }
 
     async setEntryOrders(): Promise<void> {
-        let percentLoss: number;
+        let percentLoss: number | undefined;
 
         if (this.direction == 'long') {
             percentLoss = (this.entryPrice - this.stopLoss) / (this.entryPrice / 100);
@@ -47,16 +47,23 @@ export default class PositionEmulation implements Position {
         }
 
         // entry
-        const usdtAmount = this.lossUSDT * (100 / (percentLoss + this.fee));
-        const quantity = usdtAmount / this.entryPrice;
+        if (percentLoss) {
+            const usdtAmount = this.lossUSDT * (100 / (percentLoss + this.fee));
+            const quantity = usdtAmount / this.entryPrice;
 
-        this.percentLoss = percentLoss;
-        this.usdtAmount = usdtAmount;
-        this.quantity = quantity;
+            this.percentLoss = percentLoss;
+            this.usdtAmount = usdtAmount;
+            this.quantity = quantity;
 
-        await this.logPosition('open', usdtAmount);
+            await this.logPosition('open', usdtAmount);
 
-        console.log('PositionEmulation -> setEntryOrders -> ', { entryPrice: this.entryPrice, percentLoss: percentLoss + this.fee, quantity, usdtAmount });
+            console.log('PositionEmulation -> setEntryOrders -> ', {
+                entryPrice: this.entryPrice,
+                percentLoss: percentLoss + this.fee,
+                quantity,
+                usdtAmount,
+            });
+        }
     }
 
     setOutgoingOrders(): void {
@@ -85,8 +92,7 @@ export default class PositionEmulation implements Position {
     }
 
     watch(): Promise<void> {
-        return new Promise<void>((resolve) => {
-
+        return new Promise<void>(resolve => {
             this.candleTick = async (data: Candle[]) => {
                 const lastPrice = data.slice(-1)[0].close;
 
@@ -94,7 +100,6 @@ export default class PositionEmulation implements Position {
                     if (lastPrice >= this.takeProfit) {
                         await this.close('profit');
                         resolve();
-
                     } else if (lastPrice <= this.stopLoss) {
                         if (this.averaged) {
                             await this.close('loss');
@@ -107,7 +112,6 @@ export default class PositionEmulation implements Position {
                     if (lastPrice <= this.takeProfit) {
                         await this.close('profit');
                         resolve();
-
                     } else if (lastPrice >= this.stopLoss) {
                         if (this.averaged) {
                             await this.close('loss');
@@ -115,10 +119,9 @@ export default class PositionEmulation implements Position {
                         } else {
                             await this.average();
                         }
-
                     }
                 }
-            }
+            };
 
             candlesTicksEvent.on(this.symbol, this.candleTick);
         });
@@ -127,8 +130,8 @@ export default class PositionEmulation implements Position {
     async average() {
         const prevStopLoss = this.stopLoss;
         const newEntryPrice = this.stopLoss;
-        let newStopLoss: number;
-        let percentLoss: number;
+        let newStopLoss: number | undefined;
+        let percentLoss: number | undefined;
 
         if (this.direction == 'long') {
             newStopLoss = prevStopLoss - (this.entryPrice - this.stopLoss);
@@ -139,23 +142,30 @@ export default class PositionEmulation implements Position {
         }
 
         // avg entry
-        const usdtAmount = this.lossUSDT * (100 / (percentLoss + this.fee));
-        const quantity = usdtAmount / newEntryPrice;
-        const avgEntryPrice = (newEntryPrice + this.entryPrice) / 2;
+        if (percentLoss && newStopLoss) {
+            const usdtAmount = this.lossUSDT * (100 / (percentLoss + this.fee));
+            const quantity = usdtAmount / newEntryPrice;
+            const avgEntryPrice = (newEntryPrice + this.entryPrice) / 2;
 
-        this.percentLoss = percentLoss;
-        this.usdtAmount += usdtAmount;
-        this.quantity += quantity;
-        this.entryPrice = avgEntryPrice;
-        this.stopLoss = newStopLoss;
+            this.percentLoss = percentLoss;
+            this.usdtAmount += usdtAmount;
+            this.quantity += quantity;
+            this.entryPrice = avgEntryPrice;
+            this.stopLoss = newStopLoss;
 
-        await this.logPosition('open', usdtAmount);
+            await this.logPosition('open', usdtAmount);
 
-        console.log('PositionEmulation -> average -> ', { entryPrice: this.entryPrice, percentLoss: percentLoss + this.fee, quantity, usdtAmount });
+            console.log('PositionEmulation -> average -> ', {
+                entryPrice: this.entryPrice,
+                percentLoss: percentLoss + this.fee,
+                quantity,
+                usdtAmount,
+            });
 
-        this.averaged = true;
+            this.averaged = true;
 
-        this.setOutgoingOrders();
+            this.setOutgoingOrders();
+        }
     }
 
     async close(result: 'profit' | 'loss') {
@@ -167,7 +177,6 @@ export default class PositionEmulation implements Position {
                 const profitUsdt = profitPercent * (this.usdtAmount / 100);
 
                 await this.logPosition('profit', profitUsdt);
-
             } else {
                 const lossPercent = (this.entryPrice - this.stopLoss) / (this.entryPrice / 100) + this.fee;
                 const lostUsdt = lossPercent * (this.usdtAmount / 100);
@@ -180,7 +189,6 @@ export default class PositionEmulation implements Position {
                 const profitUsdt = profitPercent * (this.usdtAmount / 100);
 
                 await this.logPosition('profit', profitUsdt);
-
             } else {
                 const lossPercent = (this.stopLoss - this.entryPrice) / (this.entryPrice / 100) + this.fee;
                 const lostUsdt = lossPercent * (this.usdtAmount / 100);
@@ -201,12 +209,14 @@ export default class PositionEmulation implements Position {
             wallet[this.symbol] = 0;
         }
 
-        if (type === 'open') {
-            wallet[this.symbol] -= amount;
-        } else if (type === 'profit') {
-            wallet[this.symbol] += (this.usdtAmount + amount);
-        } else if (type === 'loss') {
-            wallet[this.symbol] += (this.usdtAmount - amount);
+        if (amount !== undefined) {
+            if (type === 'open') {
+                wallet[this.symbol] -= amount;
+            } else if (type === 'profit') {
+                wallet[this.symbol] += this.usdtAmount + amount;
+            } else if (type === 'loss') {
+                wallet[this.symbol] += this.usdtAmount - amount;
+            }
         }
 
         await SaveData('wallet', wallet);
